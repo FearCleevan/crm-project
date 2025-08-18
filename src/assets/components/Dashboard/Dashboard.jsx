@@ -11,23 +11,39 @@ const Dashboard = () => {
         const fetchUserData = async () => {
             try {
                 const token = localStorage.getItem('token');
+                const storedUser = localStorage.getItem('user');
+
+                if (!token || !storedUser) {
+                    throw new Error('No authentication data');
+                }
+
+                // Show stored user immediately while verifying
+                setUser(JSON.parse(storedUser));
 
                 const response = await fetch('/api/auth/protected', {
                     headers: {
-                        'Authorization': `Bearer ${token}`
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
                     }
                 });
 
+                const data = await response.json();
+
                 if (!response.ok) {
-                    throw new Error('Not authenticated');
+                    console.error('Protected route error:', data);
+                    throw new Error(data.error || 'Failed to verify session');
                 }
 
-                const data = await response.json();
-                setUser(data.user);
+                // Update with fresh user data if needed
+                if (data.user) {
+                    setUser(data.user);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                }
             } catch (err) {
+                console.error('Authentication error:', err);
                 localStorage.removeItem('user');
                 localStorage.removeItem('token');
-                navigate('/login');
+                navigate('/login', { state: { error: err.message } });
             }
         };
 

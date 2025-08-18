@@ -1,19 +1,21 @@
 // server/server.js
 import express from 'express';
 import cors from 'cors';
-import authRoutes from './routes/authRoutes.js';
 import dotenv from 'dotenv';
+import authRoutes from '../routes/authRoutes.js';
 
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = 5000; // Explicitly set to 5000 since you're not using .env PORT
+
+console.log(`Starting server on port ${PORT}`); // Add this for debugging
 
 // Enhanced CORS
 app.use(cors({
   origin: 'http://localhost:5173',
   credentials: true,
-  allowedHeaders: ['Content-Type', 'Authorization'],  // Explicitly allow Authorization
+  allowedHeaders: ['Content-Type', 'Authorization'],
   methods: ['GET', 'POST', 'PUT', 'DELETE']
 }));
 
@@ -41,10 +43,11 @@ app.get('/api/health', (req, res) => {
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error('Server error:', err);
+  console.error('Unhandled error:', err);
   res.status(500).json({
     success: false,
-    error: 'Internal server error'
+    error: 'Internal server error',
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
   });
 });
 

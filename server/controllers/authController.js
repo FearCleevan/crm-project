@@ -81,17 +81,46 @@ export const loginUser = async (req, res) => {
 
 export const protectedRoute = async (req, res) => {
   try {
-    // The user is already verified by authMiddleware
-    res.json({ 
+    console.log('Protected route accessed by user:', req.user.userId); // Debug log
+    
+    const [rows] = await pool.query(
+      `SELECT 
+        user_id as id,
+        first_name as firstName,
+        last_name as lastName,
+        email,
+        role
+       FROM \`crm-users\`
+       WHERE user_id = ?`,
+      [req.user.userId]
+    );
+
+    if (rows.length === 0) {
+      console.log('User not found in database');
+      return res.status(404).json({ 
+        success: false,
+        error: 'User not found' 
+      });
+    }
+
+    const user = rows[0];
+    console.log('Returning user data:', user); // Debug log
+    
+    res.json({
       success: true,
-      user: req.user 
+      user
     });
   } catch (error) {
-    res.status(500).json({ error: 'Server error' });
+    console.error('Protected route error:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Internal server error',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
 
 export const logoutUser = (req, res) => {
   // In a real app, you might want to blacklist the token
-  res.json({ success: true, message: 'Logged out successfully' });
+  res.json({ success: true, message: "Logged out successfully" });
 };
