@@ -144,3 +144,23 @@
 .footerLink:hover {
   text-decoration: underline;
 }
+
+.rememberMe {
+  display: flex;
+  align-items: center;
+  margin: 15px 0;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.rememberMe input {
+  margin-right: 8px;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.rememberMe label {
+  cursor: pointer;
+  user-select: none;
+}

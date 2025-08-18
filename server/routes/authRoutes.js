@@ -6,7 +6,7 @@ import { authMiddleware } from '../middlewares/authMiddleware.js';
 const router = express.Router();
 
 router.post('/login', loginUser);
-router.get('/protected', authMiddleware, ProtectedRoute);
+router.get('/protected', authMiddleware, protectedRoute);
 router.post('/logout', logoutUser);
 
 export default router;

@@ -1,8 +1,8 @@
-//server/nodemon.js
+// server/nodemon.js
 module.exports = {
   execMap: {
-    js: "node --experimental-modules"
+    js: "node"
   },
-  ext: "js,mjs,json",
+  ext: "js,json",
   verbose: true
 };

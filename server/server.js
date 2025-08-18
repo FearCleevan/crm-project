@@ -2,56 +2,42 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import authRoutes from '../routes/authRoutes.js';
+import authRoutes from './routes/authRoutes.js';
+import cookieParser from 'cookie-parser';
 
 dotenv.config();
 
 const app = express();
-const PORT = 5000; // Explicitly set to 5000 since you're not using .env PORT
+const PORT = process.env.PORT || 5001;
 
-console.log(`Starting server on port ${PORT}`); // Add this for debugging
-
-// Enhanced CORS
 app.use(cors({
-  origin: 'http://localhost:5173',
-  credentials: true,
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  methods: ['GET', 'POST', 'PUT', 'DELETE']
+    origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
 }));
 
-// Body parsers
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
-// Routes
 app.use('/api/auth', authRoutes);
 
-// Health check
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'OK',
-    timestamp: new Date().toISOString() 
-  });
+    res.json({ 
+        status: 'OK',
+        timestamp: new Date().toISOString() 
+    });
 });
 
-app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'OK',
-    timestamp: new Date().toISOString() 
-  });
-});
-
-// Error handling middleware
 app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err);
-  res.status(500).json({
-    success: false,
-    error: 'Internal server error',
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
-  });
+    console.error('Unhandled error:', err);
+    res.status(500).json({
+        success: false,
+        error: 'Internal server error',
+    });
 });
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Health check: http://localhost:${PORT}/api/health`);
+    console.log(`Server running on port ${PORT}`);
 });

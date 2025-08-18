@@ -1,5 +1,5 @@
-//src/assets/components/LoginPage/Login.jsx
-import { useState } from 'react';
+// src/assets/components/LoginPage/Login.jsx
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './Login.module.css';
 
@@ -8,6 +8,7 @@ const Login = () => {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [rememberMe, setRememberMe] = useState(false);
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
@@ -16,8 +17,7 @@ const Login = () => {
         setError('');
 
         try {
-            console.log('Attempting login...');
-            const response = await fetch('/api/auth/login', {
+            const response = await fetch('http://localhost:5001/api/auth/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -25,29 +25,38 @@ const Login = () => {
                 body: JSON.stringify({ username, password }),
             });
 
-            const responseData = await response.json();
+            const data = await response.json();
 
             if (!response.ok) {
-                console.error('Login failed:', responseData.error);
-                throw new Error(responseData.error || 'Login failed');
+                throw new Error(data.error || 'Login failed');
             }
 
-            console.log('Login successful:', responseData.user);
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('user', JSON.stringify(data.user));
 
-            // Store auth data
-            localStorage.setItem('token', responseData.token);
-            localStorage.setItem('user', JSON.stringify(responseData.user));
+            if (rememberMe) {
+                localStorage.setItem('rememberedUsername', username);
+            } else {
+                localStorage.removeItem('rememberedUsername');
+            }
 
-            // Redirect
             navigate('/dashboard');
 
         } catch (err) {
-            console.error('Login error:', err);
             setError(err.message || 'Login failed. Please try again.');
+            console.error('Login error:', err);
         } finally {
             setIsLoading(false);
         }
     };
+
+    useEffect(() => {
+        const rememberedUsername = localStorage.getItem('rememberedUsername');
+        if (rememberedUsername) {
+            setUsername(rememberedUsername);
+            setRememberMe(true);
+        }
+    }, []);
 
     return (
         <div className={styles.loginContainer}>
@@ -84,6 +93,16 @@ const Login = () => {
                             className={styles.inputField}
                             required
                         />
+                    </div>
+
+                    <div className={styles.rememberMe}>
+                        <input
+                            type="checkbox"
+                            id="rememberMe"
+                            checked={rememberMe}
+                            onChange={(e) => setRememberMe(e.target.checked)}
+                        />
+                        <label htmlFor="rememberMe">Remember me</label>
                     </div>
 
                     <button type="submit" className={styles.loginButton} disabled={isLoading}>

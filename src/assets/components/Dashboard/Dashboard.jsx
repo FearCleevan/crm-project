@@ -1,4 +1,5 @@
 //src/assets/components/Dashboard/Dashboard.jsx
+import React from 'react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './Dashboard.module.css';
@@ -13,32 +14,30 @@ const Dashboard = () => {
                 const token = localStorage.getItem('token');
                 const storedUser = localStorage.getItem('user');
 
-                if (!token || !storedUser) {
-                    throw new Error('No authentication data');
+                if (!token) {
+                    throw new Error('No authentication token');
                 }
 
-                // Show stored user immediately while verifying
-                setUser(JSON.parse(storedUser));
+                if (storedUser) {
+                    setUser(JSON.parse(storedUser));
+                }
 
-                const response = await fetch('/api/auth/protected', {
+                const response = await fetch('http://localhost:5001/api/auth/protected', {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
                     }
                 });
 
-                const data = await response.json();
-
                 if (!response.ok) {
-                    console.error('Protected route error:', data);
-                    throw new Error(data.error || 'Failed to verify session');
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to verify session');
                 }
 
-                // Update with fresh user data if needed
-                if (data.user) {
-                    setUser(data.user);
-                    localStorage.setItem('user', JSON.stringify(data.user));
-                }
+                const data = await response.json();
+                setUser(data.user);
+                localStorage.setItem('user', JSON.stringify(data.user));
+
             } catch (err) {
                 console.error('Authentication error:', err);
                 localStorage.removeItem('user');
@@ -52,8 +51,11 @@ const Dashboard = () => {
 
     const handleLogout = async () => {
         try {
-            await fetch('/api/auth/logout', {
-                method: 'POST'
+            await fetch('http://localhost:5001/api/auth/logout', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
             });
         } finally {
             localStorage.removeItem('user');
@@ -86,7 +88,7 @@ const Dashboard = () => {
             <main className={styles.mainContent}>
                 <div className={styles.welcomeSection}>
                     <h2>Welcome back, {user.firstName}!</h2>
-                    <p>Here's what's happening with your CRM today.</p>
+                    <p>Heres whats happening with your CRM today.</p>
                 </div>
 
                 <div className={styles.statsGrid}>
