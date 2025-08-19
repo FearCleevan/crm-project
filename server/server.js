@@ -3,7 +3,10 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import authRoutes from './routes/authRoutes.js';
+import userRoutes from './routes/users.js';
 import cookieParser from 'cookie-parser';
+import { authMiddleware } from './middlewares/authMiddleware.js';
+import pool from './config/db.js';
 
 dotenv.config();
 
@@ -21,7 +24,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
+// Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/users', authMiddleware, userRoutes); // Add authentication middleware
 
 app.get('/api/health', (req, res) => {
     res.json({ 
@@ -41,3 +46,13 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
+
+// Add this to your server.js to test DB connection on startup
+pool.getConnection()
+  .then(connection => {
+    console.log('✅ Database connection successful');
+    connection.release();
+  })
+  .catch(err => {
+    console.error('❌ Database connection failed:', err);
+  });

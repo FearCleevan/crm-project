@@ -1,9 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
 import styles from './Dashboard.module.css';
 import RightDashboard from '../RightDashboard/RightDashboard';
 import LeftDashboard from '../LeftDashboard/LeftDashboard';
+import Header from '../Header/Header';
 import { DashboardSkeleton } from '../Common/SkeletonLoading';
+import useAuth from '../../../hooks/useAuth';
+
 
 // Mock data for dashboard stats and activities
 const mockDashboardData = {
@@ -98,81 +100,25 @@ const LogoutConfirmationModal = ({ isOpen, onConfirm, onCancel, userName }) => {
 };
 
 const Dashboard = () => {
-    const [user, setUser] = useState(null);
+    const { user, isLoading, logout } = useAuth();
     const [dashboardData, setDashboardData] = useState(null);
     const [leftCollapsed, setLeftCollapsed] = useState(false);
     const [rightCollapsed, setRightCollapsed] = useState(true);
     const [showLeftToggle, setShowLeftToggle] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
-    const navigate = useNavigate();
 
-    useEffect(() => {
-        const fetchUserData = async () => {
-            try {
-                const token = localStorage.getItem('token');
-                const storedUser = localStorage.getItem('user');
-
-                if (!token) {
-                    throw new Error('No authentication token');
-                }
-
-                if (storedUser) {
-                    setUser(JSON.parse(storedUser));
-                }
-
-                const response = await fetch('http://localhost:5001/api/auth/protected', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Failed to verify session');
-                }
-
-                const data = await response.json();
-                setUser(data.user);
-                localStorage.setItem('user', JSON.stringify(data.user));
-                
-                // Set mock data for dashboard stats and activities
-                setDashboardData(mockDashboardData);
-
-            } catch (err) {
-                console.error('Authentication error:', err);
-                localStorage.removeItem('user');
-                localStorage.removeItem('token');
-                navigate('/login', { state: { error: err.message } });
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchUserData();
-    }, [navigate]);
+    // Set mock data for dashboard stats and activities
+    useState(() => {
+      setDashboardData(mockDashboardData);
+    }, []);
 
     const handleLogoutClick = () => {
         setShowLogoutModal(true);
     };
 
     const handleLogoutConfirm = async () => {
-        try {
-            await fetch('http://localhost:5001/api/auth/logout', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
-            });
-        } catch (error) {
-            console.error('Logout error:', error);
-        } finally {
-            localStorage.removeItem('user');
-            localStorage.removeItem('token');
-            setShowLogoutModal(false);
-            navigate('/login');
-        }
+        await logout();
+        setShowLogoutModal(false);
     };
 
     const handleLogoutCancel = () => {
@@ -250,26 +196,13 @@ const Dashboard = () => {
 
             {/* Main Content Area */}
             <div className={`${styles.mainContentArea} ${leftCollapsed ? styles.leftCollapsed : ''} ${rightCollapsed ? styles.rightCollapsed : ''}`}>
-                <header className={styles.header}>
-                    <div className={styles.headerLeft}>
-                        <h1 className={styles.logo}>CRM Dashboard</h1>
-                    </div>
-                    <div className={styles.headerRight}>
-                        <div className={styles.userInfo}>
-                            <span className={styles.userName}>{user.firstName} {user.lastName}</span>
-                            <span className={styles.userRole}>{user.role}</span>
-                        </div>
-                        <button
-                            className={styles.sidebarToggle}
-                            onClick={() => setRightCollapsed(!rightCollapsed)}
-                        >
-                            {rightCollapsed ? '☰' : '▶'}
-                        </button>
-                        <button onClick={handleLogoutClick} className={styles.logoutButton}>
-                            Logout
-                        </button>
-                    </div>
-                </header>
+                {/* Header Component */}
+                <Header 
+                  user={user} 
+                  onLogoutClick={handleLogoutClick} 
+                  onToggleRightPanel={() => setRightCollapsed(!rightCollapsed)}
+                  rightCollapsed={rightCollapsed}
+                />
 
                 <main className={styles.mainContent}>
                     {/* Stats Grid */}

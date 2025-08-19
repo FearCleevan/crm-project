@@ -1,8 +1,95 @@
+.userCreationContainer {
+  display: flex;
+  min-height: 100vh;
+  background-color: #0f0f1a;
+  position: relative;
+  color: #e0e0e0;
+}
+
+.leftPanel {
+  width: 240px;
+  background: #1a1a2a;
+  color: #e0e0e0;
+  transition: all 0.3s ease;
+  z-index: 10;
+  box-shadow: 2px 0 10px rgba(0,0,0,0.3);
+}
+
+.leftPanel.collapsed {
+  width: 50px;
+  overflow: hidden;
+}
+
+.mainContentArea {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+  background: #0f0f1a;
+}
+
+.mainContentArea.leftCollapsed {
+  margin-left: 0;
+}
+
+/* Collapse button styles */
+.collapseButtonWrapper {
+  position: absolute;
+  left: 240px;
+  top: 0;
+  height: 100%;
+  width: 12px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.collapseButtonWrapper.collapsed {
+  left: 50px;
+}
+
+.collapseButton {
+  position: absolute;
+  left: -12px;
+  top: 20px;
+  background: #2a2a3a;
+  border: 1px solid #3a3a4a;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  transition: all 0.2s ease;
+  padding: 0;
+  z-index: 30;
+}
+
+.collapseButton:hover {
+  background: #3a3a4a;
+  transform: scale(1.1);
+}
+
+.collapseButton svg {
+  width: 16px;
+  height: 16px;
+  color: #6b9aff;
+}
+
+.leftPanel.collapsed ~ .collapseButtonWrapper .collapseButton svg {
+  transform: rotate(180deg);
+}
+
 .userCreation {
   padding: 2rem;
   background-color: #0f0f1a;
   color: #e0e0e0;
-  min-height: 100vh;
+  min-height: calc(100vh - 80px); /* Account for header height */
+  overflow-y: auto;
 }
 
 .header {
@@ -301,4 +388,231 @@
 
 .bulkButton:hover {
   background: #4a4a5a;
+}
+
+
+/* Add these styles to your existing CSS file */
+
+.userCreationContainer {
+  display: flex;
+  min-height: 100vh;
+  background-color: #0f0f1a;
+  position: relative;
+  color: #e0e0e0;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  font-size: 1.2rem;
+  color: #b0b0b0;
+}
+
+/* Modal Styles */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.modalContent {
+  background: linear-gradient(135deg, #1a1a2a 0%, #2a2a3a 100%);
+  border-radius: 12px;
+  padding: 2rem;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+  border: 1px solid #3a3a4a;
+  animation: modalFadeIn 0.3s ease-out;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modalHeader {
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.modalHeader h3 {
+  color: #ffffff;
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.modalBody {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.modalBody p {
+  color: #e0e0e0;
+  margin: 0.5rem 0;
+  line-height: 1.5;
+}
+
+.modalBody strong {
+  color: #6b9aff;
+}
+
+.modalFooter {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.cancelButton {
+  padding: 0.75rem 1.5rem;
+  background: transparent;
+  color: #b0b0b0;
+  border: 1px solid #4a4a5a;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.cancelButton:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+}
+
+.confirmButton {
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.confirmButton:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+/* Rest of your existing CSS remains the same */
+
+/* Add these new styles to your existing CSS */
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.refreshButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #2a2a3a;
+  border: 1px solid #3a3a4a;
+  border-radius: 6px;
+  color: #e0e0e0;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.refreshButton:hover:not(:disabled) {
+  background: #3a3a4a;
+}
+
+.refreshButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.errorBanner {
+  background: rgba(229, 62, 62, 0.1);
+  border: 1px solid rgba(229, 62, 62, 0.3);
+  border-radius: 6px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  justify-content: between;
+  align-items: center;
+}
+
+.errorBanner span {
+  color: #e53e3e;
+  flex: 1;
+}
+
+.errorBanner button {
+  background: rgba(229, 62, 62, 0.2);
+  border: 1px solid rgba(229, 62, 62, 0.4);
+  color: #e53e3e;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.errorBanner button:hover {
+  background: rgba(229, 62, 62, 0.3);
+}
+
+.loadingTable {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  color: #b0b0b0;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #2a2a3a;
+  border-top: 3px solid #6b9aff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+.itemsPerPageSelect {
+  background: #1a1a2a;
+  border: 1px solid #2a2a3a;
+  border-radius: 6px;
+  color: #e0e0e0;
+  padding: 0.5rem;
+  cursor: pointer;
+}
+
+.noData {
+  text-align: center;
+  padding: 2rem;
+  color: #b0b0b0;
+  font-style: italic;
 }
