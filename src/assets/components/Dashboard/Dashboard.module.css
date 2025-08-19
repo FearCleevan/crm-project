@@ -335,3 +335,105 @@
   gap: 0.25rem;
   margin-bottom: 10px;
 }
+
+/* Modal Styles */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.modalContent {
+  background: linear-gradient(135deg, #1a1a2a 0%, #2a2a3a 100%);
+  border-radius: 12px;
+  padding: 2rem;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+  border: 1px solid #3a3a4a;
+  animation: modalFadeIn 0.3s ease-out;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modalHeader {
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.modalHeader h3 {
+  color: #ffffff;
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.modalBody {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.modalBody p {
+  color: #e0e0e0;
+  margin: 0.5rem 0;
+  line-height: 1.5;
+}
+
+.modalBody strong {
+  color: #6b9aff;
+}
+
+.modalFooter {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.cancelButton {
+  padding: 0.75rem 1.5rem;
+  background: transparent;
+  color: #b0b0b0;
+  border: 1px solid #4a4a5a;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.cancelButton:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+}
+
+.confirmButton {
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.confirmButton:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}

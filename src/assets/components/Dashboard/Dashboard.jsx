@@ -65,6 +65,38 @@ const mockDashboardData = {
   ]
 };
 
+// Logout Confirmation Modal Component
+const LogoutConfirmationModal = ({ isOpen, onConfirm, onCancel, userName }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className={styles.modalOverlay}>
+      <div className={styles.modalContent}>
+        <div className={styles.modalHeader}>
+          <h3>Confirm Logout</h3>
+        </div>
+        <div className={styles.modalBody}>
+          <p>Are you sure you want to logout, <strong>{userName}</strong>?</p>
+        </div>
+        <div className={styles.modalFooter}>
+          <button 
+            className={styles.cancelButton}
+            onClick={onCancel}
+          >
+            Stay Logged In
+          </button>
+          <button 
+            className={styles.confirmButton}
+            onClick={onConfirm}
+          >
+            Yes, Logout
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const Dashboard = () => {
     const [user, setUser] = useState(null);
     const [dashboardData, setDashboardData] = useState(null);
@@ -72,6 +104,7 @@ const Dashboard = () => {
     const [rightCollapsed, setRightCollapsed] = useState(true);
     const [showLeftToggle, setShowLeftToggle] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -120,7 +153,11 @@ const Dashboard = () => {
         fetchUserData();
     }, [navigate]);
 
-    const handleLogout = async () => {
+    const handleLogoutClick = () => {
+        setShowLogoutModal(true);
+    };
+
+    const handleLogoutConfirm = async () => {
         try {
             await fetch('http://localhost:5001/api/auth/logout', {
                 method: 'POST',
@@ -128,11 +165,18 @@ const Dashboard = () => {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                 }
             });
+        } catch (error) {
+            console.error('Logout error:', error);
         } finally {
             localStorage.removeItem('user');
             localStorage.removeItem('token');
+            setShowLogoutModal(false);
             navigate('/login');
         }
+    };
+
+    const handleLogoutCancel = () => {
+        setShowLogoutModal(false);
     };
 
     const formatNumber = (num) => {
@@ -165,6 +209,14 @@ const Dashboard = () => {
 
     return (
         <div className={styles.dashboardContainer}>
+            {/* Logout Confirmation Modal */}
+            <LogoutConfirmationModal
+                isOpen={showLogoutModal}
+                onConfirm={handleLogoutConfirm}
+                onCancel={handleLogoutCancel}
+                userName={`${user.firstName} ${user.lastName}`}
+            />
+            
             {/* Left Dashboard Panel */}
             <div
                 className={`${styles.leftPanel} ${leftCollapsed ? styles.collapsed : ''}`}
@@ -213,7 +265,7 @@ const Dashboard = () => {
                         >
                             {rightCollapsed ? '☰' : '▶'}
                         </button>
-                        <button onClick={handleLogout} className={styles.logoutButton}>
+                        <button onClick={handleLogoutClick} className={styles.logoutButton}>
                             Logout
                         </button>
                     </div>
@@ -225,55 +277,46 @@ const Dashboard = () => {
                         <div className={styles.statCard}>
                             <div className={styles.statHeader}>
                                 <h3>Total Leads</h3>
-                                
                             </div>
                             <p className={styles.statValue}>{formatNumber(dashboardData.stats.totalLeads)}</p>
                             <p className={dashboardData.stats.totalLeadsChange >= 0 ? styles.statChangePositive : styles.statChangeNegative}>
                                 {dashboardData.stats.totalLeadsChange >= 0 ? '↑' : '↓'} {Math.abs(dashboardData.stats.totalLeadsChange)}% from last month
                             </p>
-
                             <button className={styles.moreInfoBtn}>More info</button>
                         </div>
                         <div className={styles.statCard}>
                             <div className={styles.statHeader}>
                                 <h3>Total Emails</h3>
-                                
                             </div>
                             <p className={styles.statValue}>{formatNumber(dashboardData.stats.totalEmails)}</p>
                             <p className={dashboardData.stats.totalEmailsChange >= 0 ? styles.statChangePositive : styles.statChangeNegative}>
                                 {dashboardData.stats.totalEmailsChange >= 0 ? '↑' : '↓'} {Math.abs(dashboardData.stats.totalEmailsChange)}% from last week
                             </p>
-
                             <button className={styles.moreInfoBtn}>More info</button>
                         </div>
                         <div className={styles.statCard}>
                             <div className={styles.statHeader}>
                                 <h3>Total Phone Numbers</h3>
-                                
                             </div>
                             <p className={styles.statValue}>{formatNumber(dashboardData.stats.totalPhones)}</p>
                             <p className={dashboardData.stats.totalPhonesChange >= 0 ? styles.statChangePositive : styles.statChangeNegative}>
                                 {dashboardData.stats.totalPhonesChange >= 0 ? '↑' : '↓'} {Math.abs(dashboardData.stats.totalPhonesChange)}% from yesterday
                             </p>
-
                             <button className={styles.moreInfoBtn}>More info</button>
                         </div>
                         <div className={styles.statCard}>
                             <div className={styles.statHeader}>
                                 <h3>Total Company</h3>
-                                
                             </div>
                             <p className={styles.statValue}>{formatNumber(dashboardData.stats.totalCompanies)}</p>
                             <p className={dashboardData.stats.totalCompaniesChange >= 0 ? styles.statChangePositive : styles.statChangeNegative}>
                                 {dashboardData.stats.totalCompaniesChange >= 0 ? '↑' : '↓'} {Math.abs(dashboardData.stats.totalCompaniesChange)}% from last quarter
                             </p>
-
                             <button className={styles.moreInfoBtn}>More info</button>
                         </div>
                         <div className={styles.statCard}>
                             <div className={styles.statHeader}>
                                 <h3>Duplicate Leads</h3>
-                                
                             </div>
                             <p className={styles.statValue}>{formatNumber(dashboardData.stats.duplicateLeads)}</p>
                             <p className={dashboardData.stats.duplicateLeadsChange >= 0 ? styles.statChangePositive : styles.statChangeNegative}>
@@ -284,13 +327,11 @@ const Dashboard = () => {
                         <div className={styles.statCard}>
                             <div className={styles.statHeader}>
                                 <h3>Junk Leads</h3>
-                                
                             </div>
                             <p className={styles.statValue}>{formatNumber(dashboardData.stats.junkLeads)}</p>
                             <p className={dashboardData.stats.junkLeadsChange >= 0 ? styles.statChangePositive : styles.statChangeNegative}>
                                 {dashboardData.stats.junkLeadsChange >= 0 ? '↑' : '↓'} {Math.abs(dashboardData.stats.junkLeadsChange)}% from last week
                             </p>
-
                             <button className={styles.moreInfoBtn}>More info</button>
                         </div>
                     </div>

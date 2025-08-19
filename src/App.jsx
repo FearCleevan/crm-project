@@ -2,6 +2,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './assets/components/LoginPage/Login';
 import Dashboard from './assets/components/Dashboard/Dashboard';
+import UserCreation from './assets/components/UserCreation/UserCreation';
 import ProtectedRoute from './assets/components/ProtectedRoute';
 
 function App() {
@@ -13,7 +14,8 @@ function App() {
         {/* Protected routes */}
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/" element={<Dashboard />} /> // Or redirect to dashboard
+          <Route path="/user-management" element={<UserCreation />} />
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
         </Route>
         
         {/* Fallback redirect */}
