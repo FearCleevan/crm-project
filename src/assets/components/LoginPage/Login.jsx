@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './Login.module.css';
+import SkeletonLoading from '../Common/SkeletonLoading';
 
 const Login = () => {
     const [username, setUsername] = useState('');
@@ -11,6 +12,20 @@ const Login = () => {
     const [rememberMe, setRememberMe] = useState(false);
     const [isInitializing, setIsInitializing] = useState(true);
     const navigate = useNavigate();
+
+    useEffect(() => {
+        // Simulate initial loading (e.g., checking auth status)
+        const timer = setTimeout(() => {
+            const rememberedUsername = localStorage.getItem('rememberedUsername');
+            if (rememberedUsername) {
+                setUsername(rememberedUsername);
+                setRememberMe(true);
+            }
+            setIsInitializing(false);
+        }, 1000); // Simulate 1 second loading
+
+        return () => clearTimeout(timer);
+    }, []);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -51,13 +66,17 @@ const Login = () => {
         }
     };
 
-    useEffect(() => {
-        const rememberedUsername = localStorage.getItem('rememberedUsername');
-        if (rememberedUsername) {
-            setUsername(rememberedUsername);
-            setRememberMe(true);
-        }
-    }, []);
+    if (isInitializing) {
+        return <SkeletonLoading />;
+    }
+
+    // useEffect(() => {
+    //     const rememberedUsername = localStorage.getItem('rememberedUsername');
+    //     if (rememberedUsername) {
+    //         setUsername(rememberedUsername);
+    //         setRememberMe(true);
+    //     }
+    // }, []);
 
     return (
         <div className={styles.loginContainer}>
