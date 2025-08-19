@@ -5,14 +5,74 @@ import RightDashboard from '../RightDashboard/RightDashboard';
 import LeftDashboard from '../LeftDashboard/LeftDashboard';
 import { DashboardSkeleton } from '../Common/SkeletonLoading';
 
+// Mock data for dashboard stats and activities
+const mockDashboardData = {
+  stats: {
+    totalLeads: 1248,
+    totalLeadsChange: 12,
+    totalEmails: 2475,
+    totalEmailsChange: 8,
+    totalPhones: 1982,
+    totalPhonesChange: 5,
+    totalCompanies: 428,
+    totalCompaniesChange: 3,
+    duplicateLeads: 87,
+    duplicateLeadsChange: -2,
+    junkLeads: 42,
+    junkLeadsChange: -15
+  },
+  recentActivity: [
+    {
+      id: 1,
+      type: "call",
+      icon: "📞",
+      description: "Call with Acme Corp completed",
+      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
+      user: "John Doe"
+    },
+    {
+      id: 2,
+      type: "email",
+      icon: "✉️",
+      description: "Proposal sent to XYZ Ltd",
+      timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
+      user: "Jane Smith"
+    },
+    {
+      id: 3,
+      type: "meeting",
+      icon: "📅",
+      description: "Meeting scheduled with ABC Inc",
+      timestamp: new Date(Date.now() + 24 * 60 * 60 * 1000), // 1 day from now
+      user: "John Doe"
+    },
+    {
+      id: 4,
+      type: "task",
+      icon: "✅",
+      description: "Completed customer onboarding process",
+      timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
+      user: "Mike Johnson"
+    },
+    {
+      id: 5,
+      type: "note",
+      icon: "📝",
+      description: "Added new notes to Johnson account",
+      timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
+      user: "Sarah Wilson"
+    }
+  ]
+};
+
 const Dashboard = () => {
     const [user, setUser] = useState(null);
+    const [dashboardData, setDashboardData] = useState(null);
     const [leftCollapsed, setLeftCollapsed] = useState(false);
     const [rightCollapsed, setRightCollapsed] = useState(true);
     const [showLeftToggle, setShowLeftToggle] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const navigate = useNavigate();
-
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -43,6 +103,9 @@ const Dashboard = () => {
                 const data = await response.json();
                 setUser(data.user);
                 localStorage.setItem('user', JSON.stringify(data.user));
+                
+                // Set mock data for dashboard stats and activities
+                setDashboardData(mockDashboardData);
 
             } catch (err) {
                 console.error('Authentication error:', err);
@@ -72,7 +135,31 @@ const Dashboard = () => {
         }
     };
 
-    if (isLoading || !user) {
+    const formatNumber = (num) => {
+        return new Intl.NumberFormat('en-US').format(num);
+    };
+
+    const formatDate = (date) => {
+        const now = new Date();
+        const diffTime = Math.abs(now - date);
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
+        
+        if (date > now) {
+            // Future date
+            return 'Tomorrow, ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        } else if (diffHours < 24) {
+            return 'Today, ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        } else if (diffDays === 1) {
+            return 'Yesterday, ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        } else if (diffDays < 7) {
+            return `${diffDays} days ago`;
+        } else {
+            return date.toLocaleDateString();
+        }
+    };
+
+    if (isLoading || !user || !dashboardData) {
         return <DashboardSkeleton />;
     }
 
@@ -133,58 +220,93 @@ const Dashboard = () => {
                 </header>
 
                 <main className={styles.mainContent}>
-                    <div className={styles.welcomeSection}>
-                        <h2>Welcome back, {user.firstName}!</h2>
-                        <p>Here's what's happening with your CRM today.</p>
-                    </div>
-
+                    {/* Stats Grid */}
                     <div className={styles.statsGrid}>
                         <div className={styles.statCard}>
-                            <h3>Total Customers</h3>
-                            <p className={styles.statValue}>1,248</p>
-                            <p className={styles.statChange}>↑ 12% from last month</p>
+                            <div className={styles.statHeader}>
+                                <h3>Total Leads</h3>
+                                
+                            </div>
+                            <p className={styles.statValue}>{formatNumber(dashboardData.stats.totalLeads)}</p>
+                            <p className={dashboardData.stats.totalLeadsChange >= 0 ? styles.statChangePositive : styles.statChangeNegative}>
+                                {dashboardData.stats.totalLeadsChange >= 0 ? '↑' : '↓'} {Math.abs(dashboardData.stats.totalLeadsChange)}% from last month
+                            </p>
+
+                            <button className={styles.moreInfoBtn}>More info</button>
                         </div>
                         <div className={styles.statCard}>
-                            <h3>New Leads</h3>
-                            <p className={styles.statValue}>84</p>
-                            <p className={styles.statChange}>↑ 5% from last week</p>
+                            <div className={styles.statHeader}>
+                                <h3>Total Emails</h3>
+                                
+                            </div>
+                            <p className={styles.statValue}>{formatNumber(dashboardData.stats.totalEmails)}</p>
+                            <p className={dashboardData.stats.totalEmailsChange >= 0 ? styles.statChangePositive : styles.statChangeNegative}>
+                                {dashboardData.stats.totalEmailsChange >= 0 ? '↑' : '↓'} {Math.abs(dashboardData.stats.totalEmailsChange)}% from last week
+                            </p>
+
+                            <button className={styles.moreInfoBtn}>More info</button>
                         </div>
                         <div className={styles.statCard}>
-                            <h3>Open Tasks</h3>
-                            <p className={styles.statValue}>23</p>
-                            <p className={styles.statChange}>↓ 3 from yesterday</p>
+                            <div className={styles.statHeader}>
+                                <h3>Total Phone Numbers</h3>
+                                
+                            </div>
+                            <p className={styles.statValue}>{formatNumber(dashboardData.stats.totalPhones)}</p>
+                            <p className={dashboardData.stats.totalPhonesChange >= 0 ? styles.statChangePositive : styles.statChangeNegative}>
+                                {dashboardData.stats.totalPhonesChange >= 0 ? '↑' : '↓'} {Math.abs(dashboardData.stats.totalPhonesChange)}% from yesterday
+                            </p>
+
+                            <button className={styles.moreInfoBtn}>More info</button>
                         </div>
                         <div className={styles.statCard}>
-                            <h3>Revenue</h3>
-                            <p className={styles.statValue}>$48,750</p>
-                            <p className={styles.statChange}>↑ 18% from last quarter</p>
+                            <div className={styles.statHeader}>
+                                <h3>Total Company</h3>
+                                
+                            </div>
+                            <p className={styles.statValue}>{formatNumber(dashboardData.stats.totalCompanies)}</p>
+                            <p className={dashboardData.stats.totalCompaniesChange >= 0 ? styles.statChangePositive : styles.statChangeNegative}>
+                                {dashboardData.stats.totalCompaniesChange >= 0 ? '↑' : '↓'} {Math.abs(dashboardData.stats.totalCompaniesChange)}% from last quarter
+                            </p>
+
+                            <button className={styles.moreInfoBtn}>More info</button>
+                        </div>
+                        <div className={styles.statCard}>
+                            <div className={styles.statHeader}>
+                                <h3>Duplicate Leads</h3>
+                                
+                            </div>
+                            <p className={styles.statValue}>{formatNumber(dashboardData.stats.duplicateLeads)}</p>
+                            <p className={dashboardData.stats.duplicateLeadsChange >= 0 ? styles.statChangePositive : styles.statChangeNegative}>
+                                {dashboardData.stats.duplicateLeadsChange >= 0 ? '↑' : '↓'} {Math.abs(dashboardData.stats.duplicateLeadsChange)}% from last month
+                            </p>
+                            <button className={styles.moreInfoBtn}>More info</button>
+                        </div>
+                        <div className={styles.statCard}>
+                            <div className={styles.statHeader}>
+                                <h3>Junk Leads</h3>
+                                
+                            </div>
+                            <p className={styles.statValue}>{formatNumber(dashboardData.stats.junkLeads)}</p>
+                            <p className={dashboardData.stats.junkLeadsChange >= 0 ? styles.statChangePositive : styles.statChangeNegative}>
+                                {dashboardData.stats.junkLeadsChange >= 0 ? '↑' : '↓'} {Math.abs(dashboardData.stats.junkLeadsChange)}% from last week
+                            </p>
+
+                            <button className={styles.moreInfoBtn}>More info</button>
                         </div>
                     </div>
 
                     <div className={styles.recentActivity}>
                         <h3>Recent Activity</h3>
                         <div className={styles.activityList}>
-                            <div className={styles.activityItem}>
-                                <div className={styles.activityIcon}>📞</div>
-                                <div className={styles.activityDetails}>
-                                    <p>Call with Acme Corp completed</p>
-                                    <small>Today, 10:30 AM</small>
+                            {dashboardData.recentActivity.map(activity => (
+                                <div key={activity.id} className={styles.activityItem}>
+                                    <div className={styles.activityIcon}>{activity.icon}</div>
+                                    <div className={styles.activityDetails}>
+                                        <p>{activity.description}</p>
+                                        <small>{formatDate(activity.timestamp)} • By {activity.user}</small>
+                                    </div>
                                 </div>
-                            </div>
-                            <div className={styles.activityItem}>
-                                <div className={styles.activityIcon}>✉️</div>
-                                <div className={styles.activityDetails}>
-                                    <p>Proposal sent to XYZ Ltd</p>
-                                    <small>Yesterday, 3:45 PM</small>
-                                </div>
-                            </div>
-                            <div className={styles.activityItem}>
-                                <div className={styles.activityIcon}>📅</div>
-                                <div className={styles.activityDetails}>
-                                    <p>Meeting scheduled with ABC Inc</p>
-                                    <small>Tomorrow, 2:00 PM</small>
-                                </div>
-                            </div>
+                            ))}
                         </div>
                     </div>
                 </main>

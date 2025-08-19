@@ -1,17 +1,18 @@
 .dashboardContainer {
   display: flex;
   min-height: 100vh;
-  background-color: #f5f7fa;
+  background-color: #0f0f1a;
   position: relative;
+  color: #e0e0e0;
 }
 
 .leftPanel {
   width: 240px;
-  background: #0f0f1a;
+  background: #1a1a2a;
   color: #e0e0e0;
   transition: all 0.3s ease;
   z-index: 10;
-  box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+  box-shadow: 2px 0 10px rgba(0,0,0,0.3);
 }
 
 .leftPanel.collapsed {
@@ -21,11 +22,11 @@
 
 .rightPanel {
   width: 280px;
-  background: #ffffff;
-  border-left: 1px solid #eaeaea;
+  background: #1a1a2a;
+  border-left: 1px solid #2a2a3a;
   transition: all 0.3s ease;
   z-index: 10;
-  box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+  box-shadow: -2px 0 10px rgba(0,0,0,0.3);
 }
 
 .rightPanel.collapsed {
@@ -38,6 +39,7 @@
   display: flex;
   flex-direction: column;
   transition: all 0.3s ease;
+  background: #0f0f1a;
 }
 
 .mainContentArea.leftCollapsed {
@@ -53,15 +55,16 @@
   justify-content: space-between;
   align-items: center;
   padding: 1rem 2rem;
-  background-color: white;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  background-color: #1a1a2a;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
   z-index: 5;
+  border-bottom: 1px solid #2a2a3a;
 }
 
 .logo {
   font-size: 1.5rem;
   font-weight: 600;
-  color: #4a5568;
+  color: #ffffff;
   margin: 0;
 }
 
@@ -79,12 +82,12 @@
 
 .userName {
   font-weight: 600;
-  color: #2d3748;
+  color: #ffffff;
 }
 
 .userRole {
   font-size: 0.8rem;
-  color: #718096;
+  color: #b0b0b0;
 }
 
 .sidebarToggle {
@@ -94,21 +97,29 @@
   cursor: pointer;
   padding: 0.5rem;
   margin-right: 1rem;
-  color: #4a5568;
+  color: #6b9aff;
+  background: #2a2a3a;
+  border-radius: 6px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .logoutButton {
   padding: 0.5rem 1rem;
-  background-color: #667eea;
+  background: linear-gradient(135deg, #4a6fa5 0%, #3a4a6d 100%);
   color: white;
   border: none;
   border-radius: 6px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: opacity 0.2s;
+  font-weight: 500;
 }
 
 .logoutButton:hover {
-  background-color: #5a67d8;
+  opacity: 0.9;
 }
 
 .mainContent {
@@ -116,67 +127,89 @@
   padding: 2rem;
 }
 
-.welcomeSection {
-  margin-bottom: 2rem;
-}
-
-.welcomeSection h2 {
-  font-size: 1.8rem;
-  color: #2d3748;
-  margin-bottom: 0.5rem;
-}
-
-.welcomeSection p {
-  color: #718096;
-  margin: 0;
-}
-
 .statsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 1.5rem;
   margin-bottom: 2rem;
 }
 
 .statCard {
-  background-color: white;
-  border-radius: 10px;
+  background: linear-gradient(135deg, #1a1a2a 0%, #2a2a3a 100%);
+  border-radius: 12px;
   padding: 1.5rem;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  border: 1px solid #2a2a3a;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.statCard h3 {
-  font-size: 1rem;
-  color: #718096;
-  margin-top: 0;
+.statCard:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.3);
+}
+
+.statHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 1rem;
 }
 
+.statHeader h3 {
+  font-size: 1rem;
+  color: #b0b0b0;
+  margin: 0;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.moreInfoBtn {
+  background: transparent;
+  color: #6b9aff;
+  border: 1px solid #6b9aff;
+  border-radius: 4px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.moreInfoBtn:hover {
+  background: rgba(107, 154, 255, 0.1);
+}
+
 .statValue {
-  font-size: 2rem;
+  font-size: 2.2rem;
   font-weight: 700;
-  color: #2d3748;
+  color: #ffffff;
   margin: 0.5rem 0;
+  letter-spacing: 0.5px;
 }
 
 .statChange {
   font-size: 0.9rem;
   color: #38a169;
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 
 .recentActivity {
-  background-color: white;
-  border-radius: 10px;
+  background: linear-gradient(135deg, #1a1a2a 0%, #2a2a3a 100%);
+  border-radius: 12px;
   padding: 1.5rem;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  border: 1px solid #2a2a3a;
 }
 
 .recentActivity h3 {
   font-size: 1.2rem;
-  color: #2d3748;
+  color: #ffffff;
   margin-top: 0;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
+  font-weight: 600;
 }
 
 .activityList {
@@ -189,38 +222,37 @@
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 0.5rem 0;
+  padding: 1rem;
+  background: rgba(42, 42, 58, 0.5);
+  border-radius: 8px;
+  transition: background 0.2s ease;
+}
+
+.activityItem:hover {
+  background: rgba(42, 42, 58, 0.8);
 }
 
 .activityIcon {
   font-size: 1.2rem;
   width: 2.5rem;
   height: 2.5rem;
-  background-color: #ebf4ff;
+  background: linear-gradient(135deg, #4a6fa5 0%, #3a4a6d 100%);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .activityDetails p {
   margin: 0;
-  color: #2d3748;
+  color: #ffffff;
   font-weight: 500;
 }
 
 .activityDetails small {
-  color: #718096;
+  color: #b0b0b0;
   font-size: 0.8rem;
-}
-
-.loading {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  font-size: 1.2rem;
-  color: #4a5568;
 }
 
 /* Collapse button styles */
@@ -245,8 +277,8 @@
   position: absolute;
   left: -12px;
   top: 20px;
-  background: #ffffff;
-  border: 1px solid #eaeaea;
+  background: #2a2a3a;
+  border: 1px solid #3a3a4a;
   border-radius: 50%;
   width: 24px;
   height: 24px;
@@ -254,23 +286,52 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
   transition: all 0.2s ease;
   padding: 0;
   z-index: 30;
 }
 
 .collapseButton:hover {
-  background: #f5f7fa;
+  background: #3a3a4a;
   transform: scale(1.1);
 }
 
 .collapseButton svg {
   width: 16px;
   height: 16px;
-  color: #4a5568;
+  color: #6b9aff;
 }
 
 .leftPanel.collapsed ~ .collapseButtonWrapper .collapseButton svg {
   transform: rotate(180deg);
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  font-size: 1.2rem;
+  color: #b0b0b0;
+}
+
+.statChangePositive {
+  font-size: 0.9rem;
+  color: #38a169;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-bottom: 10px;
+}
+
+.statChangeNegative {
+  font-size: 0.9rem;
+  color: #e53e3e;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-bottom: 10px;
 }

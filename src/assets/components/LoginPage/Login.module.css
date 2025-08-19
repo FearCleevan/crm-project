@@ -3,7 +3,7 @@
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #5a5a5a 100%);
   padding: 20px;
 }
 
@@ -15,7 +15,6 @@
   border-radius: 16px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
   overflow: hidden;
-  border: 1px solid #2a2a3a;
 }
 
 .loginFormContainer {
