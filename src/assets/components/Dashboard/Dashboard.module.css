@@ -41,7 +41,7 @@
 }
 
 .mainContentArea.leftCollapsed {
-  margin-left: 50px;
+  margin-left: 0;
 }
 
 .mainContentArea.rightCollapsed {
