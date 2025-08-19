@@ -5,10 +5,19 @@ import Header from '../Header/Header';
 import LeftDashboard from '../LeftDashboard/LeftDashboard';
 import styles from './UserCreation.module.css';
 import useAuth from '../../../hooks/useAuth';
+import useUsers from '../../../hooks/useUsers';
 
 const UserCreation = () => {
     const { user: authUser, isLoading: authLoading, logout } = useAuth();
-    const [users, setUsers] = useState([]);
+    const {
+        users,
+        loading,
+        error,
+        fetchUsers,
+        refreshUsers,
+        setError
+    } = useUsers(); // Use the new hook
+
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedUsers, setSelectedUsers] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
@@ -17,82 +26,16 @@ const UserCreation = () => {
     const [leftCollapsed, setLeftCollapsed] = useState(false);
     const [showLeftToggle, setShowLeftToggle] = useState(false);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
 
     const location = useLocation();
     const isDashboard = location.pathname === '/dashboard';
 
     // Fetch users from the database
     useEffect(() => {
-        // In your UserCreation component
-        const fetchUsers = async () => {
-            try {
-                setLoading(true);
-                const token = localStorage.getItem('token');
-
-                const response = await fetch('http://localhost:5001/api/users', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                // Check if response is HTML (indicating a 404 page)
-                const contentType = response.headers.get('content-type');
-                if (contentType && contentType.indexOf('text/html') !== -1) {
-                    throw new Error('Server route not found. Please check if the server is running correctly.');
-                }
-
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({}));
-                    throw new Error(errorData.error || `Server error: ${response.status}`);
-                }
-
-                const data = await response.json();
-                setUsers(data.users);
-                setError(null);
-            } catch (err) {
-                console.error('Error fetching users:', err);
-                setError(err.message);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        if (authUser) {
-            fetchUsers();
-        }
-    }, [authUser]);
-
-    // Refresh users data
-    const refreshUsers = async () => {
-        try {
-            setLoading(true);
-            const token = localStorage.getItem('token');
-
-            const response = await fetch('http://localhost:5001/api/users', {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to fetch users');
-            }
-
-            const data = await response.json();
-            setUsers(data.users);
-            setError(null);
-        } catch (err) {
-            console.error('Error refreshing users:', err);
-            setError(err.message);
-        } finally {
-            setLoading(false);
-        }
-    };
+    if (authUser) {
+      fetchUsers();
+    }
+  }, [authUser, fetchUsers]);
 
     // Filter users based on search term
     const filteredUsers = users.filter(user =>
