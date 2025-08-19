@@ -3,24 +3,26 @@
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
   padding: 20px;
 }
 
 .loginCard {
-  background: white;
+  background: #0f0f1a;
   border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
   width: 100%;
   max-width: 420px;
   overflow: hidden;
+  border: 1px solid #2a2a3a;
 }
 
 .logoSection {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: linear-gradient(135deg, #4a6fa5 0%, #3a4a6d 100%);
+  color: #e0e0e0;
   padding: 32px;
   text-align: center;
+  border-bottom: 1px solid #2a2a3a;
 }
 
 .logoText {
@@ -28,12 +30,14 @@
   font-weight: 700;
   margin: 0;
   letter-spacing: 1px;
+  color: #ffffff;
 }
 
 .tagline {
   margin: 8px 0 0;
   font-size: 0.9rem;
-  opacity: 0.9;
+  opacity: 0.8;
+  color: #d0d0d0;
 }
 
 .loginForm {
@@ -42,7 +46,7 @@
 
 .formTitle {
   font-size: 1.5rem;
-  color: #333;
+  color: #e0e0e0;
   margin-bottom: 24px;
   text-align: center;
   font-weight: 600;
@@ -56,29 +60,31 @@
   display: block;
   margin-bottom: 8px;
   font-size: 0.9rem;
-  color: #555;
+  color: #b0b0b0;
   font-weight: 500;
 }
 
 .inputField {
   width: 100%;
   padding: 12px 16px;
-  border: 1px solid #ddd;
+  background: #1a1a2a;
+  border: 1px solid #2a2a3a;
+  color: #e0e0e0;
   border-radius: 8px;
   font-size: 1rem;
-  transition: border-color 0.3s;
+  transition: all 0.3s;
 }
 
 .inputField:focus {
-  border-color: #667eea;
+  border-color: #4a6fa5;
   outline: none;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+  box-shadow: 0 0 0 3px rgba(74, 111, 165, 0.2);
 }
 
 .loginButton {
   width: 100%;
   padding: 14px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #4a6fa5 0%, #3a4a6d 100%);
   color: white;
   border: none;
   border-radius: 8px;
@@ -94,18 +100,19 @@
 }
 
 .loginButton:disabled {
-  background: #ccc;
+  background: #333344;
   cursor: not-allowed;
 }
 
 .errorMessage {
-  color: #e74c3c;
-  background: #fdecea;
+  color: #ff6b6b;
+  background: #2a1a1a;
   padding: 12px;
   border-radius: 8px;
   margin-bottom: 20px;
   font-size: 0.9rem;
   text-align: center;
+  border: 1px solid #3a2a2a;
 }
 
 .forgotPassword {
@@ -114,7 +121,7 @@
 }
 
 .forgotLink {
-  color: #667eea;
+  color: #6b9aff;
   text-decoration: none;
   font-size: 0.9rem;
 }
@@ -126,18 +133,18 @@
 .footer {
   text-align: center;
   padding: 16px;
-  border-top: 1px solid #eee;
+  border-top: 1px solid #2a2a3a;
   margin-top: 16px;
 }
 
 .footerText {
-  color: #666;
+  color: #a0a0a0;
   font-size: 0.9rem;
   margin: 0;
 }
 
 .footerLink {
-  color: #667eea;
+  color: #6b9aff;
   text-decoration: none;
 }
 
@@ -150,7 +157,7 @@
   align-items: center;
   margin: 15px 0;
   font-size: 0.9rem;
-  color: #555;
+  color: #b0b0b0;
 }
 
 .rememberMe input {
@@ -158,9 +165,13 @@
   width: 16px;
   height: 16px;
   cursor: pointer;
+  accent-color: #4a6fa5;
 }
 
 .rememberMe label {
   cursor: pointer;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
   user-select: none;
 }

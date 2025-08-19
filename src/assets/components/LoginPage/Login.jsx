@@ -9,6 +9,7 @@ const Login = () => {
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [rememberMe, setRememberMe] = useState(false);
+    const [isInitializing, setIsInitializing] = useState(true);
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
