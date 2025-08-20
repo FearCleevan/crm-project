@@ -1,3 +1,4 @@
+//src/assets/components/UserCreation/UserTable.jsx
 import React from 'react';
 import { FiMoreVertical, FiEye, FiEdit } from 'react-icons/fi';
 import styles from './UserCreation.module.css';

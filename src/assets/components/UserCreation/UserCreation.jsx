@@ -1,3 +1,4 @@
+//src/assets/components/UserCreation/UserCreation.jsx
 import React, { useState, useEffect } from 'react';
 import { FiPlus, FiRefreshCw } from 'react-icons/fi';
 import { useLocation } from 'react-router-dom';
@@ -8,6 +9,7 @@ import UserTable from './UserTable';
 import Pagination from './Pagination';
 import BulkActions from './BulkActions';
 import Controls from './Controls';
+import UserCreateModal from '../Modals/UserCreateModal/UserCreateModal';
 import styles from './UserCreation.module.css';
 import useAuth from '../../../hooks/useAuth';
 import useUsers from '../../../hooks/useUsers';
@@ -22,6 +24,7 @@ const UserCreation = () => {
     const [leftCollapsed, setLeftCollapsed] = useState(false);
     const [showLeftToggle, setShowLeftToggle] = useState(false);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
+    const [showCreateModal, setShowCreateModal] = useState(false); // Add this state
 
     const userManagement = useUserManagement(users);
 
@@ -39,6 +42,10 @@ const UserCreation = () => {
     const handleLogoutCancel = () => setShowLogoutModal(false);
     const handleToggleRightPanel = () => console.log('Right panel toggle disabled');
 
+    const handleUserCreated = () => {
+        refreshUsers();
+    };
+
     if (authLoading || !authUser) {
         return <div className={styles.loading}>Loading...</div>;
     }
@@ -50,6 +57,12 @@ const UserCreation = () => {
                 onConfirm={handleLogoutConfirm}
                 onCancel={handleLogoutCancel}
                 userName={`${authUser.firstName} ${authUser.lastName}`}
+            />
+
+            <UserCreateModal
+                isOpen={showCreateModal}
+                onClose={() => setShowCreateModal(false)}
+                onUserCreated={handleUserCreated}
             />
 
             <LeftPanel
@@ -72,6 +85,7 @@ const UserCreation = () => {
                     <HeaderSection
                         loading={loading}
                         refreshUsers={refreshUsers}
+                        onCreateUser={() => setShowCreateModal(true)} // Pass this prop
                     />
 
                     {error && (
@@ -157,7 +171,7 @@ const CollapseButton = ({ leftCollapsed, showLeftToggle, setLeftCollapsed, setSh
     </div>
 );
 
-const HeaderSection = ({ loading, refreshUsers }) => (
+const HeaderSection = ({ loading, refreshUsers, onCreateUser }) => (
     <div className={styles.header}>
         <h2>User Management</h2>
         <div className={styles.headerActions}>
@@ -165,7 +179,7 @@ const HeaderSection = ({ loading, refreshUsers }) => (
                 <FiRefreshCw size={16} className={loading ? styles.spinning : ''} />
                 Refresh
             </button>
-            <button className={styles.createButton}>
+            <button className={styles.createButton} onClick={onCreateUser}>
                 <FiPlus size={16} />
                 Create New User
             </button>

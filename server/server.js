@@ -35,6 +35,11 @@ app.get('/api/health', (req, res) => {
     });
 });
 
+app.post('/api/users/create', authMiddleware, (req, res, next) => {
+  // Forward to the users router
+  userRoutes(req, res, next);
+});
+
 app.use((err, req, res, next) => {
     console.error('Unhandled error:', err);
     res.status(500).json({
