@@ -1,0 +1,15 @@
+/* src/components/Request/Request.module.css */
+.request {
+    color: #e0e0e0;
+}
+
+.request h3 {
+    color: #ffffff;
+    margin-bottom: 1rem;
+    font-size: 18px;
+}
+
+.request p {
+    color: #b0b0b0;
+    line-height: 1.5;
+}

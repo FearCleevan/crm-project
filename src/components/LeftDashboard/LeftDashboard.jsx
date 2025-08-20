@@ -5,7 +5,7 @@ import styles from './LeftDashboard.module.css';
 
 const LeftDashboard = ({ collapsed }) => {
     const location = useLocation();
-    
+
     // Function to check if a path is active
     const isActivePath = (path) => {
         return location.pathname === path;
@@ -23,8 +23,8 @@ const LeftDashboard = ({ collapsed }) => {
                         <h4 className={styles.sectionTitle}>CRM</h4>
                         <ul className={styles.navList}>
                             <li className={styles.navItem}>
-                                <Link 
-                                    to="/dashboard" 
+                                <Link
+                                    to="/dashboard"
                                     className={`${styles.navLink} ${isActivePath('/dashboard') ? styles.active : ''}`}
                                 >
                                     <span className={styles.navIcon}>📊</span>
@@ -32,8 +32,8 @@ const LeftDashboard = ({ collapsed }) => {
                                 </Link>
                             </li>
                             <li className={styles.navItem}>
-                                <a 
-                                    href="#" 
+                                <a
+                                    href="#"
                                     className={styles.navLink}
                                     onClick={(e) => e.preventDefault()}
                                 >
@@ -42,8 +42,8 @@ const LeftDashboard = ({ collapsed }) => {
                                 </a>
                             </li>
                             <li className={styles.navItem}>
-                                <a 
-                                    href="#" 
+                                <a
+                                    href="#"
                                     className={styles.navLink}
                                     onClick={(e) => e.preventDefault()}
                                 >
@@ -52,8 +52,8 @@ const LeftDashboard = ({ collapsed }) => {
                                 </a>
                             </li>
                             <li className={styles.navItem}>
-                                <a 
-                                    href="#" 
+                                <a
+                                    href="#"
                                     className={styles.navLink}
                                     onClick={(e) => e.preventDefault()}
                                 >
@@ -62,8 +62,8 @@ const LeftDashboard = ({ collapsed }) => {
                                 </a>
                             </li>
                             <li className={styles.navItem}>
-                                <a 
-                                    href="#" 
+                                <a
+                                    href="#"
                                     className={styles.navLink}
                                     onClick={(e) => e.preventDefault()}
                                 >
@@ -78,8 +78,8 @@ const LeftDashboard = ({ collapsed }) => {
                         <h4 className={styles.sectionTitle}>Activities</h4>
                         <ul className={styles.navList}>
                             <li className={styles.navItem}>
-                                <a 
-                                    href="#" 
+                                <a
+                                    href="#"
                                     className={styles.navLink}
                                     onClick={(e) => e.preventDefault()}
                                 >
@@ -88,8 +88,8 @@ const LeftDashboard = ({ collapsed }) => {
                                 </a>
                             </li>
                             <li className={styles.navItem}>
-                                <a 
-                                    href="#" 
+                                <a
+                                    href="#"
                                     className={styles.navLink}
                                     onClick={(e) => e.preventDefault()}
                                 >
@@ -98,8 +98,8 @@ const LeftDashboard = ({ collapsed }) => {
                                 </a>
                             </li>
                             <li className={styles.navItem}>
-                                <a 
-                                    href="#" 
+                                <a
+                                    href="#"
                                     className={styles.navLink}
                                     onClick={(e) => e.preventDefault()}
                                 >
@@ -108,8 +108,8 @@ const LeftDashboard = ({ collapsed }) => {
                                 </a>
                             </li>
                             <li className={styles.navItem}>
-                                <a 
-                                    href="#" 
+                                <a
+                                    href="#"
                                     className={styles.navLink}
                                     onClick={(e) => e.preventDefault()}
                                 >
@@ -124,18 +124,17 @@ const LeftDashboard = ({ collapsed }) => {
                         <h4 className={styles.sectionTitle}>Account Settings</h4>
                         <ul className={styles.navList}>
                             <li className={styles.navItem}>
-                                <a 
-                                    href="#" 
-                                    className={styles.navLink}
-                                    onClick={(e) => e.preventDefault()}
+                                <Link
+                                    to="/permissions"
+                                    className={`${styles.navLink} ${isActivePath('/permissions') ? styles.active : ''}`}
                                 >
                                     <span className={styles.navIcon}>🔐</span>
                                     <span>Permissions</span>
-                                </a>
+                                </Link>
                             </li>
                             <li className={styles.navItem}>
-                                <Link 
-                                    to="/user-management" 
+                                <Link
+                                    to="/user-management"
                                     className={`${styles.navLink} ${isActivePath('/user-management') ? styles.active : ''}`}
                                 >
                                     <span className={styles.navIcon}>👥</span>
@@ -149,36 +148,45 @@ const LeftDashboard = ({ collapsed }) => {
 
             {collapsed && (
                 <div className={styles.collapsedMenu}>
-                    <Link 
-                        to="/dashboard" 
+                    <Link
+                        to="/dashboard"
                         className={`${styles.collapsedIcon} ${isActivePath('/dashboard') ? styles.active : ''}`}
                         title="Dashboard"
                     >
                         <span>📊</span>
                     </Link>
-                    <button 
+                    <button
                         className={styles.collapsedIcon}
                         onClick={(e) => e.preventDefault()}
                         title="Contacts"
                     >
                         <span>👤</span>
                     </button>
-                    <button 
+                    <button
                         className={styles.collapsedIcon}
                         onClick={(e) => e.preventDefault()}
                         title="Accounts"
                     >
                         <span>💼</span>
                     </button>
-                    <button 
+                    <button
                         className={styles.collapsedIcon}
                         onClick={(e) => e.preventDefault()}
                         title="Deals"
                     >
                         <span>💰</span>
                     </button>
-                    <Link 
-                        to="/user-management" 
+
+                    <Link
+                        to="/permissions"
+                        className={`${styles.collapsedIcon} ${isActivePath('/permissions') ? styles.active : ''}`}
+                        title="Permissions"
+                    >
+                        <span>🔐</span>
+                    </Link>
+
+                    <Link
+                        to="/user-management"
                         className={`${styles.collapsedIcon} ${isActivePath('/user-management') ? styles.active : ''}`}
                         title="Account Management"
                     >

@@ -1,0 +1,315 @@
+/* src/components/Permissions/Permissions.module.css */
+.permissions {
+    color: #e0e0e0;
+}
+
+.header {
+    margin-bottom: 1.5rem;
+}
+
+.header h3 {
+    color: #ffffff;
+    margin: 0 0 0.5rem 0;
+    font-size: 18px;
+}
+
+.header p {
+    color: #b0b0b0;
+    margin: 0;
+    font-size: 14px;
+}
+
+.controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    gap: 1rem;
+}
+
+.searchContainer {
+    position: relative;
+    flex: 1;
+    max-width: 400px;
+}
+
+.searchIcon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #b0b0b0;
+}
+
+.searchInput {
+    width: 100%;
+    padding: 8px 15px 8px 35px;
+    background: #1a1a2a;
+    border: 1px solid #2a2a3a;
+    border-radius: 6px;
+    color: #e0e0e0;
+    font-size: 0.9rem;
+}
+
+.searchInput:focus {
+    outline: none;
+    border-color: #4a6fa5;
+}
+
+.controlButtons {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.filterButton, .settingsButton {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 15px;
+    background: #1a1a2a;
+    border: 1px solid #2a2a3a;
+    border-radius: 6px;
+    color: #e0e0e0;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 13px;
+}
+
+.filterButton:hover, .settingsButton:hover {
+    background: #2a2a3a;
+}
+
+.itemsPerPageSelect {
+    background: #1a1a2a;
+    border: 1px solid #2a2a3a;
+    border-radius: 6px;
+    color: #e0e0e0;
+    padding: 0.5rem;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.tableContainer {
+    background: #1a1a2a;
+    border-radius: 8px;
+    border: 1px solid #2a2a3a;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+}
+
+.permissionsTable {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.permissionsTable th {
+    background: #2a2a3a;
+    padding: 11px;
+    text-align: left;
+    font-weight: 600;
+    color: #b0b0b0;
+    font-size: 13px;
+}
+
+.permissionsTable td {
+    padding: 11px;
+    border-bottom: 1px solid #2a2a3a;
+    font-size: 12px;
+}
+
+.sortableHeader {
+    cursor: pointer;
+    user-select: none;
+}
+
+.sortableHeader:hover {
+    background: #3a3a4a;
+}
+
+.headerContent {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.tableRow:hover {
+    background: rgba(42, 42, 58, 0.5);
+}
+
+.userInfo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.avatarContainer {
+    position: relative;
+}
+
+.avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4a6fa5 0%, #3a4a6d 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    color: white;
+    font-size: 13px;
+}
+
+.statusIndicator {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid #1a1a2a;
+}
+
+.statusIndicator.online {
+    background: #38a169;
+}
+
+.statusIndicator.offline {
+    background: #a0aec0;
+}
+
+.userDetails {
+    display: flex;
+    flex-direction: column;
+}
+
+.userName {
+    font-weight: 500;
+    color: #ffffff;
+    font-size: 13px;
+}
+
+.userEmail {
+    color: #b0b0b0;
+    font-size: 11px;
+    margin-top: 2px;
+}
+
+.lastLogin {
+    color: #b0b0b0;
+    font-size: 12px;
+}
+
+.permissionsList {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.permissionBadge {
+    background: rgba(74, 111, 165, 0.2);
+    color: #6b9aff;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.actionButtons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.actionButton {
+    background: none;
+    border: none;
+    color: #b0b0b0;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 4px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.actionButton:hover {
+    background: #2a2a3a;
+    color: #e0e0e0;
+}
+
+.pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.paginationInfo {
+    color: #b0b0b0;
+    font-size: 13px;
+}
+
+.paginationControls {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.paginationButton {
+    padding: 8px 15px;
+    font-size: 13px;
+    background: #1a1a2a;
+    border: 1px solid #2a2a3a;
+    border-radius: 4px;
+    color: #e0e0e0;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.paginationButton:hover:not(:disabled) {
+    background: #2a2a3a;
+}
+
+.paginationButton:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.paginationButton.active {
+    background: #4a6fa5;
+    color: white;
+    border-color: #4a6fa5;
+}
+
+.loadingTable {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+    color: #b0b0b0;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #2a2a3a;
+    border-top: 3px solid #6b9aff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 1rem;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.noData {
+    text-align: center;
+    padding: 2rem;
+    color: #b0b0b0;
+    font-style: italic;
+}
