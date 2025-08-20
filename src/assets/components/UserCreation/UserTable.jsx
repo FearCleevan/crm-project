@@ -1,6 +1,7 @@
-//src/assets/components/UserCreation/UserTable.jsx
-import React from 'react';
+// Update UserTable.jsx to include the edit modal
+import React, { useState } from 'react';
 import { FiMoreVertical, FiEye, FiEdit } from 'react-icons/fi';
+import UserEditModal from '../Modals/UserEditModal/UserEditModal'; // Add this import
 import styles from './UserCreation.module.css';
 import { formatDate } from '../../../utils/dateFormatter';
 
@@ -10,8 +11,36 @@ const UserTable = ({
     activeActionMenu,
     onSelectUser,
     onToggleActionMenu,
-    loading
+    loading,
+    refreshUsers // Add this prop
 }) => {
+    const [selectedUser, setSelectedUser] = useState(null);
+    const [modalMode, setModalMode] = useState('view');
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
+    const handleViewUser = (user) => {
+        setSelectedUser(user);
+        setModalMode('view');
+        setIsModalOpen(true);
+        onToggleActionMenu(null); // Close action menu
+    };
+
+    const handleEditUser = (user) => {
+        setSelectedUser(user);
+        setModalMode('edit');
+        setIsModalOpen(true);
+        onToggleActionMenu(null); // Close action menu
+    };
+
+    const handleUserUpdated = () => {
+        refreshUsers(); // Refresh the user list
+    };
+
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        setSelectedUser(null);
+    };
+
     if (loading) {
         return (
             <div className={styles.loadingTable}>
@@ -22,53 +51,65 @@ const UserTable = ({
     }
 
     return (
-        <div className={styles.tableContainer}>
-            <table className={styles.usersTable}>
-                <thead>
-                    <tr>
-                        <th>
-                            <input
-                                type="checkbox"
-                                checked={selectedUsers.length === users.length && users.length > 0}
-                                onChange={(e) => onSelectUser('all', e.target.checked)}
-                                className={styles.checkbox}
-                            />
-                        </th>
-                        <th>Name</th>
-                        <th>Username</th>
-                        <th>Email</th>
-                        <th>Role</th>
-                        <th>Phone</th>
-                        <th>Created</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {users.length > 0 ? (
-                        users.map(user => (
-                            <UserTableRow
-                                key={user.user_id}
-                                user={user}
-                                isSelected={selectedUsers.includes(user.user_id)}
-                                isActiveMenu={activeActionMenu === user.user_id}
-                                onSelectUser={onSelectUser}
-                                onToggleActionMenu={onToggleActionMenu}
-                            />
-                        ))
-                    ) : (
+        <>
+            <UserEditModal
+                isOpen={isModalOpen}
+                onClose={handleCloseModal}
+                user={selectedUser}
+                mode={modalMode}
+                onUserUpdated={handleUserUpdated}
+            />
+
+            <div className={styles.tableContainer}>
+                <table className={styles.usersTable}>
+                    <thead>
                         <tr>
-                            <td colSpan="8" className={styles.noData}>
-                                No users found
-                            </td>
+                            <th>
+                                <input
+                                    type="checkbox"
+                                    checked={selectedUsers.length === users.length && users.length > 0}
+                                    onChange={(e) => onSelectUser('all', e.target.checked)}
+                                    className={styles.checkbox}
+                                />
+                            </th>
+                            <th>Name</th>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Phone</th>
+                            <th>Created</th>
+                            <th>Actions</th>
                         </tr>
-                    )}
-                </tbody>
-            </table>
-        </div>
+                    </thead>
+                    <tbody>
+                        {users.length > 0 ? (
+                            users.map(user => (
+                                <UserTableRow
+                                    key={user.user_id}
+                                    user={user}
+                                    isSelected={selectedUsers.includes(user.user_id)}
+                                    isActiveMenu={activeActionMenu === user.user_id}
+                                    onSelectUser={onSelectUser}
+                                    onToggleActionMenu={onToggleActionMenu}
+                                    onViewUser={handleViewUser}
+                                    onEditUser={handleEditUser}
+                                />
+                            ))
+                        ) : (
+                            <tr>
+                                <td colSpan="8" className={styles.noData}>
+                                    No users found
+                                </td>
+                            </tr>
+                        )}
+                    </tbody>
+                </table>
+            </div>
+        </>
     );
 };
 
-const UserTableRow = ({ user, isSelected, isActiveMenu, onSelectUser, onToggleActionMenu }) => (
+const UserTableRow = ({ user, isSelected, isActiveMenu, onSelectUser, onToggleActionMenu, onViewUser, onEditUser }) => (
     <tr className={styles.tableRow}>
         <td>
             <input
@@ -102,12 +143,14 @@ const UserTableRow = ({ user, isSelected, isActiveMenu, onSelectUser, onToggleAc
                 userId={user.user_id}
                 isActive={isActiveMenu}
                 onToggle={onToggleActionMenu}
+                onView={() => onViewUser(user)}
+                onEdit={() => onEditUser(user)}
             />
         </td>
     </tr>
 );
 
-const ActionMenu = ({ userId, isActive, onToggle }) => (
+const ActionMenu = ({ userId, isActive, onToggle, onView, onEdit }) => (
     <div className={styles.actions}>
         <button
             className={styles.actionButton}
@@ -117,11 +160,11 @@ const ActionMenu = ({ userId, isActive, onToggle }) => (
         </button>
         {isActive && (
             <div className={styles.actionMenu}>
-                <button className={styles.menuItem}>
+                <button className={styles.menuItem} onClick={onView}>
                     <FiEye size={14} />
                     View
                 </button>
-                <button className={styles.menuItem}>
+                <button className={styles.menuItem} onClick={onEdit}>
                     <FiEdit size={14} />
                     Edit
                 </button>

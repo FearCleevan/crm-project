@@ -102,6 +102,7 @@ const UserCreation = () => {
                         onItemsPerPageChange={userManagement.handleItemsPerPageChange}
                     />
 
+                    // In UserCreation.jsx, update the UserTable component usage
                     <UserTable
                         users={userManagement.currentUsers}
                         selectedUsers={userManagement.selectedUsers}
@@ -109,6 +110,7 @@ const UserCreation = () => {
                         onSelectUser={userManagement.handleSelectUser}
                         onToggleActionMenu={userManagement.toggleActionMenu}
                         loading={loading}
+                        refreshUsers={refreshUsers} // Add this prop
                     />
 
                     {userManagement.filteredUsers.length > 0 && (
