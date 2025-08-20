@@ -1,0 +1,107 @@
+.leftDashboard {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: #0f0f1a;
+    color: #e0e0e0;
+    border-right: 1px solid #2a2a3a;
+}
+
+.sidebarHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid #2a2a3a;
+}
+
+.sidebarTitle {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #b0b0b0;
+}
+
+.collapseButton {
+    display: none;
+}
+
+.sidebarContent {
+    padding: 1rem;
+    flex: 1;
+    overflow-y: auto;
+}
+
+.section {
+    margin-bottom: 1.5rem;
+}
+
+.sectionTitle {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: #6b9aff;
+    margin: 0 0 0.75rem 0;
+    letter-spacing: 0.05em;
+}
+
+.navList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.navItem {
+    margin-bottom: 0.25rem;
+}
+
+.navLink {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem;
+    color: #e0e0e0;
+    text-decoration: none;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.navLink:hover {
+    background-color: #1a1a2a;
+}
+
+.navLink.active {
+    background: linear-gradient(135deg, #4a6fa5 0%, #3a4a6d 100%);
+    color: #ffffff;
+}
+
+.navIcon {
+    margin-right: 0.75rem;
+    font-size: 1rem;
+}
+
+.collapsedMenu {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem 0;
+}
+
+.collapsedIcon {
+    background: none;
+    border: none;
+    color: #e0e0e0;
+    font-size: 1.2rem;
+    padding: 0.75rem;
+    cursor: pointer;
+    width: 100%;
+    text-align: center;
+    transition: all 0.2s;
+}
+
+.collapsedIcon:hover {
+    background-color: #1a1a2a;
+}
+
+.collapsedIcon.active {
+    background: linear-gradient(135deg, #4a6fa5 0%, #3a4a6d 100%);
+    color: #ffffff;
+}

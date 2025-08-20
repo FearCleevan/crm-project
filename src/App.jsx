@@ -1,9 +1,9 @@
 //src/App.jsx
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Login from './assets/components/LoginPage/Login';
-import Dashboard from './assets/components/Dashboard/Dashboard';
-import UserCreation from './assets/components/UserCreation/UserCreation';
-import ProtectedRoute from './assets/components/ProtectedRoute';
+import Login from './components/LoginPage/Login';
+import Dashboard from './components/Dashboard/Dashboard';
+import UserCreation from './components/UserCreation/UserCreation';
+import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
   return (
