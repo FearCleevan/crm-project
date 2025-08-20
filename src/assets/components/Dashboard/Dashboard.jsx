@@ -1,3 +1,4 @@
+//src/assets/components/Dashboard/Dashboard.jsx
 import React, { useState } from 'react';
 import styles from './Dashboard.module.css';
 import RightDashboard from '../RightDashboard/RightDashboard';

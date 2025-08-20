@@ -1,5 +1,4 @@
 //src/hooks/useUsers.js
-// src/hooks/useUsers.js
 import { useState, useCallback } from 'react';
 
 const useUsers = () => {
