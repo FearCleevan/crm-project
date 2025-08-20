@@ -27,13 +27,33 @@ const UserEditModal = ({ isOpen, onClose, user, onUserUpdated }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  // Function to format date for input field (yyyy-MM-dd)
+  const formatDateForInput = (dateString) => {
+    if (!dateString) return '';
+    
+    try {
+      const date = new Date(dateString);
+      // Check if date is valid
+      if (isNaN(date.getTime())) return '';
+      
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      
+      return `${year}-${month}-${day}`;
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return '';
+    }
+  };
+
   useEffect(() => {
     if (user) {
       setFormData({
         first_name: user.first_name || '',
         middle_name: user.middle_name || '',
         last_name: user.last_name || '',
-        birthday: user.birthday || '',
+        birthday: formatDateForInput(user.birthday), // Format the date here
         phone_no: user.phone_no || '',
         address: user.address || '',
         role: user.role || 'Data Analyst',
@@ -377,7 +397,6 @@ const UserEditModal = ({ isOpen, onClose, user, onUserUpdated }) => {
                 onChange={handleInputChange}
                 rows="3"
                 disabled={isSubmitting}
-                className={styles.textarea}
               />
             </div>
 
