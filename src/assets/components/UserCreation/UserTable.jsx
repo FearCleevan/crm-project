@@ -1,44 +1,46 @@
-// Update UserTable.jsx to include the edit modal
+// Update UserTable.jsx to use separate modals
 import React, { useState } from 'react';
-import { FiMoreVertical, FiEye, FiEdit } from 'react-icons/fi';
-import UserEditModal from '../Modals/UserEditModal/UserEditModal'; // Add this import
+import { FiEye, FiEdit } from 'react-icons/fi';
 import styles from './UserCreation.module.css';
 import { formatDate } from '../../../utils/dateFormatter';
+import ViewUserModal from '../Modals/ViewUserModal/ViewUserModal';
+import UserEditModal from '../Modals/UserEditModal/UserEditModal';
 
 const UserTable = ({
     users,
     selectedUsers,
-    activeActionMenu,
     onSelectUser,
-    onToggleActionMenu,
     loading,
-    refreshUsers // Add this prop
+    refreshUsers
 }) => {
     const [selectedUser, setSelectedUser] = useState(null);
-    const [modalMode, setModalMode] = useState('view');
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
     const handleViewUser = (user) => {
         setSelectedUser(user);
-        setModalMode('view');
-        setIsModalOpen(true);
-        onToggleActionMenu(null); // Close action menu
+        setIsViewModalOpen(true);
     };
 
     const handleEditUser = (user) => {
         setSelectedUser(user);
-        setModalMode('edit');
-        setIsModalOpen(true);
-        onToggleActionMenu(null); // Close action menu
+        setIsEditModalOpen(true);
+    };
+
+    const handleCloseModals = () => {
+        setIsViewModalOpen(false);
+        setIsEditModalOpen(false);
+        setSelectedUser(null);
     };
 
     const handleUserUpdated = () => {
-        refreshUsers(); // Refresh the user list
+        refreshUsers();
+        setIsEditModalOpen(false);
     };
 
-    const handleCloseModal = () => {
-        setIsModalOpen(false);
-        setSelectedUser(null);
+    const handleEditFromView = () => {
+        setIsViewModalOpen(false);
+        setIsEditModalOpen(true);
     };
 
     if (loading) {
@@ -52,11 +54,17 @@ const UserTable = ({
 
     return (
         <>
-            <UserEditModal
-                isOpen={isModalOpen}
-                onClose={handleCloseModal}
+            <ViewUserModal
+                isOpen={isViewModalOpen}
+                onClose={handleCloseModals}
                 user={selectedUser}
-                mode={modalMode}
+                onEdit={handleEditFromView}
+            />
+
+            <UserEditModal
+                isOpen={isEditModalOpen}
+                onClose={handleCloseModals}
+                user={selectedUser}
                 onUserUpdated={handleUserUpdated}
             />
 
@@ -88,9 +96,7 @@ const UserTable = ({
                                     key={user.user_id}
                                     user={user}
                                     isSelected={selectedUsers.includes(user.user_id)}
-                                    isActiveMenu={activeActionMenu === user.user_id}
                                     onSelectUser={onSelectUser}
-                                    onToggleActionMenu={onToggleActionMenu}
                                     onViewUser={handleViewUser}
                                     onEditUser={handleEditUser}
                                 />
@@ -109,7 +115,7 @@ const UserTable = ({
     );
 };
 
-const UserTableRow = ({ user, isSelected, isActiveMenu, onSelectUser, onToggleActionMenu, onViewUser, onEditUser }) => (
+const UserTableRow = ({ user, isSelected, onSelectUser, onViewUser, onEditUser }) => (
     <tr className={styles.tableRow}>
         <td>
             <input
@@ -139,38 +145,24 @@ const UserTableRow = ({ user, isSelected, isActiveMenu, onSelectUser, onToggleAc
         <td>{user.phone_no || 'N/A'}</td>
         <td>{formatDate(user.created_at)}</td>
         <td>
-            <ActionMenu
-                userId={user.user_id}
-                isActive={isActiveMenu}
-                onToggle={onToggleActionMenu}
-                onView={() => onViewUser(user)}
-                onEdit={() => onEditUser(user)}
-            />
-        </td>
-    </tr>
-);
-
-const ActionMenu = ({ userId, isActive, onToggle, onView, onEdit }) => (
-    <div className={styles.actions}>
-        <button
-            className={styles.actionButton}
-            onClick={() => onToggle(userId)}
-        >
-            <FiMoreVertical size={16} />
-        </button>
-        {isActive && (
-            <div className={styles.actionMenu}>
-                <button className={styles.menuItem} onClick={onView}>
-                    <FiEye size={14} />
-                    View
+            <div className={styles.actionButtons}>
+                <button 
+                    className={styles.actionButton}
+                    onClick={() => onViewUser(user)}
+                    title="View user"
+                >
+                    <FiEye size={16} />
                 </button>
-                <button className={styles.menuItem} onClick={onEdit}>
-                    <FiEdit size={14} />
-                    Edit
+                <button 
+                    className={styles.actionButton}
+                    onClick={() => onEditUser(user)}
+                    title="Edit user"
+                >
+                    <FiEdit size={16} />
                 </button>
             </div>
-        )}
-    </div>
+        </td>
+    </tr>
 );
 
 export default UserTable;

@@ -102,7 +102,6 @@ const UserCreation = () => {
                         onItemsPerPageChange={userManagement.handleItemsPerPageChange}
                     />
 
-                    // In UserCreation.jsx, update the UserTable component usage
                     <UserTable
                         users={userManagement.currentUsers}
                         selectedUsers={userManagement.selectedUsers}

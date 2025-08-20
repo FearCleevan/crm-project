@@ -640,3 +640,26 @@
     color: #b0b0b0;
     font-style: italic;
 }
+
+.actionButtons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.actionButton {
+    background: none;
+    border: none;
+    color: #b0b0b0;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 4px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.actionButton:hover {
+    background: #2a2a3a;
+    color: #e0e0e0;
+}
