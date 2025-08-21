@@ -8,6 +8,7 @@ import cookieParser from 'cookie-parser';
 import { authMiddleware } from './middlewares/authMiddleware.js';
 import pool from './config/db.js';
 import requestRoutes from './routes/requestRoutes.js';
+import permissionsRoutes from './routes/permissionsRoutes.js';
 
 dotenv.config();
 
@@ -26,6 +27,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 app.use('/api/requests', requestRoutes);
+
+app.use('/api/permissions', permissionsRoutes);
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -55,12 +58,20 @@ app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
 
-// Add this to your server.js to test DB connection on startup
+// connection testing
 pool.getConnection()
   .then(connection => {
     console.log('✅ Database connection successful');
-    connection.release();
+    
+    // Test a simple query
+    return connection.query('SELECT 1 + 1 AS solution')
+      .then(([rows]) => {
+        console.log('✅ Database query test successful:', rows[0].solution);
+        connection.release();
+      });
   })
   .catch(err => {
     console.error('❌ Database connection failed:', err);
+    console.error('❌ Error details:', err.message);
+    console.error('❌ Error code:', err.code);
   });

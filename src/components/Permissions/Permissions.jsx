@@ -1,163 +1,111 @@
 // src/components/Permissions/Permissions.jsx
 import React, { useState, useEffect, useMemo } from 'react';
-import { FiSearch, FiFilter, FiSettings, FiEdit, FiTrash2, FiChevronUp, FiChevronDown } from 'react-icons/fi';
+import { FiSearch, FiFilter, FiSettings, FiEdit, FiTrash2, FiChevronUp, FiChevronDown, FiCheck, FiX } from 'react-icons/fi';
 import styles from './Permissions.module.css';
-
-// Mock data for permissions - backend ready structure
-const mockPermissionsData = [
-  {
-    id: 1,
-    firstName: 'John',
-    lastName: 'Doe',
-    email: 'john.doe@example.com',
-    avatar: 'JD',
-    status: 'online',
-    lastLogin: '2023-10-15T14:30:25Z',
-    permissions: ['Dashboard', 'Leads Management', 'User Management', 'Reports']
-  },
-  {
-    id: 2,
-    firstName: 'Jane',
-    lastName: 'Smith',
-    email: 'jane.smith@example.com',
-    avatar: 'JS',
-    status: 'offline',
-    lastLogin: '2023-10-14T09:15:42Z',
-    permissions: ['Dashboard', 'Contacts', 'Calendar', 'Tasks']
-  },
-  {
-    id: 3,
-    firstName: 'Robert',
-    lastName: 'Johnson',
-    email: 'robert.j@example.com',
-    avatar: 'RJ',
-    status: 'online',
-    lastLogin: '2023-10-16T11:20:33Z',
-    permissions: ['Dashboard', 'Leads Management', 'Deals', 'Analytics']
-  },
-  {
-    id: 4,
-    firstName: 'Sarah',
-    lastName: 'Williams',
-    email: 'sarah.w@example.com',
-    avatar: 'SW',
-    status: 'offline',
-    lastLogin: '2023-10-13T16:45:19Z',
-    permissions: ['Dashboard', 'Email', 'Reports', 'Settings']
-  },
-  {
-    id: 5,
-    firstName: 'Michael',
-    lastName: 'Brown',
-    email: 'michael.b@example.com',
-    avatar: 'MB',
-    status: 'online',
-    lastLogin: '2023-10-16T08:55:07Z',
-    permissions: ['Dashboard', 'Leads Management', 'User Management', 'Permissions']
-  },
-  {
-    id: 6,
-    firstName: 'Emily',
-    lastName: 'Davis',
-    email: 'emily.d@example.com',
-    avatar: 'ED',
-    status: 'offline',
-    lastLogin: '2023-10-12T13:10:54Z',
-    permissions: ['Dashboard', 'Contacts', 'Calendar', 'Tasks', 'Email']
-  },
-  {
-    id: 7,
-    firstName: 'David',
-    lastName: 'Wilson',
-    email: 'david.w@example.com',
-    avatar: 'DW',
-    status: 'online',
-    lastLogin: '2023-10-15T17:35:28Z',
-    permissions: ['Dashboard', 'Deals', 'Analytics', 'Reports']
-  },
-  {
-    id: 8,
-    firstName: 'Lisa',
-    lastName: 'Taylor',
-    email: 'lisa.t@example.com',
-    avatar: 'LT',
-    status: 'offline',
-    lastLogin: '2023-10-11T10:25:37Z',
-    permissions: ['Dashboard', 'Leads Management', 'Contacts']
-  },
-  {
-    id: 9,
-    firstName: 'James',
-    lastName: 'Anderson',
-    email: 'james.a@example.com',
-    avatar: 'JA',
-    status: 'online',
-    lastLogin: '2023-10-16T09:40:12Z',
-    permissions: ['Dashboard', 'User Management', 'Permissions', 'Settings']
-  },
-  {
-    id: 10,
-    firstName: 'Karen',
-    lastName: 'Thomas',
-    email: 'karen.t@example.com',
-    avatar: 'KT',
-    status: 'offline',
-    lastLogin: '2023-10-10T15:20:45Z',
-    permissions: ['Dashboard', 'Calendar', 'Tasks', 'Email']
-  }
-];
-
-// All available permissions for reference
-const allAvailablePermissions = [
-  'Dashboard', 'Leads Management', 'Contacts', 'Accounts', 'Deals', 
-  'Calendar', 'Tasks', 'Email', 'Analytics', 'Reports', 
-  'User Management', 'Permissions', 'Settings'
-];
 
 const Permissions = () => {
   const [permissions, setPermissions] = useState([]);
+  const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
-  
-  // Fetch permissions data (simulating API call)
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [showRoleModal, setShowRoleModal] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [selectedRoles, setSelectedRoles] = useState([]);
+  const [saving, setSaving] = useState(false);
+
+  // Fetch permissions data from backend
   useEffect(() => {
-    const fetchPermissions = async () => {
+    const fetchData = async () => {
       setLoading(true);
       try {
-        // Simulate API call delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        setPermissions(mockPermissionsData);
+        const token = localStorage.getItem('token');
+        console.log('Fetching with token:', token);
+
+        // Fetch users with permissions
+        const usersResponse = await fetch('http://localhost:5001/api/permissions/users', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        console.log('Users response status:', usersResponse.status);
+
+        if (!usersResponse.ok) {
+          const errorText = await usersResponse.text();
+          console.error('Users response error text:', errorText);
+          throw new Error(`Failed to fetch users: ${usersResponse.status} ${usersResponse.statusText}`);
+        }
+
+        const usersData = await usersResponse.json();
+        console.log('Users data received:', usersData);
+
+        // Fetch available roles
+        const rolesResponse = await fetch('http://localhost:5001/api/permissions/roles', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        console.log('Roles response status:', rolesResponse.status);
+
+        if (!rolesResponse.ok) {
+          const errorText = await rolesResponse.text();
+          console.error('Roles response error text:', errorText);
+          throw new Error(`Failed to fetch roles: ${rolesResponse.status} ${usersResponse.statusText}`);
+        }
+
+        const rolesData = await rolesResponse.json();
+        console.log('Roles data received:', rolesData);
+
+        setPermissions(usersData.users);
+        setRoles(rolesData.roles);
+
       } catch (error) {
-        console.error('Failed to fetch permissions:', error);
+        console.error('Failed to fetch permissions data:', error);
+        alert(`Error: ${error.message}. Using mock data for demonstration.`);
+        // Fallback to mock data
+        setPermissions(mockPermissionsData);
+        setRoles([
+          { id: 1, name: 'IT Admin', description: 'Full system access', isSystemRole: true },
+          { id: 2, name: 'Data Analyst', description: 'Basic access', isSystemRole: true },
+          { id: 3, name: 'Sales Manager', description: 'Sales team management', isSystemRole: false },
+          { id: 4, name: 'Marketing Specialist', description: 'Marketing tools access', isSystemRole: false }
+        ]);
       } finally {
         setLoading(false);
       }
     };
-    
-    fetchPermissions();
+
+    fetchData();
   }, []);
 
   // Filter users based on search term
   const filteredUsers = useMemo(() => {
     if (!searchTerm) return permissions;
-    
-    return permissions.filter(user => 
+
+    return permissions.filter(user =>
       user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.permissions.some(permission => 
+      (user.roles && user.roles.some(role =>
+        role.toLowerCase().includes(searchTerm.toLowerCase())
+      )) ||
+      (user.permissions && user.permissions.some(permission =>
         permission.toLowerCase().includes(searchTerm.toLowerCase())
-      )
+      ))
     );
   }, [permissions, searchTerm]);
 
   // Sort users
   const sortedUsers = useMemo(() => {
     if (!sortConfig.key) return filteredUsers;
-    
+
     return [...filteredUsers].sort((a, b) => {
       if (a[sortConfig.key] < b[sortConfig.key]) {
         return sortConfig.direction === 'ascending' ? -1 : 1;
@@ -194,13 +142,14 @@ const Permissions = () => {
   };
 
   // Handle items per page change
-  const handleItemsPerPageChange = (value) => {
+  const handleItemsPerPageChange = (value) =>{
     setItemsPerPage(Number(value));
-    setCurrentPage(1); // Reset to first page when changing items per page
+    setCurrentPage(1);
   };
 
   // Format date for display
   const formatDate = (dateString) => {
+    if (!dateString) return 'Never logged in';
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
@@ -211,13 +160,69 @@ const Permissions = () => {
     });
   };
 
-  // Handle modify roles (placeholder for backend integration)
-  const handleModifyRoles = (userId) => {
-    console.log('Modify roles for user:', userId);
-    // This would open a modal or navigate to a role modification page
+  // Handle modify roles
+  const handleModifyRoles = (user) => {
+    setSelectedUser(user);
+    setSelectedRoles(user.roles || []);
+    setShowRoleModal(true);
   };
 
-  // Handle remove user (placeholder for backend integration)
+  // Handle role selection
+  const handleRoleSelection = (roleName, isSelected) => {
+    if (isSelected) {
+      setSelectedRoles(prev => [...prev, roleName]);
+    } else {
+      setSelectedRoles(prev => prev.filter(role => role !== roleName));
+    }
+  };
+
+  // Save role changes
+  const saveRoleChanges = async () => {
+    if (!selectedUser) return;
+
+    setSaving(true);
+    try {
+      const token = localStorage.getItem('token');
+
+      // Convert role names to role IDs
+      const roleIds = roles
+        .filter(role => selectedRoles.includes(role.name))
+        .map(role => role.id);
+
+      const response = await fetch(`http://localhost:5001/api/permissions/users/${selectedUser.id}/roles`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ roleIds })
+      });
+
+      if (!response.ok) throw new Error('Failed to update user roles');
+
+      // Update local state
+      setPermissions(prev => prev.map(user =>
+        user.id === selectedUser.id
+          ? { ...user, roles: selectedRoles }
+          : user
+      ));
+
+      setShowRoleModal(false);
+      setShowConfirmation(true);
+
+      setTimeout(() => {
+        setShowConfirmation(false);
+      }, 3000);
+
+    } catch (error) {
+      console.error('Error updating user roles:', error);
+      alert('Failed to update user roles. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Handle remove user
   const handleRemoveUser = (userId) => {
     console.log('Remove user:', userId);
     // This would show a confirmation modal and then call an API to remove the user
@@ -278,30 +283,31 @@ const Permissions = () => {
         <table className={styles.permissionsTable}>
           <thead>
             <tr>
-              <th 
+              <th
                 className={styles.sortableHeader}
                 onClick={() => handleSort('firstName')}
               >
                 <div className={styles.headerContent}>
                   <span>Name</span>
                   {sortConfig.key === 'firstName' && (
-                    sortConfig.direction === 'ascending' ? 
-                    <FiChevronUp size={14} /> : <FiChevronDown size={14} />
+                    sortConfig.direction === 'ascending' ?
+                      <FiChevronUp size={14} /> : <FiChevronDown size={14} />
                   )}
                 </div>
               </th>
-              <th 
+              <th
                 className={styles.sortableHeader}
                 onClick={() => handleSort('lastLogin')}
               >
                 <div className={styles.headerContent}>
                   <span>Last Login</span>
                   {sortConfig.key === 'lastLogin' && (
-                    sortConfig.direction === 'ascending' ? 
-                    <FiChevronUp size={14} /> : <FiChevronDown size={14} />
+                    sortConfig.direction === 'ascending' ?
+                      <FiChevronUp size={14} /> : <FiChevronDown size={14} />
                   )}
                 </div>
               </th>
+              <th>User Roles</th>
               <th>User Permissions</th>
               <th>Actions</th>
             </tr>
@@ -314,9 +320,9 @@ const Permissions = () => {
                     <div className={styles.userInfo}>
                       <div className={styles.avatarContainer}>
                         <div className={styles.avatar}>
-                          {user.avatar}
+                          {user.firstName?.charAt(0)}{user.lastName?.charAt(0)}
                         </div>
-                        <div className={`${styles.statusIndicator} ${styles[user.status]}`}></div>
+                        {/* Removed status indicator since it's not in the database */}
                       </div>
                       <div className={styles.userDetails}>
                         <div className={styles.userName}>
@@ -334,27 +340,42 @@ const Permissions = () => {
                     </div>
                   </td>
                   <td>
-                    <div className={styles.permissionsList}>
-                      {user.permissions.map(permission => (
-                        <span key={permission} className={styles.permissionBadge}>
-                          {permission}
+                    <div className={styles.rolesList}>
+                      {user.roles && user.roles.map(role => (
+                        <span key={role} className={styles.roleBadge}>
+                          {role}
                         </span>
                       ))}
                     </div>
                   </td>
                   <td>
+                    <div className={styles.permissionsList}>
+                      {user.permissions && user.permissions.slice(0, 3).map(permission => (
+                        <span key={permission} className={styles.permissionBadge}>
+                          {permission.replace(/_/g, ' ')}
+                        </span>
+                      ))}
+                      {user.permissions && user.permissions.length > 3 && (
+                        <span className={styles.moreBadge}>
+                          +{user.permissions.length - 3} more
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td>
                     <div className={styles.actionButtons}>
-                      <button 
+                      <button
                         className={styles.actionButton}
-                        onClick={() => handleModifyRoles(user.id)}
+                        onClick={() => handleModifyRoles(user)}
                         title="Modify Roles"
                       >
                         <FiEdit size={16} />
                       </button>
-                      <button 
+                      <button
                         className={styles.actionButton}
                         onClick={() => handleRemoveUser(user.id)}
                         title="Remove User"
+                        disabled={user.roles && user.roles.includes('IT Admin')}
                       >
                         <FiTrash2 size={16} />
                       </button>
@@ -364,7 +385,7 @@ const Permissions = () => {
               ))
             ) : (
               <tr>
-                <td colSpan="4" className={styles.noData}>
+                <td colSpan="5" className={styles.noData}>
                   No users found
                 </td>
               </tr>
@@ -405,8 +426,101 @@ const Permissions = () => {
           </div>
         </div>
       )}
+
+      {/* Role Assignment Modal */}
+      {showRoleModal && selectedUser && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalContent}>
+            <div className={styles.modalHeader}>
+              <h3>Assign Roles to {selectedUser.firstName} {selectedUser.lastName}</h3>
+              <button className={styles.closeButton} onClick={() => setShowRoleModal(false)}>×</button>
+            </div>
+
+            <div className={styles.modalBody}>
+              <div className={styles.userInfoModal}>
+                <div className={styles.avatarModal}>
+                  {selectedUser.firstName?.charAt(0)}{selectedUser.lastName?.charAt(0)}
+                </div>
+                <div>
+                  <div className={styles.userNameModal}>{selectedUser.firstName} {selectedUser.lastName}</div>
+                  <div className={styles.userEmailModal}>{selectedUser.email}</div>
+                </div>
+              </div>
+
+              <div className={styles.rolesSection}>
+                <h4>Available Roles</h4>
+                <div className={styles.rolesListModal}>
+                  {roles.map(role => (
+                    <div key={role.id} className={styles.roleItem}>
+                      <label className={styles.roleCheckbox}>
+                        <input
+                          type="checkbox"
+                          checked={selectedRoles.includes(role.name)}
+                          onChange={(e) => handleRoleSelection(role.name, e.target.checked)}
+                          disabled={role.isSystemRole && !selectedUser.roles.includes(role.name)}
+                        />
+                        <span className={styles.checkmark}></span>
+                        <div className={styles.roleInfo}>
+                          <div className={styles.roleName}>{role.name}</div>
+                          <div className={styles.roleDescription}>{role.description}</div>
+                        </div>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.modalFooter}>
+              <button
+                className={styles.cancelButton}
+                onClick={() => setShowRoleModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className={styles.saveButton}
+                onClick={saveRoleChanges}
+                disabled={saving}
+              >
+                {saving ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Message */}
+      {showConfirmation && (
+        <div className={styles.confirmationMessage}>
+          <FiCheck size={20} />
+          <span>User roles updated successfully!</span>
+        </div>
+      )}
     </div>
   );
 };
+
+// Mock data fallback
+const mockPermissionsData = [
+  {
+    id: 1,
+    firstName: 'John',
+    lastName: 'Doe',
+    email: 'john.doe@example.com',
+    lastLogin: '2023-10-15T14:30:25Z',
+    roles: ['IT Admin'],
+    permissions: ['dashboard_view', 'leads_view', 'leads_create', 'leads_edit', 'leads_delete']
+  },
+  {
+    id: 2,
+    firstName: 'Jane',
+    lastName: 'Smith',
+    email: 'jane.smith@example.com',
+    lastLogin: '2023-10-14T09:15:42Z',
+    roles: ['Data Analyst'],
+    permissions: ['dashboard_view', 'leads_view', 'contacts_view']
+  }
+];
 
 export default Permissions;

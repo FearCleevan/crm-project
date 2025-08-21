@@ -1,6 +1,8 @@
 /* src/components/Permissions/Permissions.module.css */
 .permissions {
     color: #e0e0e0;
+    position: relative;
+    min-height: 400px;
 }
 
 .header {
@@ -11,6 +13,7 @@
     color: #ffffff;
     margin: 0 0 0.5rem 0;
     font-size: 18px;
+    font-weight: 600;
 }
 
 .header p {
@@ -25,6 +28,7 @@
     align-items: center;
     margin-bottom: 1.5rem;
     gap: 1rem;
+    flex-wrap: wrap;
 }
 
 .searchContainer {
@@ -39,26 +43,30 @@
     top: 50%;
     transform: translateY(-50%);
     color: #b0b0b0;
+    z-index: 1;
 }
 
 .searchInput {
     width: 100%;
-    padding: 8px 15px 8px 35px;
+    padding: 10px 15px 10px 35px;
     background: #1a1a2a;
     border: 1px solid #2a2a3a;
     border-radius: 6px;
     color: #e0e0e0;
     font-size: 0.9rem;
+    transition: border-color 0.2s ease;
 }
 
 .searchInput:focus {
     outline: none;
     border-color: #4a6fa5;
+    box-shadow: 0 0 0 2px rgba(74, 111, 165, 0.2);
 }
 
 .controlButtons {
     display: flex;
     gap: 0.75rem;
+    align-items: center;
 }
 
 .filterButton, .settingsButton {
@@ -77,6 +85,7 @@
 
 .filterButton:hover, .settingsButton:hover {
     background: #2a2a3a;
+    border-color: #3a3a4a;
 }
 
 .itemsPerPageSelect {
@@ -84,9 +93,15 @@
     border: 1px solid #2a2a3a;
     border-radius: 6px;
     color: #e0e0e0;
-    padding: 0.5rem;
+    padding: 8px 12px;
     cursor: pointer;
     font-size: 13px;
+    transition: border-color 0.2s ease;
+}
+
+.itemsPerPageSelect:focus {
+    outline: none;
+    border-color: #4a6fa5;
 }
 
 .tableContainer {
@@ -95,32 +110,39 @@
     border: 1px solid #2a2a3a;
     overflow: hidden;
     margin-bottom: 1.5rem;
+    overflow-x: auto;
 }
 
 .permissionsTable {
     width: 100%;
     border-collapse: collapse;
+    min-width: 800px;
 }
 
 .permissionsTable th {
     background: #2a2a3a;
-    padding: 11px;
+    padding: 12px 16px;
     text-align: left;
     font-weight: 600;
     color: #b0b0b0;
     font-size: 13px;
+    white-space: nowrap;
 }
 
 .permissionsTable td {
-    padding: 11px;
+    padding: 16px;
     border-bottom: 1px solid #2a2a3a;
-    font-size: 12px;
+    font-size: 13px;
+    vertical-align: top;
 }
 
 .sortableHeader {
-    cursor: pointer;
-    user-select: none;
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+  transition: background-color 0.2s ease;
 }
+
 
 .sortableHeader:hover {
     background: #3a3a4a;
@@ -129,7 +151,11 @@
 .headerContent {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
+}
+
+.tableRow {
+    transition: background-color 0.2s ease;
 }
 
 .tableRow:hover {
@@ -144,11 +170,12 @@
 
 .avatarContainer {
     position: relative;
+    flex-shrink: 0;
 }
 
 .avatar {
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     background: linear-gradient(135deg, #4a6fa5 0%, #3a4a6d 100%);
     display: flex;
@@ -156,15 +183,15 @@
     justify-content: center;
     font-weight: 600;
     color: white;
-    font-size: 13px;
+    font-size: 14px;
 }
 
 .statusIndicator {
     position: absolute;
     bottom: 0;
     right: 0;
-    width: 10px;
-    height: 10px;
+    width: 12px;
+    height: 12px;
     border-radius: 50%;
     border: 2px solid #1a1a2a;
 }
@@ -177,39 +204,81 @@
     background: #a0aec0;
 }
 
+.statusIndicator.away {
+    background: #d69e2e;
+}
+
+.statusIndicator.busy {
+    background: #e53e3e;
+}
+
 .userDetails {
     display: flex;
     flex-direction: column;
+    min-width: 0;
 }
 
 .userName {
     font-weight: 500;
     color: #ffffff;
-    font-size: 13px;
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .userEmail {
     color: #b0b0b0;
-    font-size: 11px;
+    font-size: 12px;
     margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .lastLogin {
     color: #b0b0b0;
+    font-size: 13px;
+}
+
+.rolesList {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.roleBadge {
+    background: rgba(123, 97, 255, 0.2);
+    color: #9f7aea;
+    padding: 4px 10px;
+    border-radius: 16px;
     font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
 }
 
 .permissionsList {
     display: flex;
     flex-wrap: wrap;
-    gap: 4px;
+    gap: 6px;
+    align-items: center;
 }
 
 .permissionBadge {
     background: rgba(74, 111, 165, 0.2);
     color: #6b9aff;
+    padding: 4px 10px;
+    border-radius: 16px;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.moreBadge {
+    background: rgba(160, 174, 192, 0.2);
+    color: #a0aec0;
     padding: 4px 8px;
-    border-radius: 12px;
+    border-radius: 16px;
     font-size: 11px;
     font-weight: 500;
 }
@@ -224,23 +293,30 @@
     border: none;
     color: #b0b0b0;
     cursor: pointer;
-    padding: 0.5rem;
-    border-radius: 4px;
+    padding: 8px;
+    border-radius: 6px;
     transition: all 0.2s;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
-.actionButton:hover {
+.actionButton:hover:not(:disabled) {
     background: #2a2a3a;
     color: #e0e0e0;
+}
+
+.actionButton:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .pagination {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
 }
 
 .paginationInfo {
@@ -251,21 +327,24 @@
 .paginationControls {
     display: flex;
     gap: 0.5rem;
+    flex-wrap: wrap;
 }
 
 .paginationButton {
-    padding: 8px 15px;
+    padding: 8px 12px;
     font-size: 13px;
     background: #1a1a2a;
     border: 1px solid #2a2a3a;
-    border-radius: 4px;
+    border-radius: 6px;
     color: #e0e0e0;
     cursor: pointer;
     transition: all 0.2s;
+    min-width: 40px;
 }
 
 .paginationButton:hover:not(:disabled) {
     background: #2a2a3a;
+    border-color: #3a3a4a;
 }
 
 .paginationButton:disabled {
@@ -312,4 +391,365 @@
     padding: 2rem;
     color: #b0b0b0;
     font-style: italic;
+}
+
+/* Modal Styles */
+.modalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
+}
+
+.modalContent {
+    background: #1a1a2a;
+    border-radius: 12px;
+    border: 1px solid #2a2a3a;
+    width: 100%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    animation: modalFadeIn 0.3s ease;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modalHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid #2a2a3a;
+}
+
+.modalHeader h3 {
+    margin: 0;
+    color: #ffffff;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.closeButton {
+    background: none;
+    border: none;
+    color: #b0b0b0;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.closeButton:hover {
+    background: #2a2a3a;
+    color: #ffffff;
+}
+
+.modalBody {
+    padding: 1.5rem;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.userInfoModal {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid #2a2a3a;
+}
+
+.avatarModal {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4a6fa5 0%, #3a4a6d 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    color: white;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.userNameModal {
+    font-weight: 600;
+    color: #ffffff;
+    font-size: 16px;
+    margin-bottom: 4px;
+}
+
+.userEmailModal {
+    color: #b0b0b0;
+    font-size: 14px;
+}
+
+.rolesSection h4 {
+    margin: 0 0 1rem 0;
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.rolesListModal {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-height: 300px;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+.rolesListModal::-webkit-scrollbar {
+    width: 6px;
+}
+
+.rolesListModal::-webkit-scrollbar-track {
+    background: #1a1a2a;
+    border-radius: 3px;
+}
+
+.rolesListModal::-webkit-scrollbar-thumb {
+    background: #2a2a3a;
+    border-radius: 3px;
+}
+
+.rolesListModal::-webkit-scrollbar-thumb:hover {
+    background: #3a3a4a;
+}
+
+.roleItem {
+    display: flex;
+}
+
+.roleCheckbox {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    cursor: pointer;
+    width: 100%;
+    padding: 0.75rem;
+    border-radius: 8px;
+    transition: background-color 0.2s;
+}
+
+.roleCheckbox:hover {
+    background: #2a2a3a;
+}
+
+.roleCheckbox input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.checkmark {
+    position: relative;
+    height: 18px;
+    width: 18px;
+    background-color: #1a1a2a;
+    border: 1px solid #2a2a3a;
+    border-radius: 4px;
+    flex-shrink: 0;
+    margin-top: 2px;
+    transition: all 0.2s;
+}
+
+.roleCheckbox input:checked ~ .checkmark {
+    background-color: #4a6fa5;
+    border-color: #4a6fa5;
+}
+
+.checkmark:after {
+    content: "";
+    position: absolute;
+    display: none;
+}
+
+.roleCheckbox input:checked ~ .checkmark:after {
+    display: block;
+}
+
+.roleCheckbox .checkmark:after {
+    left: 6px;
+    top: 2px;
+    width: 5px;
+    height: 10px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.roleCheckbox input:disabled ~ .checkmark {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.roleInfo {
+    flex: 1;
+}
+
+.roleName {
+    font-weight: 500;
+    color: #ffffff;
+    font-size: 14px;
+    margin-bottom: 2px;
+}
+
+.roleDescription {
+    color: #b0b0b0;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.modalFooter {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding: 1.5rem;
+    border-top: 1px solid #2a2a3a;
+}
+
+.cancelButton, .saveButton {
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.cancelButton {
+    background: #2a2a3a;
+    border: 1px solid #3a3a4a;
+    color: #e0e0e0;
+}
+
+.cancelButton:hover {
+    background: #3a3a4a;
+}
+
+.saveButton {
+    background: #4a6fa5;
+    border: 1px solid #4a6fa5;
+    color: white;
+}
+
+.saveButton:hover:not(:disabled) {
+    background: #5b7fb5;
+    border-color: #5b7fb5;
+}
+
+.saveButton:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Confirmation Message */
+.confirmationMessage {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #38a169;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    animation: slideIn 0.3s ease, fadeOut 0.5s ease 2.5s forwards;
+    z-index: 1001;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+        visibility: hidden;
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .searchContainer {
+        max-width: 100%;
+    }
+    
+    .controlButtons {
+        justify-content: space-between;
+        width: 100%;
+    }
+    
+    .pagination {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .modalContent {
+        margin: 1rem;
+        max-height: calc(100vh - 2rem);
+    }
+    
+    .modalHeader, .modalBody, .modalFooter {
+        padding: 1rem;
+    }
+    
+    .rolesListModal {
+        max-height: 200px;
+    }
+}
+
+@media (max-width: 480px) {
+    .modalFooter {
+        flex-direction: column;
+    }
+    
+    .cancelButton, .saveButton {
+        width: 100%;
+    }
 }
