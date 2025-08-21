@@ -7,6 +7,7 @@ import userRoutes from './routes/users.js';
 import cookieParser from 'cookie-parser';
 import { authMiddleware } from './middlewares/authMiddleware.js';
 import pool from './config/db.js';
+import requestRoutes from './routes/requestRoutes.js';
 
 dotenv.config();
 
@@ -23,6 +24,8 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+app.use('/api/requests', requestRoutes);
 
 // Routes
 app.use('/api/auth', authRoutes);

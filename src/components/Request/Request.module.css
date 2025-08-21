@@ -3,13 +3,419 @@
     color: #e0e0e0;
 }
 
-.request h3 {
+.header {
+    margin-bottom: 1.5rem;
+}
+
+.header h3 {
     color: #ffffff;
-    margin-bottom: 1rem;
+    margin: 0 0 0.5rem 0;
     font-size: 18px;
 }
 
-.request p {
+.header p {
     color: #b0b0b0;
+    margin: 0;
+    font-size: 14px;
+}
+
+.controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    gap: 1rem;
+}
+
+.filterButtons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.filterButton {
+    padding: 8px 16px;
+    background: #1a1a2a;
+    border: 1px solid #2a2a3a;
+    border-radius: 6px;
+    color: #e0e0e0;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 13px;
+}
+
+.filterButton:hover {
+    background: #2a2a3a;
+}
+
+.filterButton.active {
+    background: #4a6fa5;
+    border-color: #4a6fa5;
+    color: white;
+}
+
+.refreshButton {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 15px;
+    background: #2a2a3a;
+    border: 1px solid #3a3a4a;
+    border-radius: 6px;
+    color: #e0e0e0;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 13px;
+}
+
+.refreshButton:hover {
+    background: #3a3a4a;
+}
+
+.tableContainer {
+    background: #1a1a2a;
+    border-radius: 8px;
+    border: 1px solid #2a2a3a;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+}
+
+.requestsTable {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.requestsTable th {
+    background: #2a2a3a;
+    padding: 11px;
+    text-align: left;
+    font-weight: 600;
+    color: #b0b0b0;
+    font-size: 13px;
+}
+
+.requestsTable td {
+    padding: 11px;
+    border-bottom: 1px solid #2a2a3a;
+    font-size: 12px;
+}
+
+.tableRow:hover {
+    background: rgba(42, 42, 58, 0.5);
+}
+
+.userInfo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.userDetails {
+    display: flex;
+    flex-direction: column;
+}
+
+.userName {
+    font-weight: 500;
+    color: #ffffff;
+    font-size: 13px;
+}
+
+.userEmail {
+    color: #b0b0b0;
+    font-size: 11px;
+    margin-top: 2px;
+}
+
+.userUsername {
+    color: #6b9aff;
+    font-size: 11px;
+    margin-top: 2px;
+}
+
+.typeBadge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.typeBadge.passwordReset {
+    background: rgba(229, 62, 62, 0.2);
+    color: #e53e3e;
+}
+
+.typeBadge.accountCreation {
+    background: rgba(56, 161, 105, 0.2);
+    color: #38a169;
+}
+
+.statusBadge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.statusBadge.pending {
+    background: rgba(245, 158, 11, 0.2);
+    color: #f59e0b;
+}
+
+.statusBadge.completed {
+    background: rgba(56, 161, 105, 0.2);
+    color: #38a169;
+}
+
+.date {
+    color: #b0b0b0;
+    font-size: 12px;
+}
+
+.actionButtons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.actionButton, .viewButton {
+    background: none;
+    border: none;
+    color: #b0b0b0;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 4px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.actionButton:hover {
+    background: rgba(56, 161, 105, 0.2);
+    color: #38a169;
+}
+
+.viewButton:hover {
+    background: rgba(74, 111, 165, 0.2);
+    color: #6b9aff;
+}
+
+.loadingTable {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+    color: #b0b0b0;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #2a2a3a;
+    border-top: 3px solid #6b9aff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 1rem;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.noData {
+    text-align: center;
+    padding: 2rem;
+    color: #b0b0b0;
+    font-style: italic;
+}
+
+/* Modal Styles */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000;
+  padding: 1rem;
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+
+.modalContent {
+    background: linear-gradient(135deg, #1a1a2a 0%, #2a2a3a 100%);
+    border-radius: 12px;
+    padding: 0;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+    border: 1px solid #3a3a4a;
+    animation: modalFadeIn 0.3s ease-out;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.modalHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid #2a2a3a;
+}
+
+.modalHeader h3 {
+    color: #ffffff;
+    margin: 0;
+    font-size: 1.2rem;
+}
+
+.closeButton {
+    background: none;
+    border: none;
+    color: #b0b0b0;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+}
+
+.closeButton:hover {
+    background: #2a2a3a;
+    color: #e0e0e0;
+}
+
+.modalBody {
+    padding: 1.5rem;
+}
+
+.requestDetails {
+    margin-bottom: 1.5rem;
+}
+
+.detailRow {
+    display: flex;
+    margin-bottom: 0.75rem;
+    align-items: flex-start;
+}
+
+.detailLabel {
+    font-weight: 600;
+    color: #b0b0b0;
+    width: 100px;
+    flex-shrink: 0;
+    font-size: 13px;
+}
+
+.detailValue {
+    color: #e0e0e0;
+    flex: 1;
+    font-size: 13px;
+}
+
+.statusPending {
+    color: #f59e0b !important;
+}
+
+.statusCompleted {
+    color: #38a169 !important;
+}
+
+.passwordSection, .accountSection {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #2a2a3a;
+}
+
+.inputLabel {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+    color: #b0b0b0;
+    font-weight: 500;
+}
+
+.passwordInput {
+    width: 100%;
+    padding: 8px 12px;
+    background: #1a1a2a;
+    border: 1px solid #2a2a3a;
+    color: #e0e0e0;
+    border-radius: 6px;
+    font-size: 0.9rem;
+}
+
+.passwordNote {
+    margin: 8px 0 0;
+    font-size: 0.8rem;
+    color: #b0b0b0;
+    font-style: italic;
+}
+
+.confirmationText {
+    color: #e0e0e0;
+    margin: 0;
     line-height: 1.5;
+}
+
+.modalFooter {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    padding: 1.5rem;
+    border-top: 1px solid #2a2a3a;
+}
+
+.cancelButton {
+    padding: 0.75rem 1.5rem;
+    background: transparent;
+    color: #b0b0b0;
+    border: 1px solid #4a4a5a;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.cancelButton:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #ffffff;
+}
+
+.confirmButton {
+    padding: 0.75rem 1.5rem;
+    background: linear-gradient(135deg, #4a6fa5 0%, #3a4a6d 100%);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.confirmButton:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
 }

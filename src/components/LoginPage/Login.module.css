@@ -3,7 +3,7 @@
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #ffffff 0%, #5a5a5a 100%);
+   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
   padding: 20px;
 }
 
@@ -302,4 +302,47 @@
   10% { opacity: 1; transform: translateX(-50%) translateY(0); }
   90% { opacity: 1; }
   100% { opacity: 0; transform: translateX(-50%) translateY(20px); }
+}
+
+/* Add to Login.module.css */
+.errorMessage {
+    background-color: #fee;
+    border: 1px solid #fcc;
+    color: #c33;
+    padding: 12px;
+    border-radius: 4px;
+    margin-bottom: 16px;
+    font-size: 14px;
+}
+
+.errorMessage a {
+    color: #c33;
+    text-decoration: underline;
+    font-weight: bold;
+}
+
+.errorMessage strong {
+    display: block;
+    margin-bottom: 4px;
+}
+
+/* Add to Request.module.css */
+.statusBadge.pending {
+    background-color: #ff9800;
+    color: white;
+}
+
+.statusBadge.completed {
+    background-color: #4caf50;
+    color: white;
+}
+
+.statusBadge.rejected {
+    background-color: #f44336;
+    color: white;
+}
+
+.statusBadge.in_progress {
+    background-color: #2196f3;
+    color: white;
 }

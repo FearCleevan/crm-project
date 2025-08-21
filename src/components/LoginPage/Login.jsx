@@ -15,8 +15,15 @@ const Login = () => {
     const [rememberMe, setRememberMe] = useState(false);
     const [isInitializing, setIsInitializing] = useState(true);
     const [currentSlide, setCurrentSlide] = useState(0);
-    const [activeForm, setActiveForm] = useState("login"); // NEW
-    const [notification, setNotification] = useState(""); // NEW
+    const [activeForm, setActiveForm] = useState("login");
+    const [notification, setNotification] = useState("");
+    const [requestForm, setRequestForm] = useState({
+        firstName: "",
+        lastName: "",
+        email: "",
+        username: "",
+        reason: "forgot"
+    });
     const navigate = useNavigate();
 
     const carouselItems = [
@@ -88,12 +95,71 @@ const Login = () => {
         }
     };
 
-    // NEW: Mock Submit for Forgot/Contact forms
-    const handleMockSubmit = (e) => {
+    const handleRequestSubmit = async (e) => {
         e.preventDefault();
-        setNotification("✅ Submission successful! An Admin will contact you soon.");
-        setTimeout(() => setNotification(""), 4000);
-        setActiveForm("login");
+        setError("");
+        
+        // Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(requestForm.email)) {
+            setError("Please enter a valid email address");
+            return;
+        }
+        
+        // Validate username format
+        if (requestForm.username.length < 3 || !/^[a-zA-Z0-9_]+$/.test(requestForm.username)) {
+            setError("Username must be at least 3 characters and contain only letters, numbers, and underscores");
+            return;
+        }
+
+        try {
+            const response = await fetch("http://localhost:5001/api/requests/submit", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(requestForm),
+            });
+
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.error || "Failed to submit request");
+            }
+
+            setNotification("✅ Request submitted successfully! An Admin will contact you soon.");
+            setTimeout(() => {
+                setNotification("");
+                setActiveForm("login");
+                setRequestForm({
+                    firstName: "",
+                    lastName: "",
+                    email: "",
+                    username: "",
+                    reason: "forgot"
+                });
+            }, 3000);
+        } catch (err) {
+            setError(err.message || "Failed to submit request. Please try again.");
+            console.error("Request submission error:", err);
+        }
+    };
+
+    // Add the missing handleInputChange function
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setRequestForm(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    };
+
+    // Add validation functions
+    const validateEmail = (email) => {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+    };
+
+    const validateUsername = (username) => {
+        return username.length >= 3 && /^[a-zA-Z0-9_]+$/.test(username);
     };
 
     if (isInitializing) return <SkeletonLoading />;
@@ -101,10 +167,8 @@ const Login = () => {
     return (
         <div className={styles.loginContainer}>
             <div className={styles.loginWrapper}>
-                {/* Switch positions if activeForm is not login */}
                 {activeForm === "login" ? (
                     <>
-                        {/* Left: Login | Right: Carousel */}
                         <div className={styles.loginFormContainer}>
                             <div className={styles.loginCard}>
                                 <div className={styles.logoSection}>
@@ -190,7 +254,6 @@ const Login = () => {
                             </div>
                         </div>
 
-                        {/* Right: Carousel */}
                         <div className={styles.featureCarousel}>
                             <div className={styles.carouselContainer}>
                                 {carouselItems.map((item, index) => (
@@ -226,7 +289,6 @@ const Login = () => {
                     </>
                 ) : (
                     <>
-                        {/* Left: Carousel | Right: Mock Form */}
                         <div className={styles.featureCarousel}>
                             <div className={styles.carouselContainer}>
                                 {carouselItems.map((item, index) => (
@@ -249,41 +311,95 @@ const Login = () => {
                             </div>
                         </div>
 
-                        {/* Right: Forgot Password / Contact Admin Form */}
                         <div className={styles.loginFormContainer}>
                             <div className={styles.loginCard}>
                                 <h2 className={styles.formTitle}>
                                     {activeForm === "forgotPassword"
                                         ? "Forgot Password"
-                                        : "Contact Admin"}
+                                        : "Request Account"}
                                 </h2>
-                                <form onSubmit={handleMockSubmit} className={styles.loginForm}>
+                                
+                                {error && (
+                                    <div className={styles.errorMessage}>
+                                        {error.includes("already exists") ? (
+                                            <>
+                                                <strong>Account already exists:</strong> 
+                                                {error.includes("Username") ? "Username" : "Email"} is already registered. 
+                                                Please <a href="#" onClick={() => setActiveForm("login")}>login</a> instead.
+                                            </>
+                                        ) : error.includes("No account found") ? (
+                                            <>
+                                                <strong>Account not found:</strong> 
+                                                No account exists with this username and email combination. 
+                                                Please check your details or <a href="#" onClick={() => setActiveForm("contactAdmin")}>request an account</a>.
+                                            </>
+                                        ) : (
+                                            error
+                                        )}
+                                    </div>
+                                )}
+                                
+                                <form onSubmit={handleRequestSubmit} className={styles.loginForm}>
                                     <div className={styles.inputGroup}>
                                         <label className={styles.inputLabel}>First Name</label>
-                                        <input type="text" className={styles.inputField} required />
+                                        <input 
+                                            type="text" 
+                                            name="firstName"
+                                            value={requestForm.firstName}
+                                            onChange={handleInputChange}
+                                            className={styles.inputField} 
+                                            required 
+                                        />
                                     </div>
                                     <div className={styles.inputGroup}>
                                         <label className={styles.inputLabel}>Last Name</label>
-                                        <input type="text" className={styles.inputField} required />
+                                        <input 
+                                            type="text" 
+                                            name="lastName"
+                                            value={requestForm.lastName}
+                                            onChange={handleInputChange}
+                                            className={styles.inputField} 
+                                            required 
+                                        />
                                     </div>
                                     <div className={styles.inputGroup}>
                                         <label className={styles.inputLabel}>Email</label>
-                                        <input type="email" className={styles.inputField} required />
+                                        <input 
+                                            type="email" 
+                                            name="email"
+                                            value={requestForm.email}
+                                            onChange={handleInputChange}
+                                            className={styles.inputField} 
+                                            required 
+                                        />
                                     </div>
                                     <div className={styles.inputGroup}>
                                         <label className={styles.inputLabel}>Username</label>
-                                        <input type="text" className={styles.inputField} required />
+                                        <input 
+                                            type="text" 
+                                            name="username"
+                                            value={requestForm.username}
+                                            onChange={handleInputChange}
+                                            className={styles.inputField} 
+                                            required 
+                                        />
                                     </div>
                                     <div className={styles.inputGroup}>
                                         <label className={styles.inputLabel}>Reason</label>
-                                        <select className={styles.inputField} required>
+                                        <select 
+                                            name="reason"
+                                            value={requestForm.reason}
+                                            onChange={handleInputChange}
+                                            className={styles.inputField} 
+                                            required
+                                        >
                                             <option value="forgot">I forgot my Password</option>
                                             <option value="account">I Need an Account</option>
                                         </select>
                                     </div>
 
                                     <button type="submit" className={styles.loginButton}>
-                                        Submit
+                                        Submit Request
                                     </button>
                                 </form>
                                 <div className={styles.forgotPassword}>
@@ -301,7 +417,6 @@ const Login = () => {
                 )}
             </div>
 
-            {/* Notification */}
             {notification && (
                 <div className={styles.notification}>{notification}</div>
             )}
