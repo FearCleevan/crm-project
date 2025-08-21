@@ -1,7 +1,10 @@
 // src/components/Permissions/Permissions.jsx
 import React, { useState, useEffect, useMemo } from 'react';
-import { FiSearch, FiFilter, FiSettings, FiEdit, FiTrash2, FiChevronUp, FiChevronDown, FiCheck, FiX } from 'react-icons/fi';
+import { FiSearch, FiFilter, FiSettings, FiEdit, FiTrash2, FiChevronUp, FiChevronDown, FiEye } from 'react-icons/fi';
 import styles from './Permissions.module.css';
+import RoleAssignmentModal from './Modals/RoleAssignmentModal';
+import ViewUserModal from './Modals/ViewUserModal';
+import ConfirmationMessage from './Modals/ConfirmationMessage';
 
 const Permissions = () => {
   const [permissions, setPermissions] = useState([]);
@@ -13,8 +16,8 @@ const Permissions = () => {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
   const [selectedUser, setSelectedUser] = useState(null);
   const [showRoleModal, setShowRoleModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
-  const [selectedRoles, setSelectedRoles] = useState([]);
   const [saving, setSaving] = useState(false);
 
   // Fetch permissions data from backend
@@ -23,8 +26,7 @@ const Permissions = () => {
       setLoading(true);
       try {
         const token = localStorage.getItem('token');
-        // console.log('Fetching with token:', token);
-
+        
         // Fetch users with permissions
         const usersResponse = await fetch('http://localhost:5001/api/permissions/users', {
           headers: {
@@ -33,16 +35,12 @@ const Permissions = () => {
           }
         });
 
-        // console.log('Users response status:', usersResponse.status);
-
         if (!usersResponse.ok) {
           const errorText = await usersResponse.text();
-          console.error('Users response error text:', errorText);
           throw new Error(`Failed to fetch users: ${usersResponse.status} ${usersResponse.statusText}`);
         }
 
         const usersData = await usersResponse.json();
-        // console.log('Users data received:', usersData);
 
         // Fetch available roles
         const rolesResponse = await fetch('http://localhost:5001/api/permissions/roles', {
@@ -52,16 +50,12 @@ const Permissions = () => {
           }
         });
 
-        // console.log('Roles response status:', rolesResponse.status);
-
         if (!rolesResponse.ok) {
           const errorText = await rolesResponse.text();
-          console.error('Roles response error text:', errorText);
           throw new Error(`Failed to fetch roles: ${rolesResponse.status} ${usersResponse.statusText}`);
         }
 
         const rolesData = await rolesResponse.json();
-        // console.log('Roles data received:', rolesData);
 
         setPermissions(usersData.users);
         setRoles(rolesData.roles);
@@ -160,24 +154,20 @@ const Permissions = () => {
     });
   };
 
+  // Handle view user details
+  const handleViewUser = (user) => {
+    setSelectedUser(user);
+    setShowViewModal(true);
+  };
+
   // Handle modify roles
   const handleModifyRoles = (user) => {
     setSelectedUser(user);
-    setSelectedRoles(user.roles || []);
     setShowRoleModal(true);
   };
 
-  // Handle role selection
-  const handleRoleSelection = (roleName, isSelected) => {
-    if (isSelected) {
-      setSelectedRoles(prev => [...prev, roleName]);
-    } else {
-      setSelectedRoles(prev => prev.filter(role => role !== roleName));
-    }
-  };
-
   // Save role changes
-  const saveRoleChanges = async () => {
+  const saveRoleChanges = async (selectedRoles) => {
     if (!selectedUser) return;
 
     setSaving(true);
@@ -224,7 +214,7 @@ const Permissions = () => {
 
   // Handle remove user
   const handleRemoveUser = (userId) => {
-    // console.log('Remove user:', userId);
+    console.log('Remove user:', userId);
     // This would show a confirmation modal and then call an API to remove the user
   };
 
@@ -365,6 +355,13 @@ const Permissions = () => {
                     <div className={styles.actionButtons}>
                       <button
                         className={styles.actionButton}
+                        onClick={() => handleViewUser(user)}
+                        title="View User"
+                      >
+                        <FiEye size={16} />
+                      </button>
+                      <button
+                        className={styles.actionButton}
                         onClick={() => handleModifyRoles(user)}
                         title="Modify Roles"
                       >
@@ -426,76 +423,29 @@ const Permissions = () => {
         </div>
       )}
 
-      {/* Role Assignment Modal */}
+      {/* Modal Components */}
       {showRoleModal && selectedUser && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modalContent}>
-            <div className={styles.modalHeader}>
-              <h3>Assign Roles to {selectedUser.firstName} {selectedUser.lastName}</h3>
-              <button className={styles.closeButton} onClick={() => setShowRoleModal(false)}>×</button>
-            </div>
-
-            <div className={styles.modalBody}>
-              <div className={styles.userInfoModal}>
-                <div className={styles.avatarModal}>
-                  {selectedUser.firstName?.charAt(0)}{selectedUser.lastName?.charAt(0)}
-                </div>
-                <div>
-                  <div className={styles.userNameModal}>{selectedUser.firstName} {selectedUser.lastName}</div>
-                  <div className={styles.userEmailModal}>{selectedUser.email}</div>
-                </div>
-              </div>
-
-              <div className={styles.rolesSection}>
-                <h4>Available Roles</h4>
-                <div className={styles.rolesListModal}>
-                  {roles.map(role => (
-                    <div key={role.id} className={styles.roleItem}>
-                      <label className={styles.roleCheckbox}>
-                        <input
-                          type="checkbox"
-                          checked={selectedRoles.includes(role.name)}
-                          onChange={(e) => handleRoleSelection(role.name, e.target.checked)}
-                          disabled={role.isSystemRole && !selectedUser.roles.includes(role.name)}
-                        />
-                        <span className={styles.checkmark}></span>
-                        <div className={styles.roleInfo}>
-                          <div className={styles.roleName}>{role.name}</div>
-                          <div className={styles.roleDescription}>{role.description}</div>
-                        </div>
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className={styles.modalFooter}>
-              <button
-                className={styles.cancelButton}
-                onClick={() => setShowRoleModal(false)}
-              >
-                Cancel
-              </button>
-              <button
-                className={styles.saveButton}
-                onClick={saveRoleChanges}
-                disabled={saving}
-              >
-                {saving ? 'Saving...' : 'Save Changes'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <RoleAssignmentModal
+          user={selectedUser}
+          roles={roles}
+          onClose={() => setShowRoleModal(false)}
+          onSave={saveRoleChanges}
+          loading={saving}
+        />
       )}
 
-      {/* Confirmation Message */}
-      {showConfirmation && (
-        <div className={styles.confirmationMessage}>
-          <FiCheck size={20} />
-          <span>User roles updated successfully!</span>
-        </div>
+      {showViewModal && selectedUser && (
+        <ViewUserModal
+          user={selectedUser}
+          onClose={() => setShowViewModal(false)}
+        />
       )}
+
+      <ConfirmationMessage
+        message="User roles updated successfully!"
+        show={showConfirmation}
+        onHide={() => setShowConfirmation(false)}
+      />
     </div>
   );
 };

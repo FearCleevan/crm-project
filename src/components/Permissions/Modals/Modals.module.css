@@ -1,0 +1,381 @@
+/* Modal Styles */
+.modalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
+}
+
+.modalContent {
+    background: #1a1a2a;
+    border-radius: 12px;
+    border: 1px solid #2a2a3a;
+    width: 100%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    animation: modalFadeIn 0.3s ease;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modalHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid #2a2a3a;
+}
+
+.modalHeader h3 {
+    margin: 0;
+    color: #ffffff;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.closeButton {
+    background: none;
+    border: none;
+    color: #b0b0b0;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.closeButton:hover {
+    background: #2a2a3a;
+    color: #ffffff;
+}
+
+.modalBody {
+    padding: 1.5rem;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.userInfoModal {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid #2a2a3a;
+}
+
+.avatarModal {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4a6fa5 0%, #3a4a6d 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    color: white;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.userNameModal {
+    font-weight: 600;
+    color: #ffffff;
+    font-size: 16px;
+    margin-bottom: 4px;
+}
+
+.userEmailModal {
+    color: #b0b0b0;
+    font-size: 14px;
+}
+
+.userLastLogin {
+    color: #b0b0b0;
+    font-size: 13px;
+    margin-top: 4px;
+}
+
+.rolesSection, .section {
+    margin-bottom: 1.5rem;
+}
+
+.rolesSection h4, .section h4 {
+    margin: 0 0 1rem 0;
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.rolesListModal {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-height: 300px;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+.rolesListModal::-webkit-scrollbar {
+    width: 6px;
+}
+
+.rolesListModal::-webkit-scrollbar-track {
+    background: #1a1a2a;
+    border-radius: 3px;
+}
+
+.rolesListModal::-webkit-scrollbar-thumb {
+    background: #2a2a3a;
+    border-radius: 3px;
+}
+
+.rolesListModal::-webkit-scrollbar-thumb:hover {
+    background: #3a3a4a;
+}
+
+.roleItem {
+    display: flex;
+}
+
+.roleCheckbox {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    cursor: pointer;
+    width: 100%;
+    padding: 0.75rem;
+    border-radius: 8px;
+    transition: background-color 0.2s;
+}
+
+.roleCheckbox:hover {
+    background: #2a2a3a;
+}
+
+.roleCheckbox input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.checkmark {
+    position: relative;
+    height: 18px;
+    width: 18px;
+    background-color: #1a1a2a;
+    border: 1px solid #2a2a3a;
+    border-radius: 4px;
+    flex-shrink: 0;
+    margin-top: 2px;
+    transition: all 0.2s;
+}
+
+.roleCheckbox input:checked ~ .checkmark {
+    background-color: #4a6fa5;
+    border-color: #4a6fa5;
+}
+
+.checkmark:after {
+    content: "";
+    position: absolute;
+    display: none;
+}
+
+.roleCheckbox input:checked ~ .checkmark:after {
+    display: block;
+}
+
+.roleCheckbox .checkmark:after {
+    left: 6px;
+    top: 2px;
+    width: 5px;
+    height: 10px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.roleCheckbox input:disabled ~ .checkmark {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.roleInfo {
+    flex: 1;
+}
+
+.roleName {
+    font-weight: 500;
+    color: #ffffff;
+    font-size: 14px;
+    margin-bottom: 2px;
+}
+
+.roleDescription {
+    color: #b0b0b0;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.itemsList {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.roleBadge {
+    background: rgba(123, 97, 255, 0.2);
+    color: #9f7aea;
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.permissionBadge {
+    background: rgba(74, 111, 165, 0.2);
+    color: #6b9aff;
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.noItems {
+    color: #b0b0b0;
+    font-style: italic;
+    font-size: 14px;
+}
+
+.modalFooter {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding: 1.5rem;
+    border-top: 1px solid #2a2a3a;
+}
+
+.cancelButton, .saveButton {
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.cancelButton {
+    background: #2a2a3a;
+    border: 1px solid #3a3a4a;
+    color: #e0e0e0;
+}
+
+.cancelButton:hover {
+    background: #3a3a4a;
+}
+
+.saveButton {
+    background: #4a6fa5;
+    border: 1px solid #4a6fa5;
+    color: white;
+}
+
+.saveButton:hover:not(:disabled) {
+    background: #5b7fb5;
+    border-color: #5b7fb5;
+}
+
+.saveButton:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Confirmation Message */
+.confirmationMessage {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #38a169;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    animation: slideIn 0.3s ease, fadeOut 0.5s ease 2.5s forwards;
+    z-index: 1001;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+        visibility: hidden;
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .modalContent {
+        margin: 1rem;
+        max-height: calc(100vh - 2rem);
+    }
+    
+    .modalHeader, .modalBody, .modalFooter {
+        padding: 1rem;
+    }
+    
+    .rolesListModal {
+        max-height: 200px;
+    }
+}
+
+@media (max-width: 480px) {
+    .modalFooter {
+        flex-direction: column;
+    }
+    
+    .cancelButton, .saveButton {
+        width: 100%;
+    }
+}
