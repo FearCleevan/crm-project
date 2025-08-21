@@ -23,7 +23,7 @@ const Permissions = () => {
       setLoading(true);
       try {
         const token = localStorage.getItem('token');
-        console.log('Fetching with token:', token);
+        // console.log('Fetching with token:', token);
 
         // Fetch users with permissions
         const usersResponse = await fetch('http://localhost:5001/api/permissions/users', {
@@ -33,7 +33,7 @@ const Permissions = () => {
           }
         });
 
-        console.log('Users response status:', usersResponse.status);
+        // console.log('Users response status:', usersResponse.status);
 
         if (!usersResponse.ok) {
           const errorText = await usersResponse.text();
@@ -42,7 +42,7 @@ const Permissions = () => {
         }
 
         const usersData = await usersResponse.json();
-        console.log('Users data received:', usersData);
+        // console.log('Users data received:', usersData);
 
         // Fetch available roles
         const rolesResponse = await fetch('http://localhost:5001/api/permissions/roles', {
@@ -52,7 +52,7 @@ const Permissions = () => {
           }
         });
 
-        console.log('Roles response status:', rolesResponse.status);
+        // console.log('Roles response status:', rolesResponse.status);
 
         if (!rolesResponse.ok) {
           const errorText = await rolesResponse.text();
@@ -61,7 +61,7 @@ const Permissions = () => {
         }
 
         const rolesData = await rolesResponse.json();
-        console.log('Roles data received:', rolesData);
+        // console.log('Roles data received:', rolesData);
 
         setPermissions(usersData.users);
         setRoles(rolesData.roles);
@@ -142,7 +142,7 @@ const Permissions = () => {
   };
 
   // Handle items per page change
-  const handleItemsPerPageChange = (value) =>{
+  const handleItemsPerPageChange = (value) => {
     setItemsPerPage(Number(value));
     setCurrentPage(1);
   };
@@ -224,7 +224,7 @@ const Permissions = () => {
 
   // Handle remove user
   const handleRemoveUser = (userId) => {
-    console.log('Remove user:', userId);
+    // console.log('Remove user:', userId);
     // This would show a confirmation modal and then call an API to remove the user
   };
 
@@ -322,7 +322,6 @@ const Permissions = () => {
                         <div className={styles.avatar}>
                           {user.firstName?.charAt(0)}{user.lastName?.charAt(0)}
                         </div>
-                        {/* Removed status indicator since it's not in the database */}
                       </div>
                       <div className={styles.userDetails}>
                         <div className={styles.userName}>
