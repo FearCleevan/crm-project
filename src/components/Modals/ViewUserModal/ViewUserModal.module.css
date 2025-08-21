@@ -20,7 +20,7 @@
   border-radius: 12px;
   border: 1px solid #3a3a4a;
   width: 100%;
-  max-width: 700px;
+  max-width: 800px; /* Increased width for better permissions display */
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
@@ -165,6 +165,13 @@
   font-weight: 600;
   border-bottom: 1px solid #3a3a4a;
   padding-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sectionIcon {
+  color: #6b9aff;
 }
 
 .detailGrid {
@@ -191,6 +198,108 @@
   color: #e0e0e0;
   font-size: 0.95rem;
   word-break: break-word;
+}
+
+/* Roles and Permissions Styles */
+.rolesList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.roleTag {
+  background: rgba(74, 111, 165, 0.2);
+  color: #6b9aff;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  border: 1px solid rgba(74, 111, 165, 0.3);
+}
+
+/* Permissions Section */
+.permissionsGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.permissionCategory {
+  background: rgba(42, 42, 58, 0.5);
+  border-radius: 8px;
+  padding: 1rem;
+  border: 1px solid #3a3a4a;
+}
+
+.categoryTitle {
+  margin: 0 0 0.75rem 0;
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.permissionsList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.permissionTag {
+  background: rgba(56, 161, 105, 0.2);
+  color: #38a169;
+  padding: 0.375rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  border: 1px solid rgba(56, 161, 105, 0.3);
+}
+
+/* Loading States */
+.loadingText {
+  color: #b0b0b0;
+  font-style: italic;
+}
+
+.loadingPermissions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #b0b0b0;
+  padding: 1rem;
+  background: rgba(42, 42, 58, 0.3);
+  border-radius: 8px;
+  border: 1px dashed #3a3a4a;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #3a3a4a;
+  border-top: 2px solid #6b9aff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.noPermissions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 2rem;
+  color: #b0b0b0;
+  background: rgba(42, 42, 58, 0.3);
+  border-radius: 8px;
+  border: 1px dashed #3a3a4a;
+  text-align: center;
 }
 
 /* Responsive design */
@@ -225,5 +334,13 @@
   .detailGrid {
     grid-template-columns: 1fr;
     gap: 1rem;
+  }
+  
+  .permissionsList {
+    justify-content: center;
+  }
+  
+  .permissionCategory {
+    padding: 0.75rem;
   }
 }

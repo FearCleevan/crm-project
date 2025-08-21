@@ -1,9 +1,48 @@
 // src/assets/components/Modals/ViewUserModal/ViewUserModal.jsx
-import React from 'react';
-import { FiX, FiEdit } from 'react-icons/fi';
+import React, { useState, useEffect } from 'react';
+import { FiX, FiEdit, FiKey, FiShield } from 'react-icons/fi';
 import styles from './ViewUserModal.module.css';
 
 const ViewUserModal = ({ isOpen, onClose, user, onEdit }) => {
+  const [userRoles, setUserRoles] = useState([]);
+  const [userPermissions, setUserPermissions] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && user) {
+      fetchUserPermissionsAndRoles();
+    }
+  }, [isOpen, user]);
+
+  const fetchUserPermissionsAndRoles = async () => {
+    if (!user || !user.user_id) return;
+    
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      
+      // Fetch user roles and permissions
+      const response = await fetch(`http://localhost:5001/api/permissions/users/${user.user_id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setUserRoles(data.user.roles || []);
+          setUserPermissions(data.user.permissions || []);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching user permissions:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!isOpen || !user) return null;
 
   const formatDate = (dateString) => {
@@ -36,6 +75,36 @@ const ViewUserModal = ({ isOpen, onClose, user, onEdit }) => {
       return 'Not Assigned';
     }
   };
+
+  const formatPermissionKey = (permission) => {
+    return permission
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, l => l.toUpperCase());
+  };
+
+  const getPermissionCategory = (permission) => {
+    if (permission.includes('dashboard')) return 'Dashboard';
+    if (permission.includes('lead')) return 'Leads';
+    if (permission.includes('contact')) return 'Contacts';
+    if (permission.includes('account')) return 'Accounts';
+    if (permission.includes('deal')) return 'Deals';
+    if (permission.includes('calendar')) return 'Calendar';
+    if (permission.includes('email')) return 'Email';
+    if (permission.includes('call')) return 'Calls';
+    if (permission.includes('task')) return 'Tasks';
+    if (permission.includes('user')) return 'Users';
+    if (permission.includes('permission')) return 'Permissions';
+    return 'Other';
+  };
+
+  const groupedPermissions = userPermissions.reduce((groups, permission) => {
+    const category = getPermissionCategory(permission);
+    if (!groups[category]) {
+      groups[category] = [];
+    }
+    groups[category].push(permission);
+    return groups;
+  }, {});
 
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
@@ -102,15 +171,27 @@ const ViewUserModal = ({ isOpen, onClose, user, onEdit }) => {
             </div>
 
             <div className={styles.detailSection}>
-              <h4>Permissions & Access</h4>
+              <h4>Roles & Access</h4>
               <div className={styles.detailGrid}>
                 <div className={styles.detailItem}>
-                  <span className={styles.detailLabel}>Role</span>
+                  <span className={styles.detailLabel}>Primary Role</span>
                   <span className={styles.detailValue}>{user.role || 'N/A'}</span>
                 </div>
                 <div className={styles.detailItem}>
-                  <span className={styles.detailLabel}>Additional Permissions</span>
-                  <span className={styles.detailValue}>{getPermissionsDisplay()}</span>
+                  <span className={styles.detailLabel}>Additional Roles</span>
+                  <div className={styles.rolesList}>
+                    {loading ? (
+                      <span className={styles.loadingText}>Loading roles...</span>
+                    ) : userRoles.length > 0 ? (
+                      userRoles.map(role => (
+                        <span key={role} className={styles.roleTag}>
+                          {role}
+                        </span>
+                      ))
+                    ) : (
+                      <span className={styles.detailValue}>No additional roles</span>
+                    )}
+                  </div>
                 </div>
                 <div className={styles.detailItem}>
                   <span className={styles.detailLabel}>Account Created</span>
@@ -122,6 +203,54 @@ const ViewUserModal = ({ isOpen, onClose, user, onEdit }) => {
                 </div>
               </div>
             </div>
+
+            {/* Permissions Section */}
+            <div className={styles.detailSection}>
+              <h4>
+                <FiKey size={18} className={styles.sectionIcon} />
+                User Permissions
+              </h4>
+              {loading ? (
+                <div className={styles.loadingPermissions}>
+                  <div className={styles.spinner}></div>
+                  <span>Loading permissions...</span>
+                </div>
+              ) : userPermissions.length > 0 ? (
+                <div className={styles.permissionsGrid}>
+                  {Object.entries(groupedPermissions).map(([category, permissions]) => (
+                    <div key={category} className={styles.permissionCategory}>
+                      <h5 className={styles.categoryTitle}>
+                        <FiShield size={14} />
+                        {category}
+                      </h5>
+                      <div className={styles.permissionsList}>
+                        {permissions.map(permission => (
+                          <span key={permission} className={styles.permissionTag}>
+                            {formatPermissionKey(permission)}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className={styles.noPermissions}>
+                  <FiKey size={24} />
+                  <span>No permissions assigned</span>
+                </div>
+              )}
+            </div>
+
+            {/* Legacy Permissions (from user.permissions field) */}
+            {user.permissions && (
+              <div className={styles.detailSection}>
+                <h4>Legacy Permissions</h4>
+                <div className={styles.detailItem}>
+                  <span className={styles.detailLabel}>Additional Permissions</span>
+                  <span className={styles.detailValue}>{getPermissionsDisplay()}</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
