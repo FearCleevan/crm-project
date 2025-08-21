@@ -306,6 +306,7 @@ const Request = () => {
                     request={selectedRequest}
                     actionType={actionType}
                     newPassword={newPassword}
+                    setNewPassword={setNewPassword}
                     onClose={() => {
                         setShowActionModal(false);
                         setSelectedRequest(null);
@@ -319,8 +320,59 @@ const Request = () => {
     );
 };
 
-const ActionModal = ({ request, actionType, newPassword, onClose, onConfirm }) => {
+const ActionModal = ({ request, actionType, newPassword, setNewPassword, onClose, onConfirm }) => {
+    const [useManualPassword, setUseManualPassword] = useState(false);
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [passwordError, setPasswordError] = useState('');
+
     if (!request) return null;
+
+    const handlePasswordChange = (value) => {
+        setNewPassword(value);
+        if (confirmPassword && value !== confirmPassword) {
+            setPasswordError('Passwords do not match');
+        } else {
+            setPasswordError('');
+        }
+    };
+
+    const handleConfirmPasswordChange = (value) => {
+        setConfirmPassword(value);
+        if (newPassword !== value) {
+            setPasswordError('Passwords do not match');
+        } else {
+            setPasswordError('');
+        }
+    };
+
+    const generateRandomPassword = () => {
+        const randomPassword = Math.random().toString(36).slice(-8);
+        setNewPassword(randomPassword);
+        setConfirmPassword(randomPassword);
+        setPasswordError('');
+    };
+
+    const handleManualPasswordToggle = (checked) => {
+        setUseManualPassword(checked);
+        if (!checked) {
+            // Generate a new random password when switching back to auto
+            generateRandomPassword();
+        } else {
+            // Clear passwords when switching to manual
+            setNewPassword('');
+            setConfirmPassword('');
+            setPasswordError('');
+        }
+    };
+
+    const isPasswordValid = () => {
+        if (actionType !== 'password_reset') return true;
+        
+        if (useManualPassword) {
+            return newPassword.length >= 8 && newPassword === confirmPassword;
+        }
+        return newPassword.length > 0;
+    };
 
     return (
         <div className={styles.modalOverlay}>
@@ -374,16 +426,69 @@ const ActionModal = ({ request, actionType, newPassword, onClose, onConfirm }) =
 
                     {actionType === 'password_reset' && (
                         <div className={styles.passwordSection}>
-                            <label className={styles.inputLabel}>New Password</label>
-                            <input
-                                type="text"
-                                value={newPassword}
-                                readOnly
-                                className={styles.passwordInput}
-                            />
-                            <p className={styles.passwordNote}>
-                                This password will be sent to the user's email address.
-                            </p>
+                            <div className={styles.passwordOption}>
+                                <input
+                                    type="checkbox"
+                                    id="manualPassword"
+                                    checked={useManualPassword}
+                                    onChange={(e) => handleManualPasswordToggle(e.target.checked)}
+                                />
+                                <label htmlFor="manualPassword">Set manual password</label>
+                            </div>
+
+                            {useManualPassword ? (
+                                <>
+                                    <div className={styles.inputGroup}>
+                                        <label className={styles.inputLabel}>New Password</label>
+                                        <input
+                                            type="password"
+                                            value={newPassword}
+                                            onChange={(e) => handlePasswordChange(e.target.value)}
+                                            className={styles.passwordInput}
+                                            placeholder="Enter new password"
+                                        />
+                                    </div>
+                                    <div className={styles.inputGroup}>
+                                        <label className={styles.inputLabel}>Confirm New Password</label>
+                                        <input
+                                            type="password"
+                                            value={confirmPassword}
+                                            onChange={(e) => handleConfirmPasswordChange(e.target.value)}
+                                            className={styles.passwordInput}
+                                            placeholder="Confirm new password"
+                                        />
+                                    </div>
+                                    {passwordError && (
+                                        <div className={styles.passwordError}>{passwordError}</div>
+                                    )}
+                                    <p className={styles.passwordNote}>
+                                        Password must be at least 8 characters long.
+                                    </p>
+                                </>
+                            ) : (
+                                <>
+                                    <label className={styles.inputLabel}>Generated Password</label>
+                                    <div className={styles.passwordDisplay}>
+                                        <input
+                                            type="text"
+                                            value={newPassword}
+                                            readOnly
+                                            className={styles.passwordInput}
+                                        />
+                                        <button
+                                            type="button"
+                                            className={styles.regenerateButton}
+                                            onClick={generateRandomPassword}
+                                            title="Generate new password"
+                                        >
+                                            <FiRefreshCw size={14} />
+                                        </button>
+                                    </div>
+                                    <p className={styles.passwordNote}>
+                                        This password will be sent to the user's email address.
+                                    </p>
+                                </>
+                            )}
                         </div>
                     )}
 
@@ -402,7 +507,11 @@ const ActionModal = ({ request, actionType, newPassword, onClose, onConfirm }) =
                         Cancel
                     </button>
                     {actionType && (
-                        <button className={styles.confirmButton} onClick={onConfirm}>
+                        <button 
+                            className={styles.confirmButton} 
+                            onClick={onConfirm}
+                            disabled={actionType === 'password_reset' && !isPasswordValid()}
+                        >
                             {actionType === 'password_reset' ? 'Reset Password' : 'Create Account'}
                         </button>
                     )}
