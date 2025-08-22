@@ -1,4 +1,4 @@
-// src/App.jsx
+// Updated App.jsx with route-specific permission requirements
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './components/LoginPage/Login';
 import Dashboard from './components/Dashboard/Dashboard';
@@ -15,10 +15,17 @@ function App() {
         {/* Protected routes */}
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/user-management" element={<UserCreation />} />
-          <Route path="/permissions" element={<PermissionAndRequest />} />
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
         </Route>
+        
+        <Route element={<ProtectedRoute requiredPermission="USER_MANAGEMENT" />}>
+          <Route path="/user-management" element={<UserCreation />} />
+        </Route>
+        
+        <Route element={<ProtectedRoute requiredPermission="PERMISSIONS" />}>
+          <Route path="/permissions" element={<PermissionAndRequest />} />
+        </Route>
+        
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
         
         {/* Fallback redirect */}
         <Route path="*" element={<Navigate to="/login" replace />} />
