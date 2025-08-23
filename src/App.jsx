@@ -5,28 +5,33 @@ import Dashboard from './components/Dashboard/Dashboard';
 import UserCreation from './components/UserCreation/UserCreation';
 import PermissionAndRequest from './components/PermissionAndRequest/PermissionAndRequest';
 import ProtectedRoute from './components/ProtectedRoute';
+import LeadsManagement from './components/LeadsManagement/LeadsManagement';
 
 function App() {
   return (
     <Router>
       <Routes>
         <Route path="/login" element={<Login />} />
-        
+
         {/* Protected routes */}
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<Dashboard />} />
         </Route>
-        
+
+        <Route element={<ProtectedRoute requiredPermission="LEADS_VIEW" />}>
+          <Route path="/leads" element={<LeadsManagement />} />
+        </Route>
+
         <Route element={<ProtectedRoute requiredPermission="USER_MANAGEMENT" />}>
           <Route path="/user-management" element={<UserCreation />} />
         </Route>
-        
+
         <Route element={<ProtectedRoute requiredPermission="PERMISSIONS" />}>
           <Route path="/permissions" element={<PermissionAndRequest />} />
         </Route>
-        
+
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        
+
         {/* Fallback redirect */}
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>

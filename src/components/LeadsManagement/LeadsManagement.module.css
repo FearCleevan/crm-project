@@ -1,0 +1,173 @@
+/* src/components/LeadsManagement/LeadsManagement.module.css */
+.leadsManagementContainer {
+    display: flex;
+    min-height: 100vh;
+    background-color: #0f0f1a;
+    position: relative;
+    color: #e0e0e0;
+}
+
+.leftPanel {
+    width: 240px;
+    background: #1a1a2a;
+    color: #e0e0e0;
+    transition: all 0.3s ease;
+    z-index: 10;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+}
+
+.leftPanel.collapsed {
+    width: 50px;
+    overflow: hidden;
+}
+
+.mainContentArea {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s ease;
+    background: #0f0f1a;
+}
+
+.mainContentArea.leftCollapsed {
+    margin-left: 0;
+}
+
+.collapseButtonWrapper {
+    position: absolute;
+    left: 240px;
+    top: 0;
+    height: 100%;
+    width: 12px;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.collapseButtonWrapper.collapsed {
+    left: 50px;
+}
+
+.collapseButton {
+    position: absolute;
+    left: -12px;
+    top: 20px;
+    background: #2a2a3a;
+    border: 1px solid #3a3a4a;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s ease;
+    padding: 0;
+    z-index: 30;
+}
+
+.collapseButton:hover {
+    background: #3a3a4a;
+    transform: scale(1.1);
+}
+
+.collapseButton svg {
+    width: 16px;
+    height: 16px;
+    color: #6b9aff;
+}
+
+.leftPanel.collapsed~.collapseButtonWrapper .collapseButton svg {
+    transform: rotate(180deg);
+}
+
+.leadsManagementContent {
+    padding: 2rem;
+    background-color: #0f0f1a;
+    color: #e0e0e0;
+    min-height: calc(100vh - 80px);
+    overflow-y: auto;
+}
+
+.header {
+    margin-bottom: 1.5rem;
+}
+
+.header h2 {
+    margin: 0 0 0.5rem 0;
+    color: #ffffff;
+    font-size: 1.8rem;
+    font-weight: 600;
+}
+
+.header p {
+    color: #b0b0b0;
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.tabNavigation {
+    display: flex;
+    border-bottom: 1px solid #2a2a3a;
+    margin-bottom: 1.5rem;
+}
+
+.tab {
+    padding: 0.75rem 1.5rem;
+    background: transparent;
+    border: none;
+    color: #b0b0b0;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+.tab:hover {
+    color: #e0e0e0;
+}
+
+.tab.active {
+    color: #6b9aff;
+}
+
+.tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: #6b9aff;
+}
+
+.tabContent {
+    background: #1a1a2a;
+    border-radius: 8px;
+    border: 1px solid #2a2a3a;
+    overflow: hidden;
+}
+
+.placeholderTab {
+    padding: 2rem;
+    text-align: center;
+    color: #b0b0b0;
+}
+
+.placeholderTab h3 {
+    color: #ffffff;
+    margin-bottom: 1rem;
+}
+
+.loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    font-size: 1.2rem;
+    color: #b0b0b0;
+}
