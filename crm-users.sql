@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 24, 2025 at 07:28 AM
+-- Generation Time: Aug 24, 2025 at 12:04 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -226,11 +226,20 @@ INSERT INTO `prospects` (`id`, `Fullname`, `Firstname`, `Lastname`, `Jobtitle`, 
 (3, 'David Lee', 'David', 'Lee', 'CFO', 'FinTrust Corp', NULL, NULL, NULL, '0', '555-222-8888', 'david.lee@fintrust.com', NULL, NULL, NULL, 'Chicago', 'IL', NULL, 'US', 0.00, 'FIN', 500, 0, 0, NULL, NULL, NULL, 1, 'Qualified', 'SYSTEM', '2025-08-24 12:45:15', NULL, NULL, 'Finance', 'Executive'),
 (4, 'Emily Davis', 'Emily', 'Davis', 'HR Director', 'PeopleFirst Ltd', NULL, NULL, NULL, '0', '555-444-5555', 'emily.davis@peoplefirst.com', NULL, NULL, NULL, 'Boston', 'MA', NULL, 'US', 0.00, 'CONSULT', 75, 0, 0, NULL, NULL, NULL, 1, 'Proposal', 'SYSTEM', '2025-08-24 12:45:15', NULL, NULL, 'HR', 'Director'),
 (5, 'Michael Brown', 'Michael', 'Brown', 'CEO', 'NextStack LLC', NULL, NULL, NULL, '0', '555-555-6666', 'michael.brown@nextstack.com', NULL, NULL, NULL, 'Austin', 'TX', NULL, 'US', 0.00, 'TECH', 350, 0, 0, NULL, NULL, NULL, 1, 'Closed', 'SYSTEM', '2025-08-24 12:45:15', NULL, NULL, 'Executive', 'CEO'),
-(6, 'John Smith', 'John', 'Smith', 'IT Manager', 'TechNova Inc', NULL, NULL, NULL, '0', '555-111-2222', 'john.smith@technova.com', NULL, NULL, NULL, 'San Francisco', 'CA', NULL, 'USA', 0.00, 'Technology', 250, 0, 0, NULL, NULL, NULL, 1, 'New', 'SYSTEM', '2025-08-24 13:11:59', NULL, NULL, 'IT', 'Manager'),
+(6, 'John Smith', 'John', 'Smith', 'IT Manager', 'TechNova Inc', NULL, NULL, NULL, '0', '555-111-2222', 'john.smith@technova.com', NULL, NULL, NULL, 'San Francisco', 'CA', NULL, 'USA', 0.00, 'Technology', 250, 0, 0, NULL, NULL, NULL, 0, 'New', 'SYSTEM', '2025-08-24 13:11:59', '7', '2025-08-24 17:59:17', 'IT', 'Manager'),
 (7, 'Sarah Johnson', 'Sarah', 'Johnson', 'Marketing Director', 'BrandSphere', NULL, NULL, NULL, '0', '555-333-4444', 's.johnson@brandsphere.io', NULL, NULL, NULL, 'New York', 'NY', NULL, 'USA', 0.00, 'Marketing', 120, 0, 0, NULL, NULL, NULL, 1, 'Contacted', 'SYSTEM', '2025-08-24 13:11:59', NULL, NULL, 'Marketing', 'Director'),
 (8, 'David Lee', 'David', 'Lee', 'CFO', 'FinTrust Corp', NULL, NULL, NULL, '0', '555-222-8888', 'david.lee@fintrust.com', NULL, NULL, NULL, 'Chicago', 'IL', NULL, 'USA', 0.00, 'Finance', 500, 0, 0, NULL, NULL, NULL, 1, 'Qualified', 'SYSTEM', '2025-08-24 13:11:59', NULL, NULL, 'Finance', 'Executive'),
 (9, 'Emily Davis', 'Emily', 'Davis', 'HR Director', 'PeopleFirst Ltd', NULL, NULL, NULL, '0', '555-444-5555', 'emily.davis@peoplefirst.com', NULL, NULL, NULL, 'Boston', 'MA', NULL, 'USA', 0.00, 'Human Resources', 75, 0, 0, NULL, NULL, NULL, 1, 'Proposal', 'SYSTEM', '2025-08-24 13:11:59', NULL, NULL, 'HR', 'Director'),
-(10, 'Michael Brown', 'Michael', 'Brown', 'CEO', 'NextStack LLC', NULL, NULL, NULL, '0', '555-555-6666', 'michael.brown@nextstack.com', NULL, NULL, NULL, 'Austin', 'TX', NULL, 'USA', 0.00, 'Software', 350, 0, 0, NULL, NULL, NULL, 1, 'Closed', 'SYSTEM', '2025-08-24 13:11:59', NULL, NULL, 'Executive', 'CEO');
+(10, 'Michael Brown', 'Michael', 'Brown', 'CEO', 'NextStack LLC', NULL, NULL, NULL, '0', '555-555-6666', 'michael.brown@nextstack.com', NULL, NULL, NULL, 'Austin', 'TX', NULL, 'USA', 0.00, 'Software', 350, 0, 0, NULL, NULL, NULL, 1, 'Closed', 'SYSTEM', '2025-08-24 13:11:59', NULL, NULL, 'Executive', 'CEO'),
+(11, 'Peter Paul Abillar Lazan', 'Peter Paul ', 'Lazan', 'Web Developer', 'The Launchpad Inc', 'https://thelaunchpadteam.com/', 'https://thelaunchpadteam.com/', 'https://thelaunchpadteam.com/', '09515379127', '09515379127', 'jonathan.mauring17@gmail.com', 'EMA000', 'Matina Aplaya ', 'Del Carmen St. ', 'Davao City', 'Philippines', '8000', 'US', 10000.00, 'Technology', 25, 8520, 8516, 'CNA', 'PROV01', 'janvie bayot', 1, 'Contacted', '1', '2025-08-24 13:58:32', NULL, NULL, 'IT', 'CEO'),
+(83, 'John Smith', 'John', 'Smith', 'IT Manager', 'TechNova Inc', 'https://technova.com', 'https://linkedin.com/in/johnsmith', 'https://linkedin.com/company/technova', '555-123-4567', '555-111-2222', 'john.smith@technova.com', 'EMA000', '123 Main St', 'Main Street', 'San Francisco', 'CA', '94101', 'US', 1000000.00, 'Technology', 250, 7372, 541511, 'A', 'DA', 'Interested in our enterprise solution', 1, 'New', '7', '2025-08-24 17:58:35', NULL, NULL, 'IT', 'Manager'),
+(84, 'John Smith', 'John', 'Smith', 'IT Manager', 'TechNova Inc', 'https://technova.com', 'https://linkedin.com/in/johnsmith', 'https://linkedin.com/company/technova', '555-123-4567', '555-111-2222', 'john.smith@technova.com', 'EMA000', '123 Main St', 'Main Street', 'San Francisco', 'CA', '94101', 'US', 1000000.00, 'Technology', 250, 7372, 541511, 'A', 'DA', 'Interested in our enterprise solution', 0, 'New', '7', '2025-08-24 17:58:35', '7', '2025-08-24 17:58:52', 'IT', 'Manager'),
+(85, 'John Smith', 'John', 'Smith', 'IT Manager', 'TechNova Inc', 'https://technova.com', 'https://linkedin.com/in/johnsmith', 'https://linkedin.com/company/technova', '555-123-4567', '555-111-2222', 'john.smith@technova.com', 'EMA000', '123 Main St', 'Main Street', 'San Francisco', 'CA', '94101', 'US', 1000000.00, 'Technology', 250, 7372, 541511, 'A', 'DA', 'Interested in our enterprise solution', 0, 'New', '7', '2025-08-24 17:58:35', '7', '2025-08-24 17:59:17', 'IT', 'Manager'),
+(86, 'John Smith', 'John', 'Smith', 'IT Manager', 'TechNova Inc', 'https://technova.com', 'https://linkedin.com/in/johnsmith', 'https://linkedin.com/company/technova', '555-123-4567', '555-111-2222', 'john.smith@technova.com', 'EMA000', '123 Main St', 'Main Street', 'San Francisco', 'CA', '94101', 'US', 1000000.00, 'Technology', 250, 7372, 541511, 'A', 'DA', 'Interested in our enterprise solution', 0, 'New', '7', '2025-08-24 17:58:35', '7', '2025-08-24 17:59:17', 'IT', 'Manager'),
+(87, 'John Smith', 'John', 'Smith', 'IT Manager', 'TechNova Inc', 'https://technova.com', 'https://linkedin.com/in/johnsmith', 'https://linkedin.com/company/technova', '555-123-4567', '555-111-2222', 'john.smith@technova.com', 'EMA000', '123 Main St', 'Main Street', 'San Francisco', 'CA', '94101', 'US', 1000000.00, 'Technology', 250, 7372, 541511, 'A', 'DA', 'Interested in our enterprise solution', 0, 'New', '7', '2025-08-24 17:58:35', '7', '2025-08-24 17:59:17', 'IT', 'Manager'),
+(88, 'John Smith', 'John', 'Smith', 'IT Manager', 'TechNova Inc', 'https://technova.com', 'https://linkedin.com/in/johnsmith', 'https://linkedin.com/company/technova', '555-123-4567', '555-111-2222', 'john.smith@technova.com', 'EMA000', '123 Main St', 'Main Street', 'San Francisco', 'CA', '94101', 'US', 1000000.00, 'Technology', 250, 7372, 541511, 'A', 'DA', 'Interested in our enterprise solution', 0, 'New', '7', '2025-08-24 17:58:35', '7', '2025-08-24 17:59:17', 'IT', 'Manager'),
+(89, 'John Smith', 'John', 'Smith', 'IT Manager', 'TechNova Inc', 'https://technova.com', 'https://linkedin.com/in/johnsmith', 'https://linkedin.com/company/technova', '555-123-4567', '555-111-2222', 'john.smith@technova.com', 'EMA000', '123 Main St', 'Main Street', 'San Francisco', 'CA', '94101', 'US', 1000000.00, 'Technology', 250, 7372, 541511, 'A', 'DA', 'Interested in our enterprise solution', 0, 'New', '7', '2025-08-24 17:58:35', '7', '2025-08-24 17:59:17', 'IT', 'Manager'),
+(90, 'John Smith', 'John', 'Smith', 'IT Manager', 'TechNova Inc', 'https://technova.com', 'https://linkedin.com/in/johnsmith', 'https://linkedin.com/company/technova', '555-123-4567', '555-111-2222', 'john.smith@technova.com', 'EMA000', '123 Main St', 'Main Street', 'San Francisco', 'CA', '94101', 'US', 1000000.00, 'Technology', 250, 7372, 541511, 'A', 'DA', 'Interested in our enterprise solution', 0, 'New', '7', '2025-08-24 17:58:35', '7', '2025-08-24 17:59:17', 'IT', 'Manager');
 
 -- --------------------------------------------------------
 
@@ -668,7 +677,7 @@ ALTER TABLE `permission_roles`
 -- AUTO_INCREMENT for table `prospects`
 --
 ALTER TABLE `prospects`
-  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=91;
 
 --
 -- AUTO_INCREMENT for table `role_permissions`
