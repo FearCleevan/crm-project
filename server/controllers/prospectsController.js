@@ -1,7 +1,6 @@
-//src/controllers/prospectsController.js
 import pool from "../config/db.js";
 import { Readable } from "stream";
-import csv from 'csv-parser';
+import csv from "csv-parser";
 
 // Get all prospects with optional filtering
 export const getProspects = async (req, res) => {
@@ -67,9 +66,17 @@ export const getProspects = async (req, res) => {
 
     // Apply sorting
     const validSortColumns = [
-      "Fullname", "Jobtitle", "Company", "Email", "City", 
-      "State", "Country", "Industry", "Employeesize", 
-      "Status", "CreatedOn"
+      "Fullname",
+      "Jobtitle",
+      "Company",
+      "Email",
+      "City",
+      "State",
+      "Country",
+      "Industry",
+      "Employeesize",
+      "Status",
+      "CreatedOn",
     ];
     const sortColumn = validSortColumns.includes(sortBy) ? sortBy : "CreatedOn";
     const order = sortOrder.toUpperCase() === "ASC" ? "ASC" : "DESC";
@@ -176,10 +183,10 @@ export const createProspect = async (req, res) => {
       Comments,
       Department,
       Seniority,
-      Status,
+      Status
     } = req.body;
 
-    // Required fields validation
+    // Validate required fields
     if (!Fullname || !Email || !Company) {
       return res.status(400).json({
         success: false,
@@ -187,6 +194,47 @@ export const createProspect = async (req, res) => {
       });
     }
 
+    // Validate foreign keys if provided
+    if (Dispositioncode) {
+      const [dispositionCheck] = await pool.query(
+        "SELECT DispositionCode FROM prospects_disposition WHERE DispositionCode = ?",
+        [Dispositioncode]
+      );
+      if (dispositionCheck.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid Dispositioncode",
+        });
+      }
+    }
+
+    if (Emailcode) {
+      const [emailCheck] = await pool.query(
+        "SELECT EmailCode FROM prospects_email_status WHERE EmailCode = ?",
+        [Emailcode]
+      );
+      if (emailCheck.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid Emailcode",
+        });
+      }
+    }
+
+    if (Providercode) {
+      const [providerCheck] = await pool.query(
+        "SELECT ProviderCode FROM prospects_provider WHERE ProviderCode = ?",
+        [Providercode]
+      );
+      if (providerCheck.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid Providercode",
+        });
+      }
+    }
+
+    // Insert the new prospect
     const [result] = await pool.query(
       `
       INSERT INTO prospects (
@@ -194,39 +242,38 @@ export const createProspect = async (req, res) => {
         Personallinkedin, Companylinkedin, Altphonenumber, Companyphonenumber,
         Email, Emailcode, Address, Street, City, State, Postalcode, Country,
         Annualrevenue, Industry, Employeesize, Siccode, Naicscode,
-        Dispositioncode, Providercode, Comments, Department, Seniority, Status,
-        CreatedBy
+        Dispositioncode, Providercode, Comments, Department, Seniority, Status, CreatedBy
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `,
+      `,
       [
         Fullname,
-        Firstname,
-        Lastname,
-        Jobtitle,
+        Firstname || "",
+        Lastname || "",
+        Jobtitle || "",
         Company,
-        Website,
-        Personallinkedin,
-        Companylinkedin,
-        Altphonenumber,
-        Companyphonenumber,
+        Website || "",
+        Personallinkedin || "",
+        Companylinkedin || "",
+        Altphonenumber || "",
+        Companyphonenumber || "",
         Email,
-        Emailcode,
-        Address,
-        Street,
-        City,
-        State,
-        Postalcode,
-        Country,
+        Emailcode || null,
+        Address || "",
+        Street || "",
+        City || "",
+        State || "",
+        Postalcode || "",
+        Country || "",
         Annualrevenue || 0,
-        Industry,
+        Industry || "",
         Employeesize || 0,
         Siccode || 0,
         Naicscode || 0,
-        Dispositioncode,
-        Providercode,
-        Comments,
-        Department,
-        Seniority,
+        Dispositioncode || null,
+        Providercode || null,
+        Comments || "",
+        Department || "",
+        Seniority || "",
         Status || "New",
         req.user.userId,
       ]
@@ -263,6 +310,46 @@ export const updateProspect = async (req, res) => {
         success: false,
         error: "Prospect not found",
       });
+    }
+
+    // Validate foreign keys if provided
+    if (updates.Dispositioncode) {
+      const [dispositionCheck] = await pool.query(
+        "SELECT DispositionCode FROM prospects_disposition WHERE DispositionCode = ?",
+        [updates.Dispositioncode]
+      );
+      if (dispositionCheck.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid Dispositioncode",
+        });
+      }
+    }
+
+    if (updates.Emailcode) {
+      const [emailCheck] = await pool.query(
+        "SELECT EmailCode FROM prospects_email_status WHERE EmailCode = ?",
+        [updates.Emailcode]
+      );
+      if (emailCheck.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid Emailcode",
+        });
+      }
+    }
+
+    if (updates.Providercode) {
+      const [providerCheck] = await pool.query(
+        "SELECT ProviderCode FROM prospects_provider WHERE ProviderCode = ?",
+        [updates.Providercode]
+      );
+      if (providerCheck.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid Providercode",
+        });
+      }
     }
 
     // Build dynamic update query
@@ -443,6 +530,84 @@ export const exportProspects = async (req, res) => {
   }
 };
 
+// Download CSV template
+export const downloadCSVTemplate = async (req, res) => {
+  try {
+    // Get valid values from reference tables
+    const [validDispositions] = await pool.query(
+      "SELECT DispositionCode FROM prospects_disposition LIMIT 5"
+    );
+    const [validEmailStatuses] = await pool.query(
+      "SELECT EmailCode FROM prospects_email_status LIMIT 3"
+    );
+    const [validProviders] = await pool.query(
+      "SELECT ProviderCode FROM prospects_provider LIMIT 3"
+    );
+
+    const templateData = [
+      {
+        Fullname: "John Smith",
+        Firstname: "John",
+        Lastname: "Smith",
+        Jobtitle: "IT Manager",
+        Company: "TechNova Inc",
+        Website: "https://technova.com",
+        Personallinkedin: "https://linkedin.com/in/johnsmith",
+        Companylinkedin: "https://linkedin.com/company/technova",
+        Altphonenumber: "555-123-4567",
+        Companyphonenumber: "555-111-2222",
+        Email: "john.smith@technova.com",
+        Emailcode: validEmailStatuses[0]?.EmailCode || "EMA000",
+        Address: "123 Main St",
+        Street: "Main Street",
+        City: "San Francisco",
+        State: "CA",
+        Postalcode: "94101",
+        Country: "US",
+        Annualrevenue: "1000000.00",
+        Industry: "Technology",
+        Employeesize: "250",
+        Siccode: "7372",
+        Naicscode: "541511",
+        Dispositioncode: validDispositions[0]?.DispositionCode || "DISC001",
+        Providercode: validProviders[0]?.ProviderCode || "PROV01",
+        Comments: "Interested in our enterprise solution",
+        Department: "IT",
+        Seniority: "Manager",
+        Status: "New",
+      },
+    ];
+
+    const headers = Object.keys(templateData[0]).join(",");
+    const csvData = templateData
+      .map((prospect) =>
+        Object.values(prospect)
+          .map((value) => {
+            if (value === null || value === undefined) return '""';
+            const stringValue = String(value);
+            return `"${stringValue.replace(/"/g, '""')}"`;
+          })
+          .join(",")
+      )
+      .join("\n");
+
+    const csvContent = `${headers}\n${csvData}`;
+
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=prospects_import_template.csv`
+    );
+    res.send(csvContent);
+  } catch (error) {
+    console.error("Download template error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Internal server error",
+    });
+  }
+};
+
 // Import prospects from CSV
 export const importProspects = async (req, res) => {
   try {
@@ -452,6 +617,23 @@ export const importProspects = async (req, res) => {
         error: "CSV file is required",
       });
     }
+
+    // Get valid values from reference tables
+    const [validDispositions] = await pool.query(
+      "SELECT DispositionCode FROM prospects_disposition"
+    );
+    const [validEmailStatuses] = await pool.query(
+      "SELECT EmailCode FROM prospects_email_status"
+    );
+    const [validProviders] = await pool.query(
+      "SELECT ProviderCode FROM prospects_provider"
+    );
+
+    const validDispositionCodes = validDispositions.map(
+      (d) => d.DispositionCode
+    );
+    const validEmailCodes = validEmailStatuses.map((e) => e.EmailCode);
+    const validProviderCodes = validProviders.map((p) => p.ProviderCode);
 
     const csv = await import("csv-parser");
 
@@ -486,6 +668,30 @@ export const importProspects = async (req, res) => {
           continue;
         }
 
+        // Validate foreign key values - convert empty strings to null
+        const dispositionCode = row.Dispositioncode?.trim() || null;
+        const emailCode = row.Emailcode?.trim() || null;
+        const providerCode = row.Providercode?.trim() || null;
+
+        if (dispositionCode && !validDispositionCodes.includes(dispositionCode)) {
+          errors.push(
+            `Row ${index + 1}: Invalid Dispositioncode '${dispositionCode}'`
+          );
+          continue;
+        }
+
+        if (emailCode && !validEmailCodes.includes(emailCode)) {
+          errors.push(`Row ${index + 1}: Invalid Emailcode '${emailCode}'`);
+          continue;
+        }
+
+        if (providerCode && !validProviderCodes.includes(providerCode)) {
+          errors.push(
+            `Row ${index + 1}: Invalid Providercode '${providerCode}'`
+          );
+          continue;
+        }
+
         // Prepare prospect data
         const prospect = {
           Fullname: row.Fullname,
@@ -499,7 +705,7 @@ export const importProspects = async (req, res) => {
           Altphonenumber: row.Altphonenumber || "",
           Companyphonenumber: row.Companyphonenumber || "",
           Email: row.Email,
-          Emailcode: row.Emailcode || "",
+          Emailcode: emailCode,
           Address: row.Address || "",
           Street: row.Street || "",
           City: row.City || "",
@@ -511,8 +717,8 @@ export const importProspects = async (req, res) => {
           Employeesize: parseInt(row.Employeesize) || 0,
           Siccode: parseInt(row.Siccode) || 0,
           Naicscode: parseInt(row.Naicscode) || 0,
-          Dispositioncode: row.Dispositioncode || "",
-          Providercode: row.Providercode || "",
+          Dispositioncode: dispositionCode,
+          Providercode: providerCode,
           Comments: row.Comments || "",
           Department: row.Department || "",
           Seniority: row.Seniority || "",
@@ -526,39 +732,68 @@ export const importProspects = async (req, res) => {
       }
     }
 
-    // Insert prospects in batch
+    // Insert prospects one by one to handle errors individually
     if (importedProspects.length > 0) {
-      const values = importedProspects.map((p) => Object.values(p));
+      let successfulImports = 0;
+      const importErrors = [];
 
-      // Build the query with the correct number of placeholders
-      const placeholders = importedProspects
-        .map(
-          () =>
-            "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-        )
-        .join(",");
-
-      const query = `
-        INSERT INTO prospects (
-          Fullname, Firstname, Lastname, Jobtitle, Company, Website,
-          Personallinkedin, Companylinkedin, Altphonenumber, Companyphonenumber,
-          Email, Emailcode, Address, Street, City, State, Postalcode, Country,
-          Annualrevenue, Industry, Employeesize, Siccode, Naicscode,
-          Dispositioncode, Providercode, Comments, Department, Seniority, Status, CreatedBy
-        ) VALUES ${placeholders}
-      `;
-
-      // Flatten the values array
-      const flatValues = values.flat();
-
-      const [result] = await pool.query(query, flatValues);
+      for (const [index, prospect] of importedProspects.entries()) {
+        try {
+          const [result] = await pool.query(
+            `
+            INSERT INTO prospects (
+              Fullname, Firstname, Lastname, Jobtitle, Company, Website,
+              Personallinkedin, Companylinkedin, Altphonenumber, Companyphonenumber,
+              Email, Emailcode, Address, Street, City, State, Postalcode, Country,
+              Annualrevenue, Industry, Employeesize, Siccode, Naicscode,
+              Dispositioncode, Providercode, Comments, Department, Seniority, Status, CreatedBy
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `,
+            [
+              prospect.Fullname,
+              prospect.Firstname,
+              prospect.Lastname,
+              prospect.Jobtitle,
+              prospect.Company,
+              prospect.Website,
+              prospect.Personallinkedin,
+              prospect.Companylinkedin,
+              prospect.Altphonenumber,
+              prospect.Companyphonenumber,
+              prospect.Email,
+              prospect.Emailcode,
+              prospect.Address,
+              prospect.Street,
+              prospect.City,
+              prospect.State,
+              prospect.Postalcode,
+              prospect.Country,
+              prospect.Annualrevenue,
+              prospect.Industry,
+              prospect.Employeesize,
+              prospect.Siccode,
+              prospect.Naicscode,
+              prospect.Dispositioncode,
+              prospect.Providercode,
+              prospect.Comments,
+              prospect.Department,
+              prospect.Seniority,
+              prospect.Status,
+              prospect.CreatedBy,
+            ]
+          );
+          successfulImports++;
+        } catch (error) {
+          importErrors.push(`Row ${index + 1}: ${error.message}`);
+        }
+      }
 
       res.json({
         success: true,
-        message: `Successfully imported ${importedProspects.length} prospects`,
-        importedCount: importedProspects.length,
-        errorCount: errors.length,
-        errors: errors.length > 0 ? errors : undefined,
+        message: `Successfully imported ${successfulImports} out of ${importedProspects.length} prospects`,
+        importedCount: successfulImports,
+        errorCount: errors.length + importErrors.length,
+        errors: [...errors, ...importErrors],
       });
     } else {
       res.status(400).json({

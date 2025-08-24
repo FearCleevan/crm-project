@@ -272,7 +272,7 @@ const Prospects = () => {
         }
     };
 
-    // Update the handleImport function to use the backend
+    // Update the handleImport function in Prospects.js
     const handleImport = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -294,6 +294,11 @@ const Prospects = () => {
 
             if (data.success) {
                 showNotification(`Successfully imported ${data.importedCount} prospects`, 'success');
+                if (data.errors && data.errors.length > 0) {
+                    // Show detailed errors
+                    console.error('Import errors:', data.errors);
+                    showNotification(`Import completed with ${data.errors.length} errors. Check console for details.`, 'warning');
+                }
                 fetchProspects();
             } else {
                 showNotification(data.error || 'Import failed', 'error');
@@ -350,6 +355,34 @@ const Prospects = () => {
             month: 'short',
             day: 'numeric'
         });
+    };
+
+    const downloadTemplate = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch('/api/prospects/import/template', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.ok) {
+                const blob = await response.blob();
+                const downloadUrl = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = downloadUrl;
+                link.setAttribute('download', 'prospects_import_template.csv');
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                showNotification('Template downloaded successfully', 'success');
+            } else {
+                throw new Error('Failed to download template');
+            }
+        } catch (error) {
+            console.error('Download template error:', error);
+            showNotification('Failed to download template', 'error');
+        }
     };
 
     // Get unique values for filter dropdowns
@@ -465,6 +498,14 @@ const Prospects = () => {
                         >
                             <FiUser size={16} />
                             Add Prospect
+                        </button>
+
+                        <button
+                            className={styles.addButton}
+                            onClick={downloadTemplate}
+                        >
+                            <FiDownload size={16} />
+                            Download Template
                         </button>
 
                         <div className={styles.columnMenu}>

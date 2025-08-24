@@ -9,7 +9,8 @@ import {
   bulkDeleteProspects,
   exportProspects,
   importProspects,
-  getLookupData
+  getLookupData,
+  downloadCSVTemplate
 } from '../controllers/prospectsController.js';
 import multer from 'multer';
 
@@ -18,6 +19,9 @@ const router = express.Router();
 
 // All routes require authentication
 router.use(authMiddleware);
+
+// Template download route should come BEFORE parameterized routes
+router.get('/import/template', downloadCSVTemplate);
 
 // Get prospects with filtering and pagination
 router.get('/', getProspects);
