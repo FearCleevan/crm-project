@@ -64,69 +64,73 @@ const Prospects = () => {
     });
     const [notification, setNotification] = useState({ show: false, message: '', type: '' });
 
-    const [fixedColumns] = useState(['fullname', 'jobtitle', 'company']);
-
-    // Add function to fetch prospects from API
+    // Fetch prospects from API
     const fetchProspects = async () => {
         setLoading(true);
         try {
-            const response = await fetch('/api/prospects', {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`/api/prospects?page=${currentPage}&limit=${itemsPerPage}`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
                 }
             });
-            
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
             const data = await response.json();
-            
+
             if (data.success) {
-                setLeads(data.prospects);
+                setLeads(data.prospects || []);
             } else {
                 throw new Error(data.error || 'Failed to fetch prospects');
             }
         } catch (error) {
             console.error('Failed to fetch leads:', error);
-            showNotification('Failed to load prospects', 'error');
+            showNotification('Failed to load prospects: ' + error.message, 'error');
         } finally {
             setLoading(false);
         }
     };
 
-    // Add useEffect for fetching lookup data - FIXED ENDPOINT
-    useEffect(() => {
-        const fetchLookupData = async () => {
-            try {
-                const response = await fetch('/api/prospects/lookup/data', {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    }
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+    // Fetch lookup data
+    const fetchLookupData = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch('/api/prospects/lookup/data', {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
                 }
-                
-                const data = await response.json();
-                if (data.success) {
-                    setLookupData(data.data);
-                } else {
-                    throw new Error(data.error || 'Failed to fetch lookup data');
-                }
-            } catch (error) {
-                console.error('Error fetching lookup data:', error);
-                showNotification('Failed to load dropdown data', 'error');
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
-        };
 
+            const data = await response.json();
+            if (data.success) {
+                setLookupData(data.data);
+            } else {
+                throw new Error(data.error || 'Failed to fetch lookup data');
+            }
+        } catch (error) {
+            console.error('Error fetching lookup data:', error);
+            showNotification('Failed to load dropdown data: ' + error.message, 'error');
+        }
+    };
+
+    useEffect(() => {
         fetchLookupData();
-        fetchProspects(); // Fetch prospects on component mount
-    }, []);
+        fetchProspects();
+    }, [currentPage, itemsPerPage]);
 
-    // Filter leads based on search term and filters
+    // Filter and sort logic
     const filteredLeads = useMemo(() => {
-        if (!leads.length) return [];
-
         return leads.filter(lead => {
-            const matchesSearch =
+            const matchesSearch = searchTerm === '' ||
                 (lead.Fullname && lead.Fullname.toLowerCase().includes(searchTerm.toLowerCase())) ||
                 (lead.Jobtitle && lead.Jobtitle.toLowerCase().includes(searchTerm.toLowerCase())) ||
                 (lead.Company && lead.Company.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -147,7 +151,7 @@ const Prospects = () => {
         return [...filteredLeads].sort((a, b) => {
             const aValue = a[sortConfig.key] || '';
             const bValue = b[sortConfig.key] || '';
-            
+
             if (aValue < bValue) {
                 return sortConfig.direction === 'ascending' ? -1 : 1;
             }
@@ -208,9 +212,9 @@ const Prospects = () => {
                             },
                             body: JSON.stringify({ ids: selectedLeads })
                         });
-                        
+
                         const data = await response.json();
-                        
+
                         if (data.success) {
                             showNotification(`${data.message}`, 'success');
                             fetchProspects(); // Refresh the list
@@ -237,13 +241,14 @@ const Prospects = () => {
     // Update the exportToCSV function to use the backend
     const exportToCSV = async (leadIds = []) => {
         try {
+            const token = localStorage.getItem('token');
             const url = leadIds.length > 0
                 ? `/api/prospects/export/csv?ids=${leadIds.join(',')}`
                 : '/api/prospects/export/csv';
 
             const response = await fetch(url, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${token}`
                 }
             });
 
@@ -256,7 +261,6 @@ const Prospects = () => {
                 document.body.appendChild(link);
                 link.click();
                 link.remove();
-
                 showNotification(`Exported ${leadIds.length || filteredLeads.length} prospects successfully`, 'success');
             } else {
                 const errorData = await response.json();
@@ -277,10 +281,11 @@ const Prospects = () => {
         formData.append('file', file);
 
         try {
+            const token = localStorage.getItem('token');
             const response = await fetch('/api/prospects/import/csv', {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${token}`
                 },
                 body: formData
             });
@@ -289,7 +294,6 @@ const Prospects = () => {
 
             if (data.success) {
                 showNotification(`Successfully imported ${data.importedCount} prospects`, 'success');
-                // Refresh the prospects list
                 fetchProspects();
             } else {
                 showNotification(data.error || 'Import failed', 'error');
@@ -298,19 +302,19 @@ const Prospects = () => {
             console.error('Import error:', error);
             showNotification('Failed to import prospects', 'error');
         }
-        
-        // Reset the file input
+
         e.target.value = '';
     };
 
-    // Add function to handle creating new prospect
+    // Handle creating new prospect
     const handleCreateProspect = async (prospectData) => {
         try {
+            const token = localStorage.getItem('token');
             const response = await fetch('/api/prospects', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify(prospectData)
             });
@@ -319,7 +323,6 @@ const Prospects = () => {
 
             if (data.success) {
                 showNotification('Prospect created successfully', 'success');
-                // Refresh the prospects list
                 fetchProspects();
                 return true;
             } else {
@@ -332,7 +335,7 @@ const Prospects = () => {
         }
     };
 
-    // Add notification function
+    // Notification function
     const showNotification = (message, type) => {
         setNotification({ show: true, message, type });
         setTimeout(() => {

@@ -1,4 +1,7 @@
+//src/controllers/prospectsController.js
 import pool from "../config/db.js";
+import { Readable } from "stream";
+import csv from 'csv-parser';
 
 // Get all prospects with optional filtering
 export const getProspects = async (req, res) => {
@@ -64,15 +67,9 @@ export const getProspects = async (req, res) => {
 
     // Apply sorting
     const validSortColumns = [
-      "Fullname",
-      "Company",
-      "Email",
-      "CreatedOn",
-      "Status",
-      "Industry",
-      "Country",
-      "City",
-      "State"
+      "Fullname", "Jobtitle", "Company", "Email", "City", 
+      "State", "Country", "Industry", "Employeesize", 
+      "Status", "CreatedOn"
     ];
     const sortColumn = validSortColumns.includes(sortBy) ? sortBy : "CreatedOn";
     const order = sortOrder.toUpperCase() === "ASC" ? "ASC" : "DESC";
@@ -230,7 +227,7 @@ export const createProspect = async (req, res) => {
         Comments,
         Department,
         Seniority,
-        Status || 'New',
+        Status || "New",
         req.user.userId,
       ]
     );
@@ -291,7 +288,9 @@ export const updateProspect = async (req, res) => {
 
     const query = `
       UPDATE prospects 
-      SET ${updateFields.join(", ")}, UpdatedBy = ?, UpdatedOn = CURRENT_TIMESTAMP
+      SET ${updateFields.join(
+        ", "
+      )}, UpdatedBy = ?, UpdatedOn = CURRENT_TIMESTAMP
       WHERE id = ?
     `;
 
@@ -389,7 +388,8 @@ export const exportProspects = async (req, res) => {
         Personallinkedin, Companylinkedin, Altphonenumber, Companyphonenumber,
         Email, Emailcode, Address, Street, City, State, Postalcode, Country,
         Annualrevenue, Industry, Employeesize, Siccode, Naicscode,
-        Dispositioncode, Providercode, Comments, Department, Seniority, Status
+        Dispositioncode, Providercode, Comments, Department, Seniority, Status,
+        CreatedOn
       FROM prospects 
       WHERE isactive = 1
     `;
@@ -429,7 +429,9 @@ export const exportProspects = async (req, res) => {
     res.setHeader("Content-Type", "text/csv");
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename=prospects_export_${new Date().toISOString().split('T')[0]}.csv`
+      `attachment; filename=prospects_export_${
+        new Date().toISOString().split("T")[0]
+      }.csv`
     );
     res.send(csvContent);
   } catch (error) {
@@ -451,21 +453,23 @@ export const importProspects = async (req, res) => {
       });
     }
 
-    const csv = await import('csv-parser');
-    const { Readable } = await import('stream');
-    
+    const csv = await import("csv-parser");
+
     const results = [];
     const errors = [];
 
     // Parse CSV from buffer
     const stream = Readable.from(req.file.buffer.toString());
-    
+
     await new Promise((resolve, reject) => {
       stream
         .pipe(csv.default())
-        .on('data', (data) => results.push(data))
-        .on('end', resolve)
-        .on('error', reject);
+        .on("data", (data) => results.push(data))
+        .on("end", resolve)
+        .on("error", (error) => {
+          console.error("CSV parsing error:", error);
+          reject(error);
+        });
     });
 
     const importedProspects = [];
@@ -475,7 +479,9 @@ export const importProspects = async (req, res) => {
         // Validate required fields
         if (!row.Fullname || !row.Email || !row.Company) {
           errors.push(
-            `Row ${index + 1}: Missing required fields (Fullname, Email, or Company)`
+            `Row ${
+              index + 1
+            }: Missing required fields (Fullname, Email, or Company)`
           );
           continue;
         }
@@ -523,12 +529,15 @@ export const importProspects = async (req, res) => {
     // Insert prospects in batch
     if (importedProspects.length > 0) {
       const values = importedProspects.map((p) => Object.values(p));
-      
+
       // Build the query with the correct number of placeholders
-      const placeholders = importedProspects.map(() => 
-        '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
-      ).join(',');
-      
+      const placeholders = importedProspects
+        .map(
+          () =>
+            "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        )
+        .join(",");
+
       const query = `
         INSERT INTO prospects (
           Fullname, Firstname, Lastname, Jobtitle, Company, Website,
@@ -538,10 +547,10 @@ export const importProspects = async (req, res) => {
           Dispositioncode, Providercode, Comments, Department, Seniority, Status, CreatedBy
         ) VALUES ${placeholders}
       `;
-      
+
       // Flatten the values array
       const flatValues = values.flat();
-      
+
       const [result] = await pool.query(query, flatValues);
 
       res.json({
@@ -582,13 +591,13 @@ export const getLookupData = async (req, res) => {
 
     // Get unique values for filters
     const [industriesResult] = await pool.query(
-      'SELECT DISTINCT Industry FROM prospects WHERE Industry IS NOT NULL AND Industry != "" ORDER BY Industry'
+      "SELECT DISTINCT Industry FROM prospects WHERE Industry IS NOT NULL AND Industry != '' ORDER BY Industry"
     );
     const [countriesResult] = await pool.query(
-      'SELECT DISTINCT Country FROM prospects WHERE Country IS NOT NULL AND Country != "" ORDER BY Country'
+      "SELECT DISTINCT Country FROM prospects WHERE Country IS NOT NULL AND Country != '' ORDER BY Country"
     );
     const [statusesResult] = await pool.query(
-      'SELECT DISTINCT Status FROM prospects WHERE Status IS NOT NULL AND Status != "" ORDER BY Status'
+      "SELECT DISTINCT Status FROM prospects WHERE Status IS NOT NULL AND Status != '' ORDER BY Status"
     );
 
     const industries = industriesResult.map((i) => i.Industry);

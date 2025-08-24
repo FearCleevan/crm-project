@@ -11,21 +11,9 @@ import {
   importProspects,
   getLookupData
 } from '../controllers/prospectsController.js';
+import multer from 'multer';
 
-// Import multer using dynamic import
-let multer;
-let upload;
-
-(async () => {
-  try {
-    const multerModule = await import('multer');
-    multer = multerModule.default;
-    upload = multer({ storage: multerModule.default.memoryStorage() });
-  } catch (error) {
-    console.error('Failed to load multer:', error);
-  }
-})();
-
+const upload = multer({ storage: multer.memoryStorage() });
 const router = express.Router();
 
 // All routes require authentication
@@ -53,35 +41,9 @@ router.post('/bulk-delete', bulkDeleteProspects);
 router.get('/export/csv', exportProspects);
 
 // Import prospects
-router.post('/import/csv', (req, res, next) => {
-  if (!upload) {
-    return res.status(500).json({
-      success: false,
-      error: 'File upload functionality not available'
-    });
-  }
-  
-  // Use multer to handle file upload
-  upload.single('file')(req, res, (err) => {
-    if (err) {
-      return res.status(400).json({
-        success: false,
-        error: 'File upload failed: ' + err.message
-      });
-    }
-    
-    if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        error: 'No file uploaded'
-      });
-    }
-    
-    importProspects(req, res, next);
-  });
-});
+router.post('/import/csv', upload.single('file'), importProspects);
 
-// Get lookup data - FIXED ENDPOINT
+// Get lookup data
 router.get('/lookup/data', getLookupData);
 
 export default router;

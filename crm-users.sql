@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 21, 2025 at 01:19 PM
+-- Generation Time: Aug 24, 2025 at 07:28 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -55,9 +55,11 @@ INSERT INTO `crm-users` (`user_id`, `first_name`, `middle_name`, `last_name`, `p
 (1, 'John', 'A', 'Smith', NULL, '1985-06-15', '+1234567890', '123 Main St, Anytown, USA', 'IT Admin', 'john.smith@example.com', 'jsmith', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', NULL, '{\"admin\": true, \"reports\": true, \"users\": true}', '2025-08-17 23:53:51', '2025-08-17 23:53:51', NULL),
 (2, 'Sarah', 'M', 'Johnson', NULL, '1990-11-22', '+1987654321', '456 Oak Ave, Somewhere, USA', 'Data Analyst', 'sarah.johnson@example.com', 'sjohnson', '$2b$12$Q4kqwcjt6mkgf2TFZ0u5velVLW6N7JWEzKR.prbU5jN8ZdRhYEVW6', NULL, '{\"admin\": false, \"reports\": true, \"users\": false}', '2025-08-17 23:53:51', '2025-08-21 02:22:11', NULL),
 (3, 'Michael', 'T', 'Williams', NULL, '1988-03-08', '+1122334455', '789 Pine Rd, Nowhere, USA', 'Data Analyst', 'michael.williams@example.com', 'mwilliams', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', NULL, '{\"admin\": false, \"reports\": true, \"users\": false}', '2025-08-17 23:53:51', '2025-08-17 23:53:51', NULL),
-(6, 'Peter Paul', 'Abillar', 'Lazan', NULL, '2000-01-02', '09515785632', 'MATINA APLAYA, DAVAO CITY', 'IT Admin', 'fearcleevan123@gmail.com', 'fearcleevan', '$2b$12$smk1Q1JDiYp.T97u6Ch7IuYSQpf1Cb69svpLhxtaL7g88YGaKWxBa', NULL, NULL, '2025-08-20 02:11:10', '2025-08-20 02:11:10', NULL),
+(6, 'Peter Paul', 'Abillar', 'Lazan', NULL, '2000-01-02', '09515785632', 'MATINA APLAYA, DAVAO CITY', 'IT Admin', 'fearcleevan123@gmail.com', 'fearcleevan', '$2b$12$qM0/Rkz4IOLOdIeZljauiuzx4OfCrGmKNwNuvS7O/FBgVYSCV3S2e', NULL, NULL, '2025-08-20 02:11:10', '2025-08-23 16:09:44', NULL),
 (7, 'Fear', 'Clee', 'Van', NULL, '2003-02-23', '09515785632', '93 Sample St., Barangay Example', 'IT Admin', 'jonathan.mauring17@gmail.com', 'FearCleevan123', '$2b$12$Ei1eMCz06JFD65jY.SPzWu8b.WESQWLOBTsP7HYdgmgw5i9ssIeH6', NULL, NULL, '2025-08-20 11:02:33', '2025-08-20 11:28:43', NULL),
-(8, 'KC Mae', 'Abellar', 'Lazan', NULL, '2000-02-05', '09515785632', '57 Sample St., Barangay Example', 'Data Analyst', 'kc@gmail.com', 'kcmae', '$2b$12$YfQCMX8.XUi4TnDC5QaQw.B2Tb4wbC28kyOeuJ0kMx93DxeroVHSu', NULL, NULL, '2025-08-20 11:37:32', '2025-08-20 11:37:32', NULL);
+(8, 'KC Mae', 'Abellar', 'Lazan', NULL, '2000-02-05', '09515785632', '57 Sample St., Barangay Example', 'Data Analyst', 'kc@gmail.com', 'kcmae', '$2b$12$YfQCMX8.XUi4TnDC5QaQw.B2Tb4wbC28kyOeuJ0kMx93DxeroVHSu', NULL, NULL, '2025-08-20 11:37:32', '2025-08-20 11:37:32', NULL),
+(9, 'Janvie', 'D.', 'Bayot', NULL, '2000-12-12', '09515785632', 'UNIT #3 BLDG13 2ND FLOOR LTG- Y12 Beside BDO BLDG,KM 9 SASA DOÑA PILAR DAVAO CITY, Davao City, Phili', 'IT Admin', 'janvie@bayot.com', 'janviebayot', '$2b$12$3fytgknUq4R7qFqVCA.OpOZixL1/pN6Zqhuzlna0liDbMwEZjq7am', NULL, NULL, '2025-08-21 11:23:59', '2025-08-21 11:23:59', NULL),
+(10, 'Mecah', 'D.', 'Secad', NULL, '2003-02-25', '09515379127', '93 Sample St., Barangay Example', 'IT Admin', 'mecah@gmail.com', 'mecahpeter', '$2b$12$HUhxWoIe6RC8VVvrBEqtreuibwsuBsVj3vU.ZWyu7er5/8fX5z44a', NULL, NULL, '2025-08-22 03:01:42', '2025-08-22 03:01:42', NULL);
 
 -- --------------------------------------------------------
 
@@ -173,6 +175,237 @@ INSERT INTO `permission_roles` (`role_id`, `role_name`, `description`, `is_syste
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `prospects`
+--
+
+CREATE TABLE `prospects` (
+  `id` bigint(20) NOT NULL,
+  `Fullname` varchar(500) DEFAULT NULL,
+  `Firstname` varchar(500) DEFAULT NULL,
+  `Lastname` varchar(500) DEFAULT NULL,
+  `Jobtitle` varchar(500) DEFAULT NULL,
+  `Company` varchar(500) DEFAULT NULL,
+  `Website` varchar(500) DEFAULT NULL,
+  `Personallinkedin` varchar(500) DEFAULT NULL,
+  `Companylinkedin` varchar(500) DEFAULT NULL,
+  `Altphonenumber` varchar(500) DEFAULT '0',
+  `Companyphonenumber` varchar(500) DEFAULT '0',
+  `Email` varchar(500) DEFAULT NULL,
+  `Emailcode` varchar(50) DEFAULT NULL,
+  `Address` varchar(500) DEFAULT NULL,
+  `Street` varchar(500) DEFAULT NULL,
+  `City` varchar(500) DEFAULT NULL,
+  `State` varchar(500) DEFAULT NULL,
+  `Postalcode` varchar(500) DEFAULT NULL,
+  `Country` varchar(500) DEFAULT NULL,
+  `Annualrevenue` decimal(15,2) DEFAULT 0.00,
+  `Industry` varchar(500) DEFAULT NULL,
+  `Employeesize` int(11) DEFAULT 0,
+  `Siccode` int(11) DEFAULT 0,
+  `Naicscode` int(11) DEFAULT 0,
+  `Dispositioncode` varchar(50) DEFAULT NULL,
+  `Providercode` varchar(50) DEFAULT NULL,
+  `Comments` text DEFAULT NULL,
+  `isactive` tinyint(1) DEFAULT 1,
+  `Status` varchar(50) DEFAULT 'New',
+  `CreatedBy` varchar(50) DEFAULT 'SYSTEM',
+  `CreatedOn` datetime NOT NULL DEFAULT current_timestamp(),
+  `UpdatedBy` varchar(50) DEFAULT NULL,
+  `UpdatedOn` datetime DEFAULT NULL ON UPDATE current_timestamp(),
+  `Department` varchar(500) DEFAULT NULL,
+  `Seniority` varchar(500) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `prospects`
+--
+
+INSERT INTO `prospects` (`id`, `Fullname`, `Firstname`, `Lastname`, `Jobtitle`, `Company`, `Website`, `Personallinkedin`, `Companylinkedin`, `Altphonenumber`, `Companyphonenumber`, `Email`, `Emailcode`, `Address`, `Street`, `City`, `State`, `Postalcode`, `Country`, `Annualrevenue`, `Industry`, `Employeesize`, `Siccode`, `Naicscode`, `Dispositioncode`, `Providercode`, `Comments`, `isactive`, `Status`, `CreatedBy`, `CreatedOn`, `UpdatedBy`, `UpdatedOn`, `Department`, `Seniority`) VALUES
+(1, 'John Smith', 'John', 'Smith', 'IT Manager', 'TechNova Inc', NULL, NULL, NULL, '0', '555-111-2222', 'john.smith@technova.com', NULL, NULL, NULL, 'San Francisco', 'CA', NULL, 'US', 0.00, 'TECH', 250, 0, 0, NULL, NULL, NULL, 1, 'New', 'SYSTEM', '2025-08-24 12:45:15', NULL, NULL, 'IT', 'Manager'),
+(2, 'Sarah Johnson', 'Sarah', 'Johnson', 'Marketing Director', 'BrandSphere', NULL, NULL, NULL, '0', '555-333-4444', 's.johnson@brandsphere.io', NULL, NULL, NULL, 'New York', 'NY', NULL, 'US', 0.00, 'MEDIA', 120, 0, 0, NULL, NULL, NULL, 1, 'Contacted', 'SYSTEM', '2025-08-24 12:45:15', NULL, NULL, 'Marketing', 'Director'),
+(3, 'David Lee', 'David', 'Lee', 'CFO', 'FinTrust Corp', NULL, NULL, NULL, '0', '555-222-8888', 'david.lee@fintrust.com', NULL, NULL, NULL, 'Chicago', 'IL', NULL, 'US', 0.00, 'FIN', 500, 0, 0, NULL, NULL, NULL, 1, 'Qualified', 'SYSTEM', '2025-08-24 12:45:15', NULL, NULL, 'Finance', 'Executive'),
+(4, 'Emily Davis', 'Emily', 'Davis', 'HR Director', 'PeopleFirst Ltd', NULL, NULL, NULL, '0', '555-444-5555', 'emily.davis@peoplefirst.com', NULL, NULL, NULL, 'Boston', 'MA', NULL, 'US', 0.00, 'CONSULT', 75, 0, 0, NULL, NULL, NULL, 1, 'Proposal', 'SYSTEM', '2025-08-24 12:45:15', NULL, NULL, 'HR', 'Director'),
+(5, 'Michael Brown', 'Michael', 'Brown', 'CEO', 'NextStack LLC', NULL, NULL, NULL, '0', '555-555-6666', 'michael.brown@nextstack.com', NULL, NULL, NULL, 'Austin', 'TX', NULL, 'US', 0.00, 'TECH', 350, 0, 0, NULL, NULL, NULL, 1, 'Closed', 'SYSTEM', '2025-08-24 12:45:15', NULL, NULL, 'Executive', 'CEO'),
+(6, 'John Smith', 'John', 'Smith', 'IT Manager', 'TechNova Inc', NULL, NULL, NULL, '0', '555-111-2222', 'john.smith@technova.com', NULL, NULL, NULL, 'San Francisco', 'CA', NULL, 'USA', 0.00, 'Technology', 250, 0, 0, NULL, NULL, NULL, 1, 'New', 'SYSTEM', '2025-08-24 13:11:59', NULL, NULL, 'IT', 'Manager'),
+(7, 'Sarah Johnson', 'Sarah', 'Johnson', 'Marketing Director', 'BrandSphere', NULL, NULL, NULL, '0', '555-333-4444', 's.johnson@brandsphere.io', NULL, NULL, NULL, 'New York', 'NY', NULL, 'USA', 0.00, 'Marketing', 120, 0, 0, NULL, NULL, NULL, 1, 'Contacted', 'SYSTEM', '2025-08-24 13:11:59', NULL, NULL, 'Marketing', 'Director'),
+(8, 'David Lee', 'David', 'Lee', 'CFO', 'FinTrust Corp', NULL, NULL, NULL, '0', '555-222-8888', 'david.lee@fintrust.com', NULL, NULL, NULL, 'Chicago', 'IL', NULL, 'USA', 0.00, 'Finance', 500, 0, 0, NULL, NULL, NULL, 1, 'Qualified', 'SYSTEM', '2025-08-24 13:11:59', NULL, NULL, 'Finance', 'Executive'),
+(9, 'Emily Davis', 'Emily', 'Davis', 'HR Director', 'PeopleFirst Ltd', NULL, NULL, NULL, '0', '555-444-5555', 'emily.davis@peoplefirst.com', NULL, NULL, NULL, 'Boston', 'MA', NULL, 'USA', 0.00, 'Human Resources', 75, 0, 0, NULL, NULL, NULL, 1, 'Proposal', 'SYSTEM', '2025-08-24 13:11:59', NULL, NULL, 'HR', 'Director'),
+(10, 'Michael Brown', 'Michael', 'Brown', 'CEO', 'NextStack LLC', NULL, NULL, NULL, '0', '555-555-6666', 'michael.brown@nextstack.com', NULL, NULL, NULL, 'Austin', 'TX', NULL, 'USA', 0.00, 'Software', 350, 0, 0, NULL, NULL, NULL, 1, 'Closed', 'SYSTEM', '2025-08-24 13:11:59', NULL, NULL, 'Executive', 'CEO');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `prospects_country`
+--
+
+CREATE TABLE `prospects_country` (
+  `CountryCode` varchar(5) NOT NULL,
+  `CountryName` varchar(100) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `prospects_country`
+--
+
+INSERT INTO `prospects_country` (`CountryCode`, `CountryName`) VALUES
+('AU', 'Australia'),
+('BR', 'Brazil'),
+('CA', 'Canada'),
+('CH', 'Switzerland'),
+('CN', 'China'),
+('DE', 'Germany'),
+('ES', 'Spain'),
+('FR', 'France'),
+('IN', 'India'),
+('IT', 'Italy'),
+('JP', 'Japan'),
+('KR', 'South Korea'),
+('MX', 'Mexico'),
+('NL', 'Netherlands'),
+('NO', 'Norway'),
+('RU', 'Russia'),
+('SE', 'Sweden'),
+('SG', 'Singapore'),
+('UK', 'United Kingdom'),
+('US', 'United States');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `prospects_disposition`
+--
+
+CREATE TABLE `prospects_disposition` (
+  `DispositionCode` varchar(50) NOT NULL,
+  `DispositionName` varchar(191) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `prospects_disposition`
+--
+
+INSERT INTO `prospects_disposition` (`DispositionCode`, `DispositionName`) VALUES
+('A', 'Answering Machine'),
+('APPT', 'Appointment'),
+('B', 'Busy'),
+('CA', 'Cadence'),
+('CALLBK', 'Call Back'),
+('CNA', 'Customer not available'),
+('CR', 'Changed Role'),
+('DAIR', 'Dead Air'),
+('DC', 'Disconnected Number'),
+('DEC', 'Declined Sale'),
+('DISC001', 'Interested'),
+('DISC002', 'Requested Information'),
+('DISC003', 'Needs Pricing'),
+('DISC004', 'Follow-up Required'),
+('DISC005', 'Not Interested'),
+('DNC', 'DO NOT CALL'),
+('HU', 'Hang UP'),
+('LB', 'Language Barrier'),
+('N', 'No Answer'),
+('NEW', 'New Prospect'),
+('NI', 'Not Interested'),
+('NP', 'No Pitch No Price'),
+('NQ', 'Not Qualified'),
+('RFI', 'Requested for INFO'),
+('SALE', 'Sale Made'),
+('VM', 'Voicemail'),
+('WN', 'Wrong Number'),
+('XFER', 'Call Transferred');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `prospects_email_status`
+--
+
+CREATE TABLE `prospects_email_status` (
+  `EmailCode` varchar(50) NOT NULL,
+  `EmailName` varchar(50) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `prospects_email_status`
+--
+
+INSERT INTO `prospects_email_status` (`EmailCode`, `EmailName`) VALUES
+('EMA000', 'Good'),
+('EMA001', 'Bad'),
+('EMA002', 'Invalid'),
+('EMA003', 'Bounced'),
+('EMA004', 'Unverified');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `prospects_industry`
+--
+
+CREATE TABLE `prospects_industry` (
+  `IndustryCode` varchar(50) NOT NULL,
+  `IndustryName` varchar(100) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `prospects_industry`
+--
+
+INSERT INTO `prospects_industry` (`IndustryCode`, `IndustryName`) VALUES
+('AGRI', 'Agriculture'),
+('AUTO', 'Automotive'),
+('BIOTECH', 'Biotechnology'),
+('CONS', 'Construction'),
+('CONSULT', 'Consulting'),
+('EDU', 'Education'),
+('ENERGY', 'Energy'),
+('FIN', 'Finance'),
+('GOV', 'Government'),
+('HLTH', 'Healthcare'),
+('HOSP', 'Hospitality'),
+('INS', 'Insurance'),
+('LEGAL', 'Legal Services'),
+('MEDIA', 'Media & Entertainment'),
+('MFG', 'Manufacturing'),
+('NONPROF', 'Non-Profit'),
+('PHARMA', 'Pharmaceuticals'),
+('RE', 'Real Estate'),
+('RET', 'Retail'),
+('TECH', 'Technology'),
+('TELECOM', 'Telecommunications'),
+('TRANS', 'Transportation');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `prospects_provider`
+--
+
+CREATE TABLE `prospects_provider` (
+  `ProviderCode` varchar(50) NOT NULL,
+  `ProviderName` varchar(50) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `prospects_provider`
+--
+
+INSERT INTO `prospects_provider` (`ProviderCode`, `ProviderName`) VALUES
+('DA', 'Apollo.io'),
+('HS', 'HubSpot'),
+('LH', 'LinkedIn Helper'),
+('PROV01', 'LinkedIn'),
+('PROV02', 'Website Form'),
+('PROV03', 'Referral'),
+('PROV04', 'Trade Show'),
+('PROV05', 'Cold Call'),
+('SG', 'Seamless.ai'),
+('VICI', 'Vici.com'),
+('ZO', 'ZoomInfo');
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `role_permissions`
 --
 
@@ -258,7 +491,7 @@ CREATE TABLE `user_requests` (
 --
 
 INSERT INTO `user_requests` (`request_id`, `first_name`, `last_name`, `email`, `username`, `request_type`, `status`, `message`, `submitted_at`, `completed_at`, `admin_notes`) VALUES
-(1, 'PETER PAUL', 'LAZAN', 'fearcleevan123@gmail.com', 'fearcleevan', 'password_reset', 'pending', 'Password reset requested', '2025-08-21 01:58:13', NULL, NULL),
+(1, 'PETER PAUL', 'LAZAN', 'fearcleevan123@gmail.com', 'fearcleevan', 'password_reset', 'completed', 'Password reset requested', '2025-08-21 01:58:13', '2025-08-23 16:09:44', 'Password reset completed'),
 (2, 'Sarah', 'Johnson', 'sarah.johnson@example.com', 'sjohnson', 'password_reset', 'completed', 'Password reset requested', '2025-08-21 02:01:20', '2025-08-21 02:22:11', 'Password reset completed');
 
 -- --------------------------------------------------------
@@ -284,10 +517,13 @@ INSERT INTO `user_roles` (`user_role_id`, `user_id`, `role_id`) VALUES
 (15, 3, 2),
 (17, 3, 3),
 (16, 3, 4),
-(24, 7, 1),
-(18, 8, 2),
-(20, 8, 3),
-(19, 8, 4);
+(29, 7, 1),
+(31, 7, 3),
+(30, 7, 4),
+(35, 8, 2),
+(32, 9, 1),
+(34, 9, 3),
+(33, 9, 4);
 
 --
 -- Indexes for dumped tables
@@ -323,6 +559,58 @@ ALTER TABLE `permission_roles`
   ADD UNIQUE KEY `role_name` (`role_name`);
 
 --
+-- Indexes for table `prospects`
+--
+ALTER TABLE `prospects`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_prospects_email` (`Email`),
+  ADD KEY `idx_prospects_company` (`Company`),
+  ADD KEY `idx_prospects_status` (`Status`),
+  ADD KEY `idx_prospects_industry` (`Industry`),
+  ADD KEY `idx_prospects_country` (`Country`),
+  ADD KEY `idx_prospects_createdon` (`CreatedOn`),
+  ADD KEY `idx_prospects_isactive` (`isactive`),
+  ADD KEY `fk_prospects_disposition` (`Dispositioncode`),
+  ADD KEY `fk_prospects_email_status` (`Emailcode`),
+  ADD KEY `fk_prospects_provider` (`Providercode`),
+  ADD KEY `idx_prospects_fullname` (`Fullname`),
+  ADD KEY `idx_prospects_jobtitle` (`Jobtitle`),
+  ADD KEY `idx_prospects_city` (`City`),
+  ADD KEY `idx_prospects_state` (`State`),
+  ADD KEY `idx_prospects_employeesize` (`Employeesize`),
+  ADD KEY `idx_prospects_createdby` (`CreatedBy`);
+
+--
+-- Indexes for table `prospects_country`
+--
+ALTER TABLE `prospects_country`
+  ADD PRIMARY KEY (`CountryCode`);
+
+--
+-- Indexes for table `prospects_disposition`
+--
+ALTER TABLE `prospects_disposition`
+  ADD PRIMARY KEY (`DispositionCode`);
+
+--
+-- Indexes for table `prospects_email_status`
+--
+ALTER TABLE `prospects_email_status`
+  ADD PRIMARY KEY (`EmailCode`);
+
+--
+-- Indexes for table `prospects_industry`
+--
+ALTER TABLE `prospects_industry`
+  ADD PRIMARY KEY (`IndustryCode`);
+
+--
+-- Indexes for table `prospects_provider`
+--
+ALTER TABLE `prospects_provider`
+  ADD PRIMARY KEY (`ProviderCode`);
+
+--
 -- Indexes for table `role_permissions`
 --
 ALTER TABLE `role_permissions`
@@ -356,7 +644,7 @@ ALTER TABLE `user_roles`
 -- AUTO_INCREMENT for table `crm-users`
 --
 ALTER TABLE `crm-users`
-  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `permissions`
@@ -377,6 +665,12 @@ ALTER TABLE `permission_roles`
   MODIFY `role_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
+-- AUTO_INCREMENT for table `prospects`
+--
+ALTER TABLE `prospects`
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+
+--
 -- AUTO_INCREMENT for table `role_permissions`
 --
 ALTER TABLE `role_permissions`
@@ -392,7 +686,7 @@ ALTER TABLE `user_requests`
 -- AUTO_INCREMENT for table `user_roles`
 --
 ALTER TABLE `user_roles`
-  MODIFY `user_role_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
+  MODIFY `user_role_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=36;
 
 --
 -- Constraints for dumped tables
@@ -403,6 +697,14 @@ ALTER TABLE `user_roles`
 --
 ALTER TABLE `permissions`
   ADD CONSTRAINT `permissions_ibfk_1` FOREIGN KEY (`module_id`) REFERENCES `permission_modules` (`module_id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `prospects`
+--
+ALTER TABLE `prospects`
+  ADD CONSTRAINT `fk_prospects_disposition` FOREIGN KEY (`Dispositioncode`) REFERENCES `prospects_disposition` (`DispositionCode`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_prospects_email_status` FOREIGN KEY (`Emailcode`) REFERENCES `prospects_email_status` (`EmailCode`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_prospects_provider` FOREIGN KEY (`Providercode`) REFERENCES `prospects_provider` (`ProviderCode`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
 -- Constraints for table `role_permissions`
