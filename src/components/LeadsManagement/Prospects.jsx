@@ -12,7 +12,8 @@ import {
     FiEdit,
     FiTrash2,
     FiArchive,
-    FiUser
+    FiUser,
+    FiX
 } from 'react-icons/fi';
 import { FiCheckSquare, FiSquare } from 'react-icons/fi';
 import AddNewProspects from './Modals/AddNewProspects';
@@ -45,7 +46,7 @@ const Prospects = () => {
         actions: true
     });
     const [showColumnMenu, setShowColumnMenu] = useState(false);
-    const [showActionMenu, setShowActionMenu] = useState(null);
+    const [showBulkActionPopup, setShowBulkActionPopup] = useState(false);
     const [filters, setFilters] = useState({
         status: 'all',
         industry: 'all',
@@ -63,6 +64,14 @@ const Prospects = () => {
         statuses: []
     });
     const [notification, setNotification] = useState({ show: false, message: '', type: '' });
+
+    // Add this to your state variables
+    const [confirmationModal, setConfirmationModal] = useState({
+        show: false,
+        action: null,
+        message: '',
+        count: 0
+    });
 
     // Fetch prospects from API
     const fetchProspects = async () => {
@@ -202,31 +211,12 @@ const Prospects = () => {
                 exportToCSV(selectedLeads);
                 break;
             case 'delete':
-                if (window.confirm(`Are you sure you want to delete ${selectedLeads.length} leads?`)) {
-                    try {
-                        const response = await fetch('/api/prospects/bulk-delete', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${localStorage.getItem('token')}`
-                            },
-                            body: JSON.stringify({ ids: selectedLeads })
-                        });
-
-                        const data = await response.json();
-
-                        if (data.success) {
-                            showNotification(`${data.message}`, 'success');
-                            fetchProspects(); // Refresh the list
-                            setSelectedLeads([]);
-                        } else {
-                            throw new Error(data.error);
-                        }
-                    } catch (error) {
-                        console.error('Bulk delete error:', error);
-                        showNotification('Failed to delete prospects', 'error');
-                    }
-                }
+                setConfirmationModal({
+                    show: true,
+                    action: 'delete',
+                    message: `Are you sure you want to delete ${selectedLeads.length} leads?`,
+                    count: selectedLeads.length
+                });
                 break;
             case 'archive':
                 // Implement archive functionality if needed
@@ -235,7 +225,38 @@ const Prospects = () => {
             default:
                 break;
         }
-        setShowActionMenu(null);
+        setShowBulkActionPopup(false);
+    };
+
+    // Add this function to handle the confirmed action
+    const handleConfirmedAction = async () => {
+        if (confirmationModal.action === 'delete') {
+            try {
+                const response = await fetch('/api/prospects/bulk-delete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify({ ids: selectedLeads })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showNotification(`${data.message}`, 'success');
+                    fetchProspects(); // Refresh the list
+                    setSelectedLeads([]);
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                console.error('Bulk delete error:', error);
+                showNotification('Failed to delete prospects', 'error');
+            }
+        }
+
+        setConfirmationModal({ show: false, action: null, message: '', count: 0 });
     };
 
     // Update the exportToCSV function to use the backend
@@ -401,6 +422,56 @@ const Prospects = () => {
         return ['all', ...uniqueStatuses];
     }, [leads]);
 
+    // Generate pagination buttons
+    const getPaginationButtons = () => {
+        const buttons = [];
+        const maxVisibleButtons = 5;
+
+        if (totalPages <= maxVisibleButtons) {
+            // Show all pages if total pages is less than max visible
+            for (let i = 1; i <= totalPages; i++) {
+                buttons.push(i);
+            }
+        } else {
+            // Always show first page
+            buttons.push(1);
+
+            // Calculate start and end of visible page range
+            let startPage = Math.max(2, currentPage - 1);
+            let endPage = Math.min(totalPages - 1, currentPage + 1);
+
+            // Adjust if we're at the beginning
+            if (currentPage <= 3) {
+                endPage = 4;
+            }
+
+            // Adjust if we're at the end
+            if (currentPage >= totalPages - 2) {
+                startPage = totalPages - 3;
+            }
+
+            // Add ellipsis after first page if needed
+            if (startPage > 2) {
+                buttons.push('ellipsis-left');
+            }
+
+            // Add page numbers
+            for (let i = startPage; i <= endPage; i++) {
+                buttons.push(i);
+            }
+
+            // Add ellipsis before last page if needed
+            if (endPage < totalPages - 1) {
+                buttons.push('ellipsis-right');
+            }
+
+            // Always show last page
+            buttons.push(totalPages);
+        }
+
+        return buttons;
+    };
+
     if (loading) {
         return (
             <div className={styles.loading}>
@@ -539,43 +610,81 @@ const Prospects = () => {
                 </div>
             </div>
 
-            {/* Bulk Actions Bar */}
-            {selectedLeads.length > 0 && (
-                <div className={styles.bulkActions}>
-                    <div className={styles.bulkActionsInfo}>
-                        <span>{selectedLeads.length} selected</span>
-                    </div>
-                    <div className={styles.bulkActionsButtons}>
-                        <div className={styles.actionMenu}>
-                            <button
-                                className={styles.bulkActionButton}
-                                onClick={() => setShowActionMenu(!showActionMenu)}
-                            >
-                                <span>Actions</span>
-                                <FiChevronDown size={16} />
-                            </button>
-
-                            {showActionMenu && (
-                                <div className={styles.actionMenuDropdown}>
-                                    <button onClick={() => handleBulkAction('export')}>
-                                        <FiDownload size={14} />
-                                        Export Selected
-                                    </button>
-                                    <button onClick={() => handleBulkAction('archive')}>
-                                        <FiArchive size={14} />
-                                        Archive Selected
-                                    </button>
-                                    <button
-                                        onClick={() => handleBulkAction('delete')}
-                                        className={styles.deleteAction}
-                                    >
-                                        <FiTrash2 size={14} />
-                                        Delete Selected
-                                    </button>
-                                </div>
-                            )}
+            {/* Confirmation Modal */}
+            {confirmationModal.show && (
+                <div className={styles.confirmationModalOverlay}>
+                    <div className={styles.confirmationModal}>
+                        <div className={styles.confirmationModalContent}>
+                            <h3>Confirm Action</h3>
+                            <p>{confirmationModal.message}</p>
+                            <div className={styles.confirmationModalButtons}>
+                                <button
+                                    className={styles.confirmationCancelButton}
+                                    onClick={() => setConfirmationModal({ show: false, action: null, message: '', count: 0 })}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    className={styles.confirmationConfirmButton}
+                                    onClick={handleConfirmedAction}
+                                >
+                                    Confirm
+                                </button>
+                            </div>
                         </div>
                     </div>
+                </div>
+            )}
+
+            {/* Bulk Actions Popup */}
+            {selectedLeads.length > 0 && (
+                <div className={`${styles.bulkActionsPopup} ${showBulkActionPopup ? styles.show : ''}`}>
+                    <div className={styles.bulkActionsPopupContent}>
+                        <div className={styles.bulkActionsPopupHeader}>
+                            <h3>Bulk Actions ({selectedLeads.length} selected)</h3>
+                            <button
+                                className={styles.closeButton}
+                                onClick={() => setShowBulkActionPopup(false)}
+                            >
+                                <FiX size={20} />
+                            </button>
+                        </div>
+                        <div className={styles.bulkActionsPopupButtons}>
+                            <button
+                                className={styles.bulkActionPopupButton}
+                                onClick={() => handleBulkAction('export')}
+                            >
+                                <FiDownload size={16} />
+                                Export Selected
+                            </button>
+                            <button
+                                className={styles.bulkActionPopupButton}
+                                onClick={() => handleBulkAction('archive')}
+                            >
+                                <FiArchive size={16} />
+                                Archive Selected
+                            </button>
+                            <button
+                                className={`${styles.bulkActionPopupButton} ${styles.deleteAction}`}
+                                onClick={() => handleBulkAction('delete')}
+                            >
+                                <FiTrash2 size={16} />
+                                Delete Selected
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Show Bulk Actions Button */}
+            {selectedLeads.length > 0 && (
+                <div className={styles.bulkActionsButtonContainer}>
+                    <button
+                        className={styles.showBulkActionsButton}
+                        onClick={() => setShowBulkActionPopup(true)}
+                    >
+                        {selectedLeads.length} Selected - Show Actions
+                    </button>
                 </div>
             )}
 
@@ -924,41 +1033,25 @@ const Prospects = () => {
                             Previous
                         </button>
 
-                        {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                            let pageNum;
-                            if (totalPages <= 5) {
-                                pageNum = i + 1;
-                            } else if (currentPage <= 3) {
-                                pageNum = i + 1;
-                            } else if (currentPage >= totalPages - 2) {
-                                pageNum = totalPages - 4 + i;
-                            } else {
-                                pageNum = currentPage - 2 + i;
+                        {getPaginationButtons().map((page, index) => {
+                            if (page === 'ellipsis-left' || page === 'ellipsis-right') {
+                                return (
+                                    <span key={`ellipsis-${index}`} className={styles.paginationEllipsis}>
+                                        ...
+                                    </span>
+                                );
                             }
 
                             return (
                                 <button
-                                    key={pageNum}
-                                    onClick={() => setCurrentPage(pageNum)}
-                                    className={`${styles.paginationButton} ${currentPage === pageNum ? styles.active : ''}`}
+                                    key={page}
+                                    onClick={() => setCurrentPage(page)}
+                                    className={`${styles.paginationButton} ${currentPage === page ? styles.active : ''}`}
                                 >
-                                    {pageNum}
+                                    {page}
                                 </button>
                             );
                         })}
-
-                        {totalPages > 5 && currentPage < totalPages - 2 && (
-                            <span className={styles.paginationEllipsis}>...</span>
-                        )}
-
-                        {totalPages > 5 && currentPage < totalPages - 2 && (
-                            <button
-                                onClick={() => setCurrentPage(totalPages)}
-                                className={styles.paginationButton}
-                            >
-                                {totalPages}
-                            </button>
-                        )}
 
                         <button
                             onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}

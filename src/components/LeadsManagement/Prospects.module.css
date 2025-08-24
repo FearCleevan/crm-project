@@ -59,7 +59,8 @@
     gap: 0.5rem;
 }
 
-.filterSelect {
+.filterSelect,
+.itemsPerPageSelect {
     background: #2a2a3a;
     border: 1px solid #3a3a4a;
     border-radius: 6px;
@@ -70,7 +71,8 @@
     transition: border-color 0.2s ease;
 }
 
-.filterSelect:focus {
+.filterSelect:focus,
+.itemsPerPageSelect:focus {
     outline: none;
     border-color: #4a6fa5;
 }
@@ -82,7 +84,10 @@
 
 .importButton,
 .exportButton,
-.settingsButton {
+.settingsButton,
+.addButton,
+.bulkActionButton,
+.bulkActionPopupButton {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -98,16 +103,29 @@
 
 .importButton:hover,
 .exportButton:hover,
-.settingsButton:hover {
+.settingsButton:hover,
+.bulkActionButton:hover,
+.bulkActionPopupButton:hover {
     background: #3a3a4a;
     border-color: #4a4a5a;
+}
+
+.addButton {
+    background: #6b9aff;
+    border: 1px solid #5a8aef;
+    color: #ffffff;
+}
+
+.addButton:hover {
+    background: #5a8aef;
 }
 
 .columnMenu {
     position: relative;
 }
 
-.columnMenuDropdown {
+.columnMenuDropdown,
+.actionMenuDropdown {
     position: absolute;
     top: 100%;
     right: 0;
@@ -120,7 +138,8 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
-.columnMenuItem {
+.columnMenuItem,
+.actionMenuDropdown button {
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -129,14 +148,28 @@
     border-radius: 4px;
     transition: background-color 0.2s;
     font-size: 0.8rem;
+    background: none;
+    border: none;
+    color: #e0e0e0;
+    text-align: left;
+    width: 100%;
 }
 
-.columnMenuItem:hover {
+.columnMenuItem:hover,
+.actionMenuDropdown button:hover {
     background: #3a3a4a;
 }
 
 .columnMenuItem input {
     margin: 0;
+}
+
+.actionMenuDropdown .deleteAction {
+    color: #e53e3e;
+}
+
+.actionMenuDropdown .deleteAction:hover {
+    background: rgba(229, 62, 62, 0.1);
 }
 
 /* Bulk Actions */
@@ -166,123 +199,43 @@
     position: relative;
 }
 
-/* Add these styles to Prospects.module.css */
-
 /* Notification styles */
 .notification {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  padding: 12px 20px;
-  border-radius: 6px;
-  color: white;
-  font-weight: 500;
-  z-index: 1000;
-  animation: slideIn 0.3s ease;
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 12px 20px;
+    border-radius: 6px;
+    color: white;
+    font-weight: 500;
+    z-index: 1000;
+    animation: slideIn 0.3s ease;
 }
 
 .notification.success {
-  background: #48bb78;
-  border: 1px solid #38a169;
+    background: #48bb78;
+    border: 1px solid #38a169;
 }
 
 .notification.error {
-  background: #e53e3e;
-  border: 1px solid #c53030;
+    background: #e53e3e;
+    border: 1px solid #c53030;
 }
 
 .notification.info {
-  background: #4299e1;
-  border: 1px solid #3182ce;
+    background: #4299e1;
+    border: 1px solid #3182ce;
 }
 
 @keyframes slideIn {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-/* Add button style */
-.addButton {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 15px;
-  background: #6b9aff;
-  border: 1px solid #5a8aef;
-  border-radius: 6px;
-  color: #ffffff;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-size: 0.8rem;
-}
-
-.addButton:hover {
-  background: #5a8aef;
-}
-
-.bulkActionButton {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  background: #2a2a3a;
-  border: 1px solid #3a3a4a;
-  border-radius: 6px;
-  color: #e0e0e0;
-  cursor: pointer;
-  font-size: 0.8rem;
-  transition: all 0.2s;
-}
-
-.bulkActionButton:hover {
-  background: #3a3a4a;
-  border-color: #4a4a5a;
-}
-
-.actionMenuDropdown {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  background: #2a2a3a;
-  border: 1px solid #3a3a4a;
-  border-radius: 6px;
-  padding: 0.5rem;
-  z-index: 10;
-  min-width: 150px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-.actionMenuDropdown button {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 0.5rem;
-  background: none;
-  border: none;
-  color: #e0e0e0;
-  cursor: pointer;
-  text-align: left;
-  border-radius: 4px;
-  font-size: 0.8rem;
-}
-
-.actionMenuDropdown button:hover {
-  background: #3a3a4a;
-}
-
-.actionMenuDropdown .deleteAction {
-  color: #e53e3e;
-}
-
-.actionMenuDropdown .deleteAction:hover {
-  background: rgba(229, 62, 62, 0.1);
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
 }
 
 /* Table */
@@ -326,7 +279,6 @@
     user-select: none;
     transition: background-color 0.2s ease;
 }
-
 
 .sortableHeader:hover {
     background: #3a3a4a;
@@ -468,16 +420,6 @@
     flex-wrap: wrap;
 }
 
-.itemsPerPageSelect {
-    background: #2a2a3a;
-    border: 1px solid #3a3a4a;
-    border-radius: 4px;
-    color: #e0e0e0;
-    padding: 6px 8px;
-    cursor: pointer;
-    font-size: 0.8rem;
-}
-
 .paginationButton {
     padding: 6px 10px;
     font-size: 0.8rem;
@@ -535,10 +477,193 @@
     from {
         transform: rotate(0deg);
     }
-
     to {
         transform: rotate(360deg);
     }
+}
+
+.bulkActionsPopup {
+  position: fixed;
+  bottom: -100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #2a2a3a;
+  border: 1px solid #3a3a4a;
+  border-radius: 8px;
+  padding: 1rem;
+  z-index: 1000;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3);
+  transition: bottom 0.3s ease;
+  width: 90%;
+  max-width: 700px;
+}
+
+.bulkActionsPopup.show {
+  bottom: 20px;
+}
+
+.bulkActionsPopupContent {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.bulkActionsPopupHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #3a3a4a;
+  padding-bottom: 0.5rem;
+}
+
+.bulkActionsPopupHeader h3 {
+  margin: 0;
+  color: #e0e0e0;
+  font-size: 1rem;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  color: #b0b0b0;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.closeButton:hover {
+  color: #e0e0e0;
+}
+
+.bulkActionsPopupButtons {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.bulkActionPopupButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 15px;
+  background: #3a3a4a;
+  border: 1px solid #4a4a5a;
+  border-radius: 6px;
+  color: #e0e0e0;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.8rem;
+}
+
+.bulkActionPopupButton:hover {
+  background: #4a4a5a;
+}
+
+.bulkActionPopupButton.deleteAction {
+  color: #e53e3e;
+}
+
+.bulkActionPopupButton.deleteAction:hover {
+  background: rgba(229, 62, 62, 0.1);
+}
+
+/* Show Bulk Actions Button */
+.bulkActionsButtonContainer {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 999;
+}
+
+.showBulkActionsButton {
+  padding: 10px 20px;
+  background: #6b9aff;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s;
+}
+
+.showBulkActionsButton:hover {
+  background: #5a8aef;
+  transform: translateY(-2px);
+}
+
+/* Confirmation Modal Styles */
+.confirmationModalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1001;
+}
+
+.confirmationModal {
+    background: #2a2a3a;
+    border-radius: 8px;
+    border: 1px solid #3a3a4a;
+    padding: 1.5rem;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.confirmationModalContent h3 {
+    margin: 0 0 1rem 0;
+    color: #e0e0e0;
+    font-size: 1.2rem;
+}
+
+.confirmationModalContent p {
+    margin: 0 0 1.5rem 0;
+    color: #b0b0b0;
+    line-height: 1.5;
+}
+
+.confirmationModalButtons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+}
+
+.confirmationCancelButton {
+    padding: 8px 16px;
+    background: #3a3a4a;
+    border: 1px solid #4a4a5a;
+    border-radius: 4px;
+    color: #e0e0e0;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.confirmationCancelButton:hover {
+    background: #4a4a5a;
+}
+
+.confirmationConfirmButton {
+    padding: 8px 16px;
+    background: #e53e3e;
+    border: 1px solid #c53030;
+    border-radius: 4px;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.confirmationConfirmButton:hover {
+    background: #c53030;
 }
 
 /* Responsive */
