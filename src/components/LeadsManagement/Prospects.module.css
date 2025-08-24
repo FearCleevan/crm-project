@@ -261,14 +261,15 @@
     text-align: left;
     font-weight: 600;
     color: #b0b0b0;
-    font-size: 0.8rem;
+    font-size: 12px;
     white-space: nowrap;
+    font-weight: 600;
 }
 
 .leadsTable td {
     padding: 12px 16px;
     border-bottom: 1px solid #3a3a4a;
-    font-size: 0.8rem;
+    font-size: 11px;
     vertical-align: middle;
 }
 
@@ -377,7 +378,7 @@
     border: none;
     color: #b0b0b0;
     cursor: pointer;
-    padding: 6px;
+    padding: 4px;
     border-radius: 4px;
     transition: all 0.2s;
     display: flex;
@@ -494,8 +495,8 @@
   z-index: 1000;
   box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3);
   transition: bottom 0.3s ease;
-  width: 90%;
-  max-width: 700px;
+  width: 50%;
+  max-width: 500px;
 }
 
 .bulkActionsPopup.show {
@@ -519,7 +520,7 @@
 .bulkActionsPopupHeader h3 {
   margin: 0;
   color: #e0e0e0;
-  font-size: 1rem;
+  font-size: 13px;
 }
 
 .closeButton {
@@ -555,7 +556,7 @@
   color: #e0e0e0;
   cursor: pointer;
   transition: all 0.2s;
-  font-size: 0.8rem;
+  font-size: 12px;
 }
 
 .bulkActionPopupButton:hover {
@@ -586,6 +587,7 @@
   border-radius: 6px;
   color: white;
   font-weight: 500;
+  font-size: 13px;
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   transition: all 0.2s;

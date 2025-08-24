@@ -136,6 +136,11 @@ const Prospects = () => {
         fetchProspects();
     }, [currentPage, itemsPerPage]);
 
+    useEffect(() => {
+        // Reset to first page when filters or search term change
+        setCurrentPage(1);
+    }, [searchTerm, filters.status, filters.industry, filters.country]);
+
     // Filter and sort logic
     const filteredLeads = useMemo(() => {
         return leads.filter(lead => {
@@ -441,13 +446,13 @@ const Prospects = () => {
             let endPage = Math.min(totalPages - 1, currentPage + 1);
 
             // Adjust if we're at the beginning
-            if (currentPage <= 3) {
-                endPage = 4;
+            if (currentPage <= 2) {
+                endPage = 3;
             }
 
             // Adjust if we're at the end
-            if (currentPage >= totalPages - 2) {
-                startPage = totalPages - 3;
+            if (currentPage >= totalPages - 1) {
+                startPage = totalPages - 2;
             }
 
             // Add ellipsis after first page if needed
@@ -940,9 +945,9 @@ const Prospects = () => {
                                         {columnVisibility.fullname && (
                                             <td>
                                                 <div className={styles.leadInfo}>
-                                                    <div className={styles.avatar}>
+                                                    {/* <div className={styles.avatar}>
                                                         {lead.Firstname?.[0]}{lead.Lastname?.[0]}
-                                                    </div>
+                                                    </div> */}
                                                     <div className={styles.leadName}>{lead.Fullname}</div>
                                                 </div>
                                             </td>
@@ -974,13 +979,13 @@ const Prospects = () => {
                                             <td>
                                                 <div className={styles.actionButtons}>
                                                     <button className={styles.actionButton} title="View">
-                                                        <FiEye size={16} />
+                                                        <FiEye size={14} />
                                                     </button>
                                                     <button className={styles.actionButton} title="Edit">
-                                                        <FiEdit size={16} />
+                                                        <FiEdit size={14} />
                                                     </button>
                                                     <button className={styles.actionButton} title="Archive">
-                                                        <FiArchive size={16} />
+                                                        <FiArchive size={14} />
                                                     </button>
                                                 </div>
                                             </td>
