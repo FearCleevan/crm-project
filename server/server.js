@@ -9,6 +9,7 @@ import { authMiddleware } from './middlewares/authMiddleware.js';
 import pool from './config/db.js';
 import requestRoutes from './routes/requestRoutes.js';
 import permissionsRoutes from './routes/permissionsRoutes.js';
+import prospectsRoutes from './routes/prospectsRoutes.js';
 
 dotenv.config();
 
@@ -29,6 +30,8 @@ app.use(cookieParser());
 app.use('/api/requests', requestRoutes);
 
 app.use('/api/permissions', permissionsRoutes);
+
+app.use('/api/prospects', prospectsRoutes);
 
 // Routes
 app.use('/api/auth', authRoutes);

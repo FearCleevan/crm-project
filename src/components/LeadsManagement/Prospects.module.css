@@ -166,61 +166,123 @@
     position: relative;
 }
 
+/* Add these styles to Prospects.module.css */
+
+/* Notification styles */
+.notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 12px 20px;
+  border-radius: 6px;
+  color: white;
+  font-weight: 500;
+  z-index: 1000;
+  animation: slideIn 0.3s ease;
+}
+
+.notification.success {
+  background: #48bb78;
+  border: 1px solid #38a169;
+}
+
+.notification.error {
+  background: #e53e3e;
+  border: 1px solid #c53030;
+}
+
+.notification.info {
+  background: #4299e1;
+  border: 1px solid #3182ce;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Add button style */
+.addButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 15px;
+  background: #6b9aff;
+  border: 1px solid #5a8aef;
+  border-radius: 6px;
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.8rem;
+}
+
+.addButton:hover {
+  background: #5a8aef;
+}
+
 .bulkActionButton {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 12px;
-    background: #2a2a3a;
-    border: 1px solid #3a3a4a;
-    border-radius: 4px;
-    color: #e0e0e0;
-    cursor: pointer;
-    font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #2a2a3a;
+  border: 1px solid #3a3a4a;
+  border-radius: 6px;
+  color: #e0e0e0;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.2s;
 }
 
 .bulkActionButton:hover {
-    background: #3a3a4a;
+  background: #3a3a4a;
+  border-color: #4a4a5a;
 }
 
 .actionMenuDropdown {
-    position: absolute;
-    top: 100%;
-    right: 0;
-    background: #2a2a3a;
-    border: 1px solid #3a3a4a;
-    border-radius: 6px;
-    padding: 0.5rem;
-    z-index: 10;
-    min-width: 150px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: #2a2a3a;
+  border: 1px solid #3a3a4a;
+  border-radius: 6px;
+  padding: 0.5rem;
+  z-index: 10;
+  min-width: 150px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .actionMenuDropdown button {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    width: 100%;
-    padding: 0.5rem;
-    background: none;
-    border: none;
-    color: #e0e0e0;
-    cursor: pointer;
-    text-align: left;
-    border-radius: 4px;
-    font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 0.5rem;
+  background: none;
+  border: none;
+  color: #e0e0e0;
+  cursor: pointer;
+  text-align: left;
+  border-radius: 4px;
+  font-size: 0.8rem;
 }
 
 .actionMenuDropdown button:hover {
-    background: #3a3a4a;
+  background: #3a3a4a;
 }
 
 .actionMenuDropdown .deleteAction {
-    color: #e53e3e;
+  color: #e53e3e;
 }
 
 .actionMenuDropdown .deleteAction:hover {
-    background: rgba(229, 62, 62, 0.1);
+  background: rgba(229, 62, 62, 0.1);
 }
 
 /* Table */
@@ -231,12 +293,13 @@
     overflow: hidden;
     margin-bottom: 1.5rem;
     overflow-x: auto;
+    width: 100%;
+    max-width: 1550px;
 }
 
 .leadsTable {
     width: 100%;
     border-collapse: collapse;
-    min-width: 1000px;
 }
 
 .leadsTable th {

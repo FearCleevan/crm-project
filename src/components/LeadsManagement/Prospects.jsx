@@ -1,4 +1,3 @@
-// src/components/LeadsManagement/Prospects.jsx
 import React, { useState, useEffect, useMemo } from 'react';
 import {
     FiSearch,
@@ -12,8 +11,11 @@ import {
     FiEye,
     FiEdit,
     FiTrash2,
-    FiArchive
+    FiArchive,
+    FiUser
 } from 'react-icons/fi';
+import { FiCheckSquare, FiSquare } from 'react-icons/fi';
+import AddNewProspects from './Modals/AddNewProspects';
 import styles from './Prospects.module.css';
 
 const Prospects = () => {
@@ -50,212 +52,73 @@ const Prospects = () => {
         country: 'all'
     });
 
+    // Add these state variables
+    const [showAddModal, setShowAddModal] = useState(false);
+    const [lookupData, setLookupData] = useState({
+        dispositions: [],
+        emailStatuses: [],
+        providers: [],
+        industries: [],
+        countries: [],
+        statuses: []
+    });
+    const [notification, setNotification] = useState({ show: false, message: '', type: '' });
+
     const [fixedColumns] = useState(['fullname', 'jobtitle', 'company']);
 
-    // Mock data based on the provided format
+    // Add function to fetch prospects from API
+    const fetchProspects = async () => {
+        setLoading(true);
+        try {
+            const response = await fetch('/api/prospects', {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                setLeads(data.prospects);
+            } else {
+                throw new Error(data.error || 'Failed to fetch prospects');
+            }
+        } catch (error) {
+            console.error('Failed to fetch leads:', error);
+            showNotification('Failed to load prospects', 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Add useEffect for fetching lookup data - FIXED ENDPOINT
     useEffect(() => {
-        const fetchLeads = async () => {
-            setLoading(true);
+        const fetchLookupData = async () => {
             try {
-                // Simulate API call
-                setTimeout(() => {
-                    const mockLeads = [
-                        {
-                            id: 1,
-                            fullname: 'John Smith',
-                            firstname: 'John',
-                            lastname: 'Smith',
-                            jobtitle: 'IT Manager',
-                            company: 'TechNova Inc',
-                            website: 'https://technova.com',
-                            personallinkedin: 'https://linkedin.com/in/johnsmith',
-                            companylinkedin: 'https://linkedin.com/company/technova',
-                            altphonenumber: '555-234-5678',
-                            companyphonenumber: '555-111-2222',
-                            email: 'john.smith@technova.com',
-                            emailcode: 'JS123',
-                            address: '123 Main St',
-                            street: 'Main St',
-                            city: 'San Francisco',
-                            state: 'CA',
-                            postalcode: '94105',
-                            country: 'USA',
-                            annualrevenue: 5000000,
-                            industry: 'Technology',
-                            employeesize: 250,
-                            siccode: '7372',
-                            naicscode: '541511',
-                            dispositioncode: 'DISC001',
-                            providercode: 'PROV01',
-                            comments: 'Interested in cloud solutions',
-                            isactive: true,
-                            createdby: 'Admin',
-                            createdon: '2025-08-20',
-                            updatedby: 'Admin',
-                            updatedon: '2025-08-21',
-                            department: 'IT',
-                            seniority: 'Manager',
-                            status: 'New'
-                        },
-                        {
-                            id: 2,
-                            fullname: 'Sarah Johnson',
-                            firstname: 'Sarah',
-                            lastname: 'Johnson',
-                            jobtitle: 'Marketing Director',
-                            company: 'BrandSphere',
-                            website: 'https://brandsphere.io',
-                            personallinkedin: 'https://linkedin.com/in/sarahjohnson',
-                            companylinkedin: 'https://linkedin.com/company/brandsphere',
-                            altphonenumber: '555-789-1234',
-                            companyphonenumber: '555-333-4444',
-                            email: 's.johnson@brandsphere.io',
-                            emailcode: 'SJ456',
-                            address: '456 Oak Ave',
-                            street: 'Oak Ave',
-                            city: 'New York',
-                            state: 'NY',
-                            postalcode: '10001',
-                            country: 'USA',
-                            annualrevenue: 20000000,
-                            industry: 'Marketing',
-                            employeesize: 120,
-                            siccode: '8742',
-                            naicscode: '541613',
-                            dispositioncode: 'DISC002',
-                            providercode: 'PROV02',
-                            comments: 'Requested brochure',
-                            isactive: true,
-                            createdby: 'Admin',
-                            createdon: '2025-08-20',
-                            updatedby: 'Admin',
-                            updatedon: '2025-08-21',
-                            department: 'Marketing',
-                            seniority: 'Director',
-                            status: 'Contacted'
-                        },
-                        {
-                            id: 3,
-                            fullname: 'David Lee',
-                            firstname: 'David',
-                            lastname: 'Lee',
-                            jobtitle: 'CFO',
-                            company: 'FinTrust Corp',
-                            website: 'https://fintrust.com',
-                            personallinkedin: 'https://linkedin.com/in/davidlee',
-                            companylinkedin: 'https://linkedin.com/company/fintrust',
-                            altphonenumber: '555-678-9876',
-                            companyphonenumber: '555-222-8888',
-                            email: 'david.lee@fintrust.com',
-                            emailcode: 'DL789',
-                            address: '789 Pine Rd',
-                            street: 'Pine Rd',
-                            city: 'Chicago',
-                            state: 'IL',
-                            postalcode: '60601',
-                            country: 'USA',
-                            annualrevenue: 100000000,
-                            industry: 'Finance',
-                            employeesize: 500,
-                            siccode: '6211',
-                            naicscode: '522110',
-                            dispositioncode: 'DISC003',
-                            providercode: 'PROV03',
-                            comments: 'Needs pricing details',
-                            isactive: false,
-                            createdby: 'Admin',
-                            createdon: '2025-08-20',
-                            updatedby: 'Admin',
-                            updatedon: '2025-08-21',
-                            department: 'Finance',
-                            seniority: 'Executive',
-                            status: 'Qualified'
-                        },
-                        {
-                            id: 4,
-                            fullname: 'Emily Davis',
-                            firstname: 'Emily',
-                            lastname: 'Davis',
-                            jobtitle: 'HR Director',
-                            company: 'PeopleFirst Ltd',
-                            website: 'https://peoplefirst.com',
-                            personallinkedin: 'https://linkedin.com/in/emilydavis',
-                            companylinkedin: 'https://linkedin.com/company/peoplefirst',
-                            altphonenumber: '555-345-6789',
-                            companyphonenumber: '555-444-5555',
-                            email: 'emily.davis@peoplefirst.com',
-                            emailcode: 'ED321',
-                            address: '321 Market St',
-                            street: 'Market St',
-                            city: 'Boston',
-                            state: 'MA',
-                            postalcode: '2110',
-                            country: 'USA',
-                            annualrevenue: 15000000,
-                            industry: 'Human Resources',
-                            employeesize: 75,
-                            siccode: '8748',
-                            naicscode: '541612',
-                            dispositioncode: 'DISC004',
-                            providercode: 'PROV04',
-                            comments: 'Interested in HR software',
-                            isactive: true,
-                            createdby: 'Admin',
-                            createdon: '2025-08-20',
-                            updatedby: 'Admin',
-                            updatedon: '2025-08-21',
-                            department: 'HR',
-                            seniority: 'Director',
-                            status: 'Proposal'
-                        },
-                        {
-                            id: 5,
-                            fullname: 'Michael Brown',
-                            firstname: 'Michael',
-                            lastname: 'Brown',
-                            jobtitle: 'CEO',
-                            company: 'NextStack LLC',
-                            website: 'https://nextstack.com',
-                            personallinkedin: 'https://linkedin.com/in/michaelbrown',
-                            companylinkedin: 'https://linkedin.com/company/nextstack',
-                            altphonenumber: '555-987-1234',
-                            companyphonenumber: '555-555-6666',
-                            email: 'michael.brown@nextstack.com',
-                            emailcode: 'MB654',
-                            address: '654 Elm St',
-                            street: 'Elm St',
-                            city: 'Austin',
-                            state: 'TX',
-                            postalcode: '73301',
-                            country: 'USA',
-                            annualrevenue: 75000000,
-                            industry: 'Software',
-                            employeesize: 350,
-                            siccode: '7371',
-                            naicscode: '541511',
-                            dispositioncode: 'DISC005',
-                            providercode: 'PROV05',
-                            comments: 'Follow-up next week',
-                            isactive: true,
-                            createdby: 'Admin',
-                            createdon: '2025-08-20',
-                            updatedby: 'Admin',
-                            updatedon: '2025-08-21',
-                            department: 'Executive',
-                            seniority: 'CEO',
-                            status: 'Closed'
-                        }
-                    ];
-                    setLeads(mockLeads);
-                    setLoading(false);
-                }, 1000);
+                const response = await fetch('/api/prospects/lookup/data', {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                if (data.success) {
+                    setLookupData(data.data);
+                } else {
+                    throw new Error(data.error || 'Failed to fetch lookup data');
+                }
             } catch (error) {
-                console.error('Failed to fetch leads:', error);
-                setLoading(false);
+                console.error('Error fetching lookup data:', error);
+                showNotification('Failed to load dropdown data', 'error');
             }
         };
 
-        fetchLeads();
+        fetchLookupData();
+        fetchProspects(); // Fetch prospects on component mount
     }, []);
 
     // Filter leads based on search term and filters
@@ -264,14 +127,14 @@ const Prospects = () => {
 
         return leads.filter(lead => {
             const matchesSearch =
-                lead.fullname.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                lead.jobtitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                lead.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                lead.email.toLowerCase().includes(searchTerm.toLowerCase());
+                (lead.Fullname && lead.Fullname.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                (lead.Jobtitle && lead.Jobtitle.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                (lead.Company && lead.Company.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                (lead.Email && lead.Email.toLowerCase().includes(searchTerm.toLowerCase()));
 
-            const matchesStatus = filters.status === 'all' || lead.status === filters.status;
-            const matchesIndustry = filters.industry === 'all' || lead.industry === filters.industry;
-            const matchesCountry = filters.country === 'all' || lead.country === filters.country;
+            const matchesStatus = filters.status === 'all' || lead.Status === filters.status;
+            const matchesIndustry = filters.industry === 'all' || lead.Industry === filters.industry;
+            const matchesCountry = filters.country === 'all' || lead.Country === filters.country;
 
             return matchesSearch && matchesStatus && matchesIndustry && matchesCountry;
         });
@@ -282,10 +145,13 @@ const Prospects = () => {
         if (!sortConfig.key) return filteredLeads;
 
         return [...filteredLeads].sort((a, b) => {
-            if (a[sortConfig.key] < b[sortConfig.key]) {
+            const aValue = a[sortConfig.key] || '';
+            const bValue = b[sortConfig.key] || '';
+            
+            if (aValue < bValue) {
                 return sortConfig.direction === 'ascending' ? -1 : 1;
             }
-            if (a[sortConfig.key] > b[sortConfig.key]) {
+            if (aValue > bValue) {
                 return sortConfig.direction === 'ascending' ? 1 : -1;
             }
             return 0;
@@ -326,23 +192,41 @@ const Prospects = () => {
         );
     };
 
-    const handleBulkAction = (action) => {
+    const handleBulkAction = async (action) => {
         switch (action) {
             case 'export':
                 exportToCSV(selectedLeads);
                 break;
             case 'delete':
                 if (window.confirm(`Are you sure you want to delete ${selectedLeads.length} leads?`)) {
-                    // API call to delete leads
-                    setLeads(prev => prev.filter(lead => !selectedLeads.includes(lead.id)));
-                    setSelectedLeads([]);
+                    try {
+                        const response = await fetch('/api/prospects/bulk-delete', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${localStorage.getItem('token')}`
+                            },
+                            body: JSON.stringify({ ids: selectedLeads })
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (data.success) {
+                            showNotification(`${data.message}`, 'success');
+                            fetchProspects(); // Refresh the list
+                            setSelectedLeads([]);
+                        } else {
+                            throw new Error(data.error);
+                        }
+                    } catch (error) {
+                        console.error('Bulk delete error:', error);
+                        showNotification('Failed to delete prospects', 'error');
+                    }
                 }
                 break;
             case 'archive':
-                if (window.confirm(`Are you sure you want to archive ${selectedLeads.length} leads?`)) {
-                    // API call to archive leads
-                    setSelectedLeads([]);
-                }
+                // Implement archive functionality if needed
+                showNotification('Archive functionality not implemented yet', 'info');
                 break;
             default:
                 break;
@@ -350,69 +234,114 @@ const Prospects = () => {
         setShowActionMenu(null);
     };
 
-    const exportToCSV = (leadIds = []) => {
-        const dataToExport = leadIds.length
-            ? leads.filter(lead => leadIds.includes(lead.id))
-            : filteredLeads;
+    // Update the exportToCSV function to use the backend
+    const exportToCSV = async (leadIds = []) => {
+        try {
+            const url = leadIds.length > 0
+                ? `/api/prospects/export/csv?ids=${leadIds.join(',')}`
+                : '/api/prospects/export/csv';
 
-        // Get all possible headers from the first lead object
-        const allHeaders = leads.length > 0 ? Object.keys(leads[0]) : [];
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
 
-        const csvContent = [
-            allHeaders.join(','),
-            ...dataToExport.map(lead =>
-                allHeaders.map(header => {
-                    const value = lead[header];
-                    // Handle values that might contain commas or quotes
-                    if (value === null || value === undefined) return '""';
-                    return `"${String(value).replace(/"/g, '""')}"`;
-                }).join(',')
-            )
-        ].join('\n');
+            if (response.ok) {
+                const blob = await response.blob();
+                const downloadUrl = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = downloadUrl;
+                link.setAttribute('download', `prospects_export_${new Date().toISOString().split('T')[0]}.csv`);
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
 
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', `leads_export_${new Date().toISOString().split('T')[0]}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    };
-
-    const handleImport = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            // Process CSV import
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                const csvData = event.target.result;
-                // Parse CSV and add to leads
-                const lines = csvData.split('\n');
-                const headers = lines[0].split(',').map(header => header.trim());
-
-                const importedLeads = lines.slice(1).map(line => {
-                    const values = line.split(',').map(value =>
-                        value.trim().replace(/^"(.*)"$/, '$1').replace(/""/g, '"')
-                    );
-
-                    const lead = {};
-                    headers.forEach((header, index) => {
-                        lead[header] = values[index] || '';
-                    });
-                    return lead;
-                }).filter(lead => lead.id); // Filter out empty rows
-
-                // Add imported leads to existing leads
-                setLeads(prev => [...prev, ...importedLeads]);
-                alert(`Successfully imported ${importedLeads.length} leads`);
-            };
-            reader.readAsText(file);
+                showNotification(`Exported ${leadIds.length || filteredLeads.length} prospects successfully`, 'success');
+            } else {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Export failed');
+            }
+        } catch (error) {
+            console.error('Export error:', error);
+            showNotification(error.message || 'Failed to export prospects', 'error');
         }
     };
 
+    // Update the handleImport function to use the backend
+    const handleImport = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const response = await fetch('/api/prospects/import/csv', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                showNotification(`Successfully imported ${data.importedCount} prospects`, 'success');
+                // Refresh the prospects list
+                fetchProspects();
+            } else {
+                showNotification(data.error || 'Import failed', 'error');
+            }
+        } catch (error) {
+            console.error('Import error:', error);
+            showNotification('Failed to import prospects', 'error');
+        }
+        
+        // Reset the file input
+        e.target.value = '';
+    };
+
+    // Add function to handle creating new prospect
+    const handleCreateProspect = async (prospectData) => {
+        try {
+            const response = await fetch('/api/prospects', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify(prospectData)
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                showNotification('Prospect created successfully', 'success');
+                // Refresh the prospects list
+                fetchProspects();
+                return true;
+            } else {
+                throw new Error(data.error);
+            }
+        } catch (error) {
+            console.error('Create prospect error:', error);
+            showNotification(error.message || 'Failed to create prospect', 'error');
+            throw error;
+        }
+    };
+
+    // Add notification function
+    const showNotification = (message, type) => {
+        setNotification({ show: true, message, type });
+        setTimeout(() => {
+            setNotification({ show: false, message: '', type: '' });
+        }, 3000);
+    };
+
     const formatDate = (dateString) => {
+        if (!dateString) return '';
         return new Date(dateString).toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'short',
@@ -422,13 +351,18 @@ const Prospects = () => {
 
     // Get unique values for filter dropdowns
     const industries = useMemo(() => {
-        const uniqueIndustries = [...new Set(leads.map(lead => lead.industry))].filter(Boolean);
+        const uniqueIndustries = [...new Set(leads.map(lead => lead.Industry).filter(Boolean))];
         return ['all', ...uniqueIndustries];
     }, [leads]);
 
     const countries = useMemo(() => {
-        const uniqueCountries = [...new Set(leads.map(lead => lead.country))].filter(Boolean);
+        const uniqueCountries = [...new Set(leads.map(lead => lead.Country).filter(Boolean))];
         return ['all', ...uniqueCountries];
+    }, [leads]);
+
+    const statuses = useMemo(() => {
+        const uniqueStatuses = [...new Set(leads.map(lead => lead.Status).filter(Boolean))];
+        return ['all', ...uniqueStatuses];
     }, [leads]);
 
     if (loading) {
@@ -463,11 +397,9 @@ const Prospects = () => {
                             className={styles.filterSelect}
                         >
                             <option value="all">All Statuses</option>
-                            <option value="New">New</option>
-                            <option value="Contacted">Contacted</option>
-                            <option value="Qualified">Qualified</option>
-                            <option value="Proposal">Proposal</option>
-                            <option value="Closed">Closed</option>
+                            {statuses.filter(s => s !== 'all').map(status => (
+                                <option key={status} value={status}>{status}</option>
+                            ))}
                         </select>
 
                         <select
@@ -517,6 +449,21 @@ const Prospects = () => {
                             Export
                         </button>
 
+                        <AddNewProspects
+                            isOpen={showAddModal}
+                            onClose={() => setShowAddModal(false)}
+                            onSave={handleCreateProspect}
+                            lookupData={lookupData}
+                        />
+
+                        <button
+                            className={styles.addButton}
+                            onClick={() => setShowAddModal(true)}
+                        >
+                            <FiUser size={16} />
+                            Add Prospect
+                        </button>
+
                         <div className={styles.columnMenu}>
                             <button
                                 className={styles.settingsButton}
@@ -560,8 +507,8 @@ const Prospects = () => {
                                 className={styles.bulkActionButton}
                                 onClick={() => setShowActionMenu(!showActionMenu)}
                             >
-                                <FiMoreVertical size={16} />
-                                Actions
+                                <span>Actions</span>
+                                <FiChevronDown size={16} />
                             </button>
 
                             {showActionMenu && (
@@ -588,6 +535,12 @@ const Prospects = () => {
                 </div>
             )}
 
+            {notification.show && (
+                <div className={`${styles.notification} ${styles[notification.type]}`}>
+                    {notification.message}
+                </div>
+            )}
+
             {/* Table */}
             <div className={styles.tableWrapper}>
                 <div className={styles.tableContainer}>
@@ -606,11 +559,11 @@ const Prospects = () => {
                                 {columnVisibility.fullname && (
                                     <th
                                         className={styles.sortableHeader}
-                                        onClick={() => handleSort('fullname')}
+                                        onClick={() => handleSort('Fullname')}
                                     >
                                         <div className={styles.headerContent}>
                                             <span>Full Name</span>
-                                            {sortConfig.key === 'fullname' && (
+                                            {sortConfig.key === 'Fullname' && (
                                                 sortConfig.direction === 'ascending' ?
                                                     <FiChevronUp size={14} /> : <FiChevronDown size={14} />
                                             )}
@@ -621,11 +574,11 @@ const Prospects = () => {
                                 {columnVisibility.jobtitle && (
                                     <th
                                         className={styles.sortableHeader}
-                                        onClick={() => handleSort('jobtitle')}
+                                        onClick={() => handleSort('Jobtitle')}
                                     >
                                         <div className={styles.headerContent}>
                                             <span>Job Title</span>
-                                            {sortConfig.key === 'jobtitle' && (
+                                            {sortConfig.key === 'Jobtitle' && (
                                                 sortConfig.direction === 'ascending' ?
                                                     <FiChevronUp size={14} /> : <FiChevronDown size={14} />
                                             )}
@@ -636,11 +589,11 @@ const Prospects = () => {
                                 {columnVisibility.company && (
                                     <th
                                         className={styles.sortableHeader}
-                                        onClick={() => handleSort('company')}
+                                        onClick={() => handleSort('Company')}
                                     >
                                         <div className={styles.headerContent}>
                                             <span>Company</span>
-                                            {sortConfig.key === 'company' && (
+                                            {sortConfig.key === 'Company' && (
                                                 sortConfig.direction === 'ascending' ?
                                                     <FiChevronUp size={14} /> : <FiChevronDown size={14} />
                                             )}
@@ -651,11 +604,11 @@ const Prospects = () => {
                                 {columnVisibility.email && (
                                     <th
                                         className={styles.sortableHeader}
-                                        onClick={() => handleSort('email')}
+                                        onClick={() => handleSort('Email')}
                                     >
                                         <div className={styles.headerContent}>
                                             <span>Email</span>
-                                            {sortConfig.key === 'email' && (
+                                            {sortConfig.key === 'Email' && (
                                                 sortConfig.direction === 'ascending' ?
                                                     <FiChevronUp size={14} /> : <FiChevronDown size={14} />
                                             )}
@@ -666,11 +619,11 @@ const Prospects = () => {
                                 {columnVisibility.companyphonenumber && (
                                     <th
                                         className={styles.sortableHeader}
-                                        onClick={() => handleSort('companyphonenumber')}
+                                        onClick={() => handleSort('Companyphonenumber')}
                                     >
                                         <div className={styles.headerContent}>
                                             <span>Company Phone</span>
-                                            {sortConfig.key === 'companyphonenumber' && (
+                                            {sortConfig.key === 'Companyphonenumber' && (
                                                 sortConfig.direction === 'ascending' ?
                                                     <FiChevronUp size={14} /> : <FiChevronDown size={14} />
                                             )}
@@ -681,11 +634,11 @@ const Prospects = () => {
                                 {columnVisibility.city && (
                                     <th
                                         className={styles.sortableHeader}
-                                        onClick={() => handleSort('city')}
+                                        onClick={() => handleSort('City')}
                                     >
                                         <div className={styles.headerContent}>
                                             <span>City</span>
-                                            {sortConfig.key === 'city' && (
+                                            {sortConfig.key === 'City' && (
                                                 sortConfig.direction === 'ascending' ?
                                                     <FiChevronUp size={14} /> : <FiChevronDown size={14} />
                                             )}
@@ -696,11 +649,11 @@ const Prospects = () => {
                                 {columnVisibility.state && (
                                     <th
                                         className={styles.sortableHeader}
-                                        onClick={() => handleSort('state')}
+                                        onClick={() => handleSort('State')}
                                     >
                                         <div className={styles.headerContent}>
                                             <span>State</span>
-                                            {sortConfig.key === 'state' && (
+                                            {sortConfig.key === 'State' && (
                                                 sortConfig.direction === 'ascending' ?
                                                     <FiChevronUp size={14} /> : <FiChevronDown size={14} />
                                             )}
@@ -711,11 +664,11 @@ const Prospects = () => {
                                 {columnVisibility.country && (
                                     <th
                                         className={styles.sortableHeader}
-                                        onClick={() => handleSort('country')}
+                                        onClick={() => handleSort('Country')}
                                     >
                                         <div className={styles.headerContent}>
                                             <span>Country</span>
-                                            {sortConfig.key === 'country' && (
+                                            {sortConfig.key === 'Country' && (
                                                 sortConfig.direction === 'ascending' ?
                                                     <FiChevronUp size={14} /> : <FiChevronDown size={14} />
                                             )}
@@ -726,11 +679,11 @@ const Prospects = () => {
                                 {columnVisibility.industry && (
                                     <th
                                         className={styles.sortableHeader}
-                                        onClick={() => handleSort('industry')}
+                                        onClick={() => handleSort('Industry')}
                                     >
                                         <div className={styles.headerContent}>
                                             <span>Industry</span>
-                                            {sortConfig.key === 'industry' && (
+                                            {sortConfig.key === 'Industry' && (
                                                 sortConfig.direction === 'ascending' ?
                                                     <FiChevronUp size={14} /> : <FiChevronDown size={14} />
                                             )}
@@ -741,11 +694,11 @@ const Prospects = () => {
                                 {columnVisibility.employeesize && (
                                     <th
                                         className={styles.sortableHeader}
-                                        onClick={() => handleSort('employeesize')}
+                                        onClick={() => handleSort('Employeesize')}
                                     >
                                         <div className={styles.headerContent}>
                                             <span>Employee Size</span>
-                                            {sortConfig.key === 'employeesize' && (
+                                            {sortConfig.key === 'Employeesize' && (
                                                 sortConfig.direction === 'ascending' ?
                                                     <FiChevronUp size={14} /> : <FiChevronDown size={14} />
                                             )}
@@ -756,11 +709,11 @@ const Prospects = () => {
                                 {columnVisibility.department && (
                                     <th
                                         className={styles.sortableHeader}
-                                        onClick={() => handleSort('department')}
+                                        onClick={() => handleSort('Department')}
                                     >
                                         <div className={styles.headerContent}>
                                             <span>Department</span>
-                                            {sortConfig.key === 'department' && (
+                                            {sortConfig.key === 'Department' && (
                                                 sortConfig.direction === 'ascending' ?
                                                     <FiChevronUp size={14} /> : <FiChevronDown size={14} />
                                             )}
@@ -771,11 +724,11 @@ const Prospects = () => {
                                 {columnVisibility.seniority && (
                                     <th
                                         className={styles.sortableHeader}
-                                        onClick={() => handleSort('seniority')}
+                                        onClick={() => handleSort('Seniority')}
                                     >
                                         <div className={styles.headerContent}>
                                             <span>Seniority</span>
-                                            {sortConfig.key === 'seniority' && (
+                                            {sortConfig.key === 'Seniority' && (
                                                 sortConfig.direction === 'ascending' ?
                                                     <FiChevronUp size={14} /> : <FiChevronDown size={14} />
                                             )}
@@ -786,11 +739,11 @@ const Prospects = () => {
                                 {columnVisibility.status && (
                                     <th
                                         className={styles.sortableHeader}
-                                        onClick={() => handleSort('status')}
+                                        onClick={() => handleSort('Status')}
                                     >
                                         <div className={styles.headerContent}>
                                             <span>Status</span>
-                                            {sortConfig.key === 'status' && (
+                                            {sortConfig.key === 'Status' && (
                                                 sortConfig.direction === 'ascending' ?
                                                     <FiChevronUp size={14} /> : <FiChevronDown size={14} />
                                             )}
@@ -801,11 +754,11 @@ const Prospects = () => {
                                 {columnVisibility.createdon && (
                                     <th
                                         className={styles.sortableHeader}
-                                        onClick={() => handleSort('createdon')}
+                                        onClick={() => handleSort('CreatedOn')}
                                     >
                                         <div className={styles.headerContent}>
                                             <span>Created On</span>
-                                            {sortConfig.key === 'createdon' && (
+                                            {sortConfig.key === 'CreatedOn' && (
                                                 sortConfig.direction === 'ascending' ?
                                                     <FiChevronUp size={14} /> : <FiChevronDown size={14} />
                                             )}
@@ -835,34 +788,34 @@ const Prospects = () => {
                                             <td>
                                                 <div className={styles.leadInfo}>
                                                     <div className={styles.avatar}>
-                                                        {lead.firstname?.[0]}{lead.lastname?.[0]}
+                                                        {lead.Firstname?.[0]}{lead.Lastname?.[0]}
                                                     </div>
-                                                    <div className={styles.leadName}>{lead.fullname}</div>
+                                                    <div className={styles.leadName}>{lead.Fullname}</div>
                                                 </div>
                                             </td>
                                         )}
 
-                                        {columnVisibility.jobtitle && <td>{lead.jobtitle}</td>}
-                                        {columnVisibility.company && <td>{lead.company}</td>}
-                                        {columnVisibility.email && <td>{lead.email}</td>}
-                                        {columnVisibility.companyphonenumber && <td>{lead.companyphonenumber}</td>}
-                                        {columnVisibility.city && <td>{lead.city}</td>}
-                                        {columnVisibility.state && <td>{lead.state}</td>}
-                                        {columnVisibility.country && <td>{lead.country}</td>}
-                                        {columnVisibility.industry && <td>{lead.industry}</td>}
-                                        {columnVisibility.employeesize && <td>{lead.employeesize}</td>}
-                                        {columnVisibility.department && <td>{lead.department}</td>}
-                                        {columnVisibility.seniority && <td>{lead.seniority}</td>}
+                                        {columnVisibility.jobtitle && <td>{lead.Jobtitle}</td>}
+                                        {columnVisibility.company && <td>{lead.Company}</td>}
+                                        {columnVisibility.email && <td>{lead.Email}</td>}
+                                        {columnVisibility.companyphonenumber && <td>{lead.Companyphonenumber}</td>}
+                                        {columnVisibility.city && <td>{lead.City}</td>}
+                                        {columnVisibility.state && <td>{lead.State}</td>}
+                                        {columnVisibility.country && <td>{lead.Country}</td>}
+                                        {columnVisibility.industry && <td>{lead.Industry}</td>}
+                                        {columnVisibility.employeesize && <td>{lead.Employeesize}</td>}
+                                        {columnVisibility.department && <td>{lead.Department}</td>}
+                                        {columnVisibility.seniority && <td>{lead.Seniority}</td>}
 
                                         {columnVisibility.status && (
                                             <td>
-                                                <span className={`${styles.statusBadge} ${styles[lead.status?.toLowerCase()]}`}>
-                                                    {lead.status}
+                                                <span className={`${styles.statusBadge} ${styles[lead.Status?.toLowerCase()]}`}>
+                                                    {lead.Status}
                                                 </span>
                                             </td>
                                         )}
 
-                                        {columnVisibility.createdon && <td>{formatDate(lead.createdon)}</td>}
+                                        {columnVisibility.createdon && <td>{formatDate(lead.CreatedOn)}</td>}
 
                                         {columnVisibility.actions && (
                                             <td>
