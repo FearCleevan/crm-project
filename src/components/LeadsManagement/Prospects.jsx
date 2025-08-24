@@ -78,6 +78,8 @@ const Prospects = () => {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
+            console.log('Fetching prospects with token:', token ? 'Token exists' : 'No token');
+
             const response = await fetch(`/api/prospects?page=${currentPage}&limit=${itemsPerPage}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -85,11 +87,23 @@ const Prospects = () => {
                 }
             });
 
+            console.log('Response status:', response.status);
+
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                // Try to get the error message from the response
+                let errorMessage = `HTTP error! status: ${response.status}`;
+                try {
+                    const errorData = await response.json();
+                    errorMessage = errorData.error || errorMessage;
+                } catch (e) {
+                    // If we can't parse JSON, use the status text
+                    errorMessage = response.statusText || errorMessage;
+                }
+                throw new Error(errorMessage);
             }
 
             const data = await response.json();
+            console.log('Received data:', data);
 
             if (data.success) {
                 setLeads(data.prospects || []);
@@ -141,7 +155,7 @@ const Prospects = () => {
         setCurrentPage(1);
     }, [searchTerm, filters.status, filters.industry, filters.country]);
 
-    // Filter and sort logic
+    // In the useMemo for filteredLeads, update the industry filter condition:
     const filteredLeads = useMemo(() => {
         return leads.filter(lead => {
             const matchesSearch = searchTerm === '' ||
@@ -151,12 +165,18 @@ const Prospects = () => {
                 (lead.Email && lead.Email.toLowerCase().includes(searchTerm.toLowerCase()));
 
             const matchesStatus = filters.status === 'all' || lead.Status === filters.status;
+            // Change from lead.Industry to lead.Industry (assuming your lead data uses IndustryCode)
             const matchesIndustry = filters.industry === 'all' || lead.Industry === filters.industry;
             const matchesCountry = filters.country === 'all' || lead.Country === filters.country;
 
             return matchesSearch && matchesStatus && matchesIndustry && matchesCountry;
         });
     }, [leads, searchTerm, filters]);
+
+    const getIndustryName = (industryCode) => {
+        const industry = lookupData.industries?.find(ind => ind.IndustryCode === industryCode);
+        return industry ? industry.IndustryName : industryCode;
+    };
 
     // Sort leads
     const sortedLeads = useMemo(() => {
@@ -427,55 +447,16 @@ const Prospects = () => {
         return ['all', ...uniqueStatuses];
     }, [leads]);
 
-    // Generate pagination buttons
-    const getPaginationButtons = () => {
-        const buttons = [];
-        const maxVisibleButtons = 5;
+    // Calculate pagination values
+    const startItem = (currentPage - 1) * itemsPerPage + 1;
+    const endItem = Math.min(currentPage * itemsPerPage, sortedLeads.length);
+    const totalItems = sortedLeads.length;
 
-        if (totalPages <= maxVisibleButtons) {
-            // Show all pages if total pages is less than max visible
-            for (let i = 1; i <= totalPages; i++) {
-                buttons.push(i);
-            }
-        } else {
-            // Always show first page
-            buttons.push(1);
-
-            // Calculate start and end of visible page range
-            let startPage = Math.max(2, currentPage - 1);
-            let endPage = Math.min(totalPages - 1, currentPage + 1);
-
-            // Adjust if we're at the beginning
-            if (currentPage <= 2) {
-                endPage = 3;
-            }
-
-            // Adjust if we're at the end
-            if (currentPage >= totalPages - 1) {
-                startPage = totalPages - 2;
-            }
-
-            // Add ellipsis after first page if needed
-            if (startPage > 2) {
-                buttons.push('ellipsis-left');
-            }
-
-            // Add page numbers
-            for (let i = startPage; i <= endPage; i++) {
-                buttons.push(i);
-            }
-
-            // Add ellipsis before last page if needed
-            if (endPage < totalPages - 1) {
-                buttons.push('ellipsis-right');
-            }
-
-            // Always show last page
-            buttons.push(totalPages);
-        }
-
-        return buttons;
-    };
+    // Generate page numbers array
+    const pageNumbers = [];
+    for (let i = 1; i <= totalPages; i++) {
+        pageNumbers.push(i);
+    }
 
     if (loading) {
         return (
@@ -520,8 +501,10 @@ const Prospects = () => {
                             className={styles.filterSelect}
                         >
                             <option value="all">All Industries</option>
-                            {industries.filter(i => i !== 'all').map(industry => (
-                                <option key={industry} value={industry}>{industry}</option>
+                            {lookupData.industries?.map(industry => (
+                                <option key={industry.IndustryCode} value={industry.IndustryName}>
+                                    {industry.IndustryName}
+                                </option>
                             ))}
                         </select>
 
@@ -960,7 +943,7 @@ const Prospects = () => {
                                         {columnVisibility.city && <td>{lead.City}</td>}
                                         {columnVisibility.state && <td>{lead.State}</td>}
                                         {columnVisibility.country && <td>{lead.Country}</td>}
-                                        {columnVisibility.industry && <td>{lead.Industry}</td>}
+                                        {columnVisibility.industry && <td>{getIndustryName(lead.Industry)}</td>}
                                         {columnVisibility.employeesize && <td>{lead.Employeesize}</td>}
                                         {columnVisibility.department && <td>{lead.Department}</td>}
                                         {columnVisibility.seniority && <td>{lead.Seniority}</td>}
@@ -1011,7 +994,7 @@ const Prospects = () => {
             {sortedLeads.length > 0 && (
                 <div className={styles.pagination}>
                     <div className={styles.paginationInfo}>
-                        Showing {Math.min((currentPage - 1) * itemsPerPage + 1, sortedLeads.length)} to {Math.min(currentPage * itemsPerPage, sortedLeads.length)} of {sortedLeads.length} entries
+                        Showing {startItem} to {endItem} of {totalItems} entries
                     </div>
 
                     <div className={styles.paginationControls}>
@@ -1038,25 +1021,15 @@ const Prospects = () => {
                             Previous
                         </button>
 
-                        {getPaginationButtons().map((page, index) => {
-                            if (page === 'ellipsis-left' || page === 'ellipsis-right') {
-                                return (
-                                    <span key={`ellipsis-${index}`} className={styles.paginationEllipsis}>
-                                        ...
-                                    </span>
-                                );
-                            }
-
-                            return (
-                                <button
-                                    key={page}
-                                    onClick={() => setCurrentPage(page)}
-                                    className={`${styles.paginationButton} ${currentPage === page ? styles.active : ''}`}
-                                >
-                                    {page}
-                                </button>
-                            );
-                        })}
+                        {pageNumbers.map(page => (
+                            <button
+                                key={page}
+                                onClick={() => setCurrentPage(page)}
+                                className={`${styles.paginationButton} ${currentPage === page ? styles.active : ''}`}
+                            >
+                                {page}
+                            </button>
+                        ))}
 
                         <button
                             onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}

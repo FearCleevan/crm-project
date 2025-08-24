@@ -256,8 +256,8 @@ const AddNewProspects = ({ isOpen, onClose, onSave, lookupData }) => {
                                     >
                                         <option value="">Select Industry</option>
                                         {lookupData.industries?.map(industry => (
-                                            <option key={industry} value={industry}>
-                                                {industry}
+                                            <option key={industry.IndustryCode} value={industry.IndustryCode}>
+                                                {industry.IndustryName}
                                             </option>
                                         ))}
                                     </select>

@@ -17,6 +17,14 @@ import multer from 'multer';
 const upload = multer({ storage: multer.memoryStorage() });
 const router = express.Router();
 
+router.get('/test', (req, res) => {
+    res.json({ 
+        success: true, 
+        message: 'API is working',
+        timestamp: new Date().toISOString()
+    });
+});
+
 // All routes require authentication
 router.use(authMiddleware);
 

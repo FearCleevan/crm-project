@@ -20,14 +20,22 @@ export const getProspects = async (req, res) => {
       SELECT p.*, 
         pd.DispositionName,
         pes.EmailName,
-        pp.ProviderName
+        pp.ProviderName,
+        pi.IndustryName
       FROM prospects p
       LEFT JOIN prospects_disposition pd ON p.DispositionCode = pd.DispositionCode
       LEFT JOIN prospects_email_status pes ON p.EmailCode = pes.EmailCode
       LEFT JOIN prospects_provider pp ON p.ProviderCode = pp.ProviderCode
+      LEFT JOIN prospects_industry pi ON p.Industry = pi.IndustryCode
       WHERE p.isactive = 1
     `;
-    let countQuery = `SELECT COUNT(*) as total FROM prospects p WHERE p.isactive = 1`;
+
+    let countQuery = `
+      SELECT COUNT(*) as total 
+      FROM prospects p 
+      WHERE p.isactive = 1
+    `;
+
     let queryParams = [];
     let countParams = [];
 
@@ -88,6 +96,9 @@ export const getProspects = async (req, res) => {
     queryParams.push(parseInt(limit), offset);
 
     // Execute queries
+    console.log("Executing query:", query);
+    console.log("Query params:", queryParams);
+
     const [prospects] = await pool.query(query, queryParams);
     const [countResult] = await pool.query(countQuery, countParams);
     const total = countResult[0]?.total || 0;
@@ -106,7 +117,7 @@ export const getProspects = async (req, res) => {
     console.error("Get prospects error:", error);
     res.status(500).json({
       success: false,
-      error: "Internal server error",
+      error: "Internal server error: " + error.message,
     });
   }
 };
@@ -122,9 +133,11 @@ export const getProspectById = async (req, res) => {
         pd.DispositionName,
         pes.EmailName,
         pp.ProviderName
+        pos.IndustryName
       FROM prospects p
       LEFT JOIN prospects_disposition pd ON p.DispositionCode = pd.DispositionCode
       LEFT JOIN prospects_email_status pes ON p.EmailCode = pes.EmailCode
+      LEFT JOIN prospects_industry pos ON p.IndustryCode = pos.IndustryCode
       LEFT JOIN prospects_provider pp ON p.ProviderCode = pp.ProviderCode
       WHERE p.id = ? AND p.isactive = 1
     `,
@@ -183,7 +196,7 @@ export const createProspect = async (req, res) => {
       Comments,
       Department,
       Seniority,
-      Status
+      Status,
     } = req.body;
 
     // Validate required fields
@@ -204,6 +217,20 @@ export const createProspect = async (req, res) => {
         return res.status(400).json({
           success: false,
           error: "Invalid Dispositioncode",
+        });
+      }
+    }
+
+    // Validate foreign keys if provided
+    if (Industry) {
+      const [industryCheck] = await pool.query(
+        "SELECT IndustryCode FROM prospects_industry WHERE IndustryCode = ?",
+        [Industry]
+      );
+      if (industryCheck.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid IndustryCode",
         });
       }
     }
@@ -322,6 +349,20 @@ export const updateProspect = async (req, res) => {
         return res.status(400).json({
           success: false,
           error: "Invalid Dispositioncode",
+        });
+      }
+    }
+
+    // Validate foreign keys if provided
+    if (updates.Industry) {
+      const [industryCheck] = await pool.query(
+        "SELECT IndustryCode FROM prospects_industry WHERE IndustryCode = ?",
+        [updates.Industry]
+      );
+      if (industryCheck.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid Industrycode",
         });
       }
     }
@@ -544,6 +585,10 @@ export const downloadCSVTemplate = async (req, res) => {
       "SELECT ProviderCode FROM prospects_provider LIMIT 3"
     );
 
+    const [validIndustries] = await pool.query(
+      "SELECT IndustryCode FROM prospects_industry LIMIT 3"
+    );
+
     const templateData = [
       {
         Fullname: "John Smith",
@@ -565,7 +610,7 @@ export const downloadCSVTemplate = async (req, res) => {
         Postalcode: "94101",
         Country: "US",
         Annualrevenue: "1000000.00",
-        Industry: "Technology",
+        Industry: validIndustries[0]?.IndustryCode || "IND001",
         Employeesize: "250",
         Siccode: "7372",
         Naicscode: "541511",
@@ -628,10 +673,14 @@ export const importProspects = async (req, res) => {
     const [validProviders] = await pool.query(
       "SELECT ProviderCode FROM prospects_provider"
     );
+    const [validIndustries] = await pool.query(
+      "SELECT IndustryCode FROM prospects_industry"
+    );
 
     const validDispositionCodes = validDispositions.map(
       (d) => d.DispositionCode
     );
+    const validIndustryCodes = validIndustries.map((i) => i.IndustryCode);
     const validEmailCodes = validEmailStatuses.map((e) => e.EmailCode);
     const validProviderCodes = validProviders.map((p) => p.ProviderCode);
 
@@ -670,12 +719,23 @@ export const importProspects = async (req, res) => {
 
         // Validate foreign key values - convert empty strings to null
         const dispositionCode = row.Dispositioncode?.trim() || null;
+        const industryCode = row.Industry?.trim() || null;
         const emailCode = row.Emailcode?.trim() || null;
         const providerCode = row.Providercode?.trim() || null;
 
-        if (dispositionCode && !validDispositionCodes.includes(dispositionCode)) {
+        if (
+          dispositionCode &&
+          !validDispositionCodes.includes(dispositionCode)
+        ) {
           errors.push(
             `Row ${index + 1}: Invalid Dispositioncode '${dispositionCode}'`
+          );
+          continue;
+        }
+
+        if (industryCode && !validIndustryCodes.includes(industryCode)) {
+          errors.push(
+            `Row ${index + 1}: Invalid Invalid IndustryCode '${industryCode}'`
           );
           continue;
         }
@@ -713,7 +773,7 @@ export const importProspects = async (req, res) => {
           Postalcode: row.Postalcode || "",
           Country: row.Country || "",
           Annualrevenue: parseFloat(row.Annualrevenue) || 0,
-          Industry: row.Industry || "",
+          Industry: industryCode,
           Employeesize: parseInt(row.Employeesize) || 0,
           Siccode: parseInt(row.Siccode) || 0,
           Naicscode: parseInt(row.Naicscode) || 0,
@@ -824,10 +884,11 @@ export const getLookupData = async (req, res) => {
       "SELECT * FROM prospects_provider ORDER BY ProviderName"
     );
 
-    // Get unique values for filters
-    const [industriesResult] = await pool.query(
-      "SELECT DISTINCT Industry FROM prospects WHERE Industry IS NOT NULL AND Industry != '' ORDER BY Industry"
+    // Get industry data - use IndustryCode as value and IndustryName as display text
+    const [industries] = await pool.query(
+      "SELECT * FROM prospects_industry ORDER BY IndustryName"
     );
+
     const [countriesResult] = await pool.query(
       "SELECT DISTINCT Country FROM prospects WHERE Country IS NOT NULL AND Country != '' ORDER BY Country"
     );
@@ -835,7 +896,6 @@ export const getLookupData = async (req, res) => {
       "SELECT DISTINCT Status FROM prospects WHERE Status IS NOT NULL AND Status != '' ORDER BY Status"
     );
 
-    const industries = industriesResult.map((i) => i.Industry);
     const countries = countriesResult.map((c) => c.Country);
     const statuses = statusesResult.map((s) => s.Status);
 
@@ -845,7 +905,7 @@ export const getLookupData = async (req, res) => {
         dispositions,
         emailStatuses,
         providers,
-        industries,
+        industries, // This contains {IndustryCode, IndustryName}
         countries,
         statuses,
       },
