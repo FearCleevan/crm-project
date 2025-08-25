@@ -1,4 +1,4 @@
-// Updated LeftDashboard.jsx with robust error handling
+// Updated LeftDashboard.jsx with IP Management navigation
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import styles from './LeftDashboard.module.css';
@@ -33,6 +33,7 @@ const LeftDashboard = ({ collapsed }) => {
       accessible.TASKS = hasAccessToNavigation(permissions, 'TASKS');
       accessible.PERMISSIONS = hasAccessToNavigation(permissions, 'PERMISSIONS');
       accessible.USER_MANAGEMENT = hasAccessToNavigation(permissions, 'USER_MANAGEMENT');
+      accessible.IP_MANAGEMENT = hasAccessToNavigation(permissions, 'IP_MANAGEMENT'); // Added IP Management
 
       setAccessibleRoutes(accessible);
 
@@ -41,6 +42,8 @@ const LeftDashboard = ({ collapsed }) => {
       if (currentPath === '/permissions' && !accessible.PERMISSIONS) {
         navigate('/dashboard', { replace: true });
       } else if (currentPath === '/user-management' && !accessible.USER_MANAGEMENT) {
+        navigate('/dashboard', { replace: true });
+      } else if (currentPath === '/ip-management' && !accessible.IP_MANAGEMENT) { // Added IP Management redirect
         navigate('/dashboard', { replace: true });
       }
     }
@@ -206,7 +209,7 @@ const LeftDashboard = ({ collapsed }) => {
             )}
 
           {/* Account Settings Section - Only show for IT Admins */}
-          {(accessibleRoutes.PERMISSIONS || accessibleRoutes.USER_MANAGEMENT) && (
+          {(accessibleRoutes.PERMISSIONS || accessibleRoutes.USER_MANAGEMENT || accessibleRoutes.IP_MANAGEMENT) && (
             <div className={styles.section}>
               <h4 className={styles.sectionTitle}>Account Settings</h4>
               <ul className={styles.navList}>
@@ -232,6 +235,19 @@ const LeftDashboard = ({ collapsed }) => {
                     >
                       <span className={styles.navIcon}>👥</span>
                       <span>Account Management</span>
+                    </Link>
+                  </li>
+                )}
+
+                {/* IP Management - Added this section */}
+                {accessibleRoutes.IP_MANAGEMENT && (
+                  <li className={styles.navItem}>
+                    <Link
+                      to="/ip-management"
+                      className={`${styles.navLink} ${isActivePath('/ip-management') ? styles.active : ''}`}
+                    >
+                      <span className={styles.navIcon}>🌐</span>
+                      <span>IP Management</span>
                     </Link>
                   </li>
                 )}
@@ -293,6 +309,17 @@ const LeftDashboard = ({ collapsed }) => {
               title="Account Management"
             >
               <span>👥</span>
+            </Link>
+          )}
+
+          {/* IP Management - Added this section for collapsed view */}
+          {accessibleRoutes.IP_MANAGEMENT && (
+            <Link
+              to="/ip-management"
+              className={`${styles.collapsedIcon} ${isActivePath('/ip-management') ? styles.active : ''}`}
+              title="IP Management"
+            >
+              <span>🌐</span>
             </Link>
           )}
         </div>

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 24, 2025 at 12:04 PM
+-- Generation Time: Aug 25, 2025 at 04:06 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -64,6 +64,55 @@ INSERT INTO `crm-users` (`user_id`, `first_name`, `middle_name`, `last_name`, `p
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `ip_blacklist`
+--
+
+CREATE TABLE `ip_blacklist` (
+  `id` int(11) NOT NULL,
+  `ip_address` varchar(45) NOT NULL,
+  `description` text DEFAULT NULL,
+  `is_active` tinyint(1) DEFAULT 1,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `ip_blacklist`
+--
+
+INSERT INTO `ip_blacklist` (`id`, `ip_address`, `description`, `is_active`, `created_at`, `updated_at`) VALUES
+(1, '192.168.1.200', 'Suspicious activity', 1, '2025-08-25 02:03:15', '2025-08-25 02:03:15'),
+(2, '10.0.0.99', 'Former employee', 1, '2025-08-25 02:03:15', '2025-08-25 02:03:15');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `ip_whitelist`
+--
+
+CREATE TABLE `ip_whitelist` (
+  `id` int(11) NOT NULL,
+  `ip_address` varchar(45) NOT NULL,
+  `description` text DEFAULT NULL,
+  `is_active` tinyint(1) DEFAULT 1,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `ip_whitelist`
+--
+
+INSERT INTO `ip_whitelist` (`id`, `ip_address`, `description`, `is_active`, `created_at`, `updated_at`) VALUES
+(4, '143.44.184.3', 'Home Network IP', 1, '2025-08-25 01:15:48', '2025-08-25 02:02:46'),
+(5, '192.168.1.1', 'Home IP', 1, '2025-08-25 01:16:09', '2025-08-25 02:02:50'),
+(6, '192.168.1.100', 'Office main IP', 1, '2025-08-25 02:03:15', '2025-08-25 02:03:15'),
+(7, '127.0.0.1', 'Localhost', 1, '2025-08-25 02:03:15', '2025-08-25 02:03:15'),
+(8, '10.0.0.50', 'Admin workstation', 1, '2025-08-25 02:03:15', '2025-08-25 02:03:15');
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `permissions`
 --
 
@@ -114,7 +163,10 @@ INSERT INTO `permissions` (`permission_id`, `module_id`, `permission_name`, `per
 (32, 10, 'Edit Users', 'users_edit', 'Can edit existing users'),
 (33, 10, 'Delete Users', 'users_delete', 'Can delete users'),
 (34, 11, 'View Permissions', 'permissions_view', 'Can view permissions'),
-(35, 11, 'Manage Permissions', 'permissions_manage', 'Can manage user permissions');
+(35, 11, 'Manage Permissions', 'permissions_manage', 'Can manage user permissions'),
+(36, 11, 'IP Control', 'ip_control', 'Can manage IP access control settings'),
+(37, 12, 'View IP Management', 'ip_management_view', 'Can view IP management interface'),
+(38, 12, 'Manage IP Settings', 'ip_management_manage', 'Can change IP access settings');
 
 -- --------------------------------------------------------
 
@@ -145,7 +197,8 @@ INSERT INTO `permission_modules` (`module_id`, `module_name`, `description`, `ca
 (8, 'Calls', 'Track and log phone calls', 'activities', '2025-08-21 02:43:31'),
 (9, 'Tasks', 'Create and assign tasks', 'activities', '2025-08-21 02:43:31'),
 (10, 'User Management', 'Manage system users', 'account_settings', '2025-08-21 02:43:31'),
-(11, 'Permissions', 'Manage user permissions and roles', 'account_settings', '2025-08-21 02:43:31');
+(11, 'Permissions', 'Manage user permissions and roles', 'account_settings', '2025-08-21 02:43:31'),
+(12, 'IP Management', 'Manage IP access controls', 'account_settings', '2025-08-25 02:06:06');
 
 -- --------------------------------------------------------
 
@@ -219,29 +272,6 @@ CREATE TABLE `prospects` (
 --
 -- Dumping data for table `prospects`
 --
-
-INSERT INTO `prospects` (`id`, `Fullname`, `Firstname`, `Lastname`, `Jobtitle`, `Company`, `Website`, `Personallinkedin`, `Companylinkedin`, `Altphonenumber`, `Companyphonenumber`, `Email`, `Emailcode`, `Address`, `Street`, `City`, `State`, `Postalcode`, `Country`, `Annualrevenue`, `Industry`, `Employeesize`, `Siccode`, `Naicscode`, `Dispositioncode`, `Providercode`, `Comments`, `isactive`, `Status`, `CreatedBy`, `CreatedOn`, `UpdatedBy`, `UpdatedOn`, `Department`, `Seniority`) VALUES
-(1, 'John Smith', 'John', 'Smith', 'IT Manager', 'TechNova Inc', NULL, NULL, NULL, '0', '555-111-2222', 'john.smith@technova.com', NULL, NULL, NULL, 'San Francisco', 'CA', NULL, 'US', 0.00, 'TECH', 250, 0, 0, NULL, NULL, NULL, 1, 'New', 'SYSTEM', '2025-08-24 12:45:15', NULL, NULL, 'IT', 'Manager'),
-(2, 'Sarah Johnson', 'Sarah', 'Johnson', 'Marketing Director', 'BrandSphere', NULL, NULL, NULL, '0', '555-333-4444', 's.johnson@brandsphere.io', NULL, NULL, NULL, 'New York', 'NY', NULL, 'US', 0.00, 'MEDIA', 120, 0, 0, NULL, NULL, NULL, 1, 'Contacted', 'SYSTEM', '2025-08-24 12:45:15', NULL, NULL, 'Marketing', 'Director'),
-(3, 'David Lee', 'David', 'Lee', 'CFO', 'FinTrust Corp', NULL, NULL, NULL, '0', '555-222-8888', 'david.lee@fintrust.com', NULL, NULL, NULL, 'Chicago', 'IL', NULL, 'US', 0.00, 'FIN', 500, 0, 0, NULL, NULL, NULL, 1, 'Qualified', 'SYSTEM', '2025-08-24 12:45:15', NULL, NULL, 'Finance', 'Executive'),
-(4, 'Emily Davis', 'Emily', 'Davis', 'HR Director', 'PeopleFirst Ltd', NULL, NULL, NULL, '0', '555-444-5555', 'emily.davis@peoplefirst.com', NULL, NULL, NULL, 'Boston', 'MA', NULL, 'US', 0.00, 'CONSULT', 75, 0, 0, NULL, NULL, NULL, 1, 'Proposal', 'SYSTEM', '2025-08-24 12:45:15', NULL, NULL, 'HR', 'Director'),
-(5, 'Michael Brown', 'Michael', 'Brown', 'CEO', 'NextStack LLC', NULL, NULL, NULL, '0', '555-555-6666', 'michael.brown@nextstack.com', NULL, NULL, NULL, 'Austin', 'TX', NULL, 'US', 0.00, 'TECH', 350, 0, 0, NULL, NULL, NULL, 1, 'Closed', 'SYSTEM', '2025-08-24 12:45:15', NULL, NULL, 'Executive', 'CEO'),
-(6, 'John Smith', 'John', 'Smith', 'IT Manager', 'TechNova Inc', NULL, NULL, NULL, '0', '555-111-2222', 'john.smith@technova.com', NULL, NULL, NULL, 'San Francisco', 'CA', NULL, 'USA', 0.00, 'Technology', 250, 0, 0, NULL, NULL, NULL, 0, 'New', 'SYSTEM', '2025-08-24 13:11:59', '7', '2025-08-24 17:59:17', 'IT', 'Manager'),
-(7, 'Sarah Johnson', 'Sarah', 'Johnson', 'Marketing Director', 'BrandSphere', NULL, NULL, NULL, '0', '555-333-4444', 's.johnson@brandsphere.io', NULL, NULL, NULL, 'New York', 'NY', NULL, 'USA', 0.00, 'Marketing', 120, 0, 0, NULL, NULL, NULL, 1, 'Contacted', 'SYSTEM', '2025-08-24 13:11:59', NULL, NULL, 'Marketing', 'Director'),
-(8, 'David Lee', 'David', 'Lee', 'CFO', 'FinTrust Corp', NULL, NULL, NULL, '0', '555-222-8888', 'david.lee@fintrust.com', NULL, NULL, NULL, 'Chicago', 'IL', NULL, 'USA', 0.00, 'Finance', 500, 0, 0, NULL, NULL, NULL, 1, 'Qualified', 'SYSTEM', '2025-08-24 13:11:59', NULL, NULL, 'Finance', 'Executive'),
-(9, 'Emily Davis', 'Emily', 'Davis', 'HR Director', 'PeopleFirst Ltd', NULL, NULL, NULL, '0', '555-444-5555', 'emily.davis@peoplefirst.com', NULL, NULL, NULL, 'Boston', 'MA', NULL, 'USA', 0.00, 'Human Resources', 75, 0, 0, NULL, NULL, NULL, 1, 'Proposal', 'SYSTEM', '2025-08-24 13:11:59', NULL, NULL, 'HR', 'Director'),
-(10, 'Michael Brown', 'Michael', 'Brown', 'CEO', 'NextStack LLC', NULL, NULL, NULL, '0', '555-555-6666', 'michael.brown@nextstack.com', NULL, NULL, NULL, 'Austin', 'TX', NULL, 'USA', 0.00, 'Software', 350, 0, 0, NULL, NULL, NULL, 1, 'Closed', 'SYSTEM', '2025-08-24 13:11:59', NULL, NULL, 'Executive', 'CEO'),
-(11, 'Peter Paul Abillar Lazan', 'Peter Paul ', 'Lazan', 'Web Developer', 'The Launchpad Inc', 'https://thelaunchpadteam.com/', 'https://thelaunchpadteam.com/', 'https://thelaunchpadteam.com/', '09515379127', '09515379127', 'jonathan.mauring17@gmail.com', 'EMA000', 'Matina Aplaya ', 'Del Carmen St. ', 'Davao City', 'Philippines', '8000', 'US', 10000.00, 'Technology', 25, 8520, 8516, 'CNA', 'PROV01', 'janvie bayot', 1, 'Contacted', '1', '2025-08-24 13:58:32', NULL, NULL, 'IT', 'CEO'),
-(83, 'John Smith', 'John', 'Smith', 'IT Manager', 'TechNova Inc', 'https://technova.com', 'https://linkedin.com/in/johnsmith', 'https://linkedin.com/company/technova', '555-123-4567', '555-111-2222', 'john.smith@technova.com', 'EMA000', '123 Main St', 'Main Street', 'San Francisco', 'CA', '94101', 'US', 1000000.00, 'Technology', 250, 7372, 541511, 'A', 'DA', 'Interested in our enterprise solution', 1, 'New', '7', '2025-08-24 17:58:35', NULL, NULL, 'IT', 'Manager'),
-(84, 'John Smith', 'John', 'Smith', 'IT Manager', 'TechNova Inc', 'https://technova.com', 'https://linkedin.com/in/johnsmith', 'https://linkedin.com/company/technova', '555-123-4567', '555-111-2222', 'john.smith@technova.com', 'EMA000', '123 Main St', 'Main Street', 'San Francisco', 'CA', '94101', 'US', 1000000.00, 'Technology', 250, 7372, 541511, 'A', 'DA', 'Interested in our enterprise solution', 0, 'New', '7', '2025-08-24 17:58:35', '7', '2025-08-24 17:58:52', 'IT', 'Manager'),
-(85, 'John Smith', 'John', 'Smith', 'IT Manager', 'TechNova Inc', 'https://technova.com', 'https://linkedin.com/in/johnsmith', 'https://linkedin.com/company/technova', '555-123-4567', '555-111-2222', 'john.smith@technova.com', 'EMA000', '123 Main St', 'Main Street', 'San Francisco', 'CA', '94101', 'US', 1000000.00, 'Technology', 250, 7372, 541511, 'A', 'DA', 'Interested in our enterprise solution', 0, 'New', '7', '2025-08-24 17:58:35', '7', '2025-08-24 17:59:17', 'IT', 'Manager'),
-(86, 'John Smith', 'John', 'Smith', 'IT Manager', 'TechNova Inc', 'https://technova.com', 'https://linkedin.com/in/johnsmith', 'https://linkedin.com/company/technova', '555-123-4567', '555-111-2222', 'john.smith@technova.com', 'EMA000', '123 Main St', 'Main Street', 'San Francisco', 'CA', '94101', 'US', 1000000.00, 'Technology', 250, 7372, 541511, 'A', 'DA', 'Interested in our enterprise solution', 0, 'New', '7', '2025-08-24 17:58:35', '7', '2025-08-24 17:59:17', 'IT', 'Manager'),
-(87, 'John Smith', 'John', 'Smith', 'IT Manager', 'TechNova Inc', 'https://technova.com', 'https://linkedin.com/in/johnsmith', 'https://linkedin.com/company/technova', '555-123-4567', '555-111-2222', 'john.smith@technova.com', 'EMA000', '123 Main St', 'Main Street', 'San Francisco', 'CA', '94101', 'US', 1000000.00, 'Technology', 250, 7372, 541511, 'A', 'DA', 'Interested in our enterprise solution', 0, 'New', '7', '2025-08-24 17:58:35', '7', '2025-08-24 17:59:17', 'IT', 'Manager'),
-(88, 'John Smith', 'John', 'Smith', 'IT Manager', 'TechNova Inc', 'https://technova.com', 'https://linkedin.com/in/johnsmith', 'https://linkedin.com/company/technova', '555-123-4567', '555-111-2222', 'john.smith@technova.com', 'EMA000', '123 Main St', 'Main Street', 'San Francisco', 'CA', '94101', 'US', 1000000.00, 'Technology', 250, 7372, 541511, 'A', 'DA', 'Interested in our enterprise solution', 0, 'New', '7', '2025-08-24 17:58:35', '7', '2025-08-24 17:59:17', 'IT', 'Manager'),
-(89, 'John Smith', 'John', 'Smith', 'IT Manager', 'TechNova Inc', 'https://technova.com', 'https://linkedin.com/in/johnsmith', 'https://linkedin.com/company/technova', '555-123-4567', '555-111-2222', 'john.smith@technova.com', 'EMA000', '123 Main St', 'Main Street', 'San Francisco', 'CA', '94101', 'US', 1000000.00, 'Technology', 250, 7372, 541511, 'A', 'DA', 'Interested in our enterprise solution', 0, 'New', '7', '2025-08-24 17:58:35', '7', '2025-08-24 17:59:17', 'IT', 'Manager'),
-(90, 'John Smith', 'John', 'Smith', 'IT Manager', 'TechNova Inc', 'https://technova.com', 'https://linkedin.com/in/johnsmith', 'https://linkedin.com/company/technova', '555-123-4567', '555-111-2222', 'john.smith@technova.com', 'EMA000', '123 Main St', 'Main Street', 'San Francisco', 'CA', '94101', 'US', 1000000.00, 'Technology', 250, 7372, 541511, 'A', 'DA', 'Interested in our enterprise solution', 0, 'New', '7', '2025-08-24 17:58:35', '7', '2025-08-24 17:59:17', 'IT', 'Manager');
-
--- --------------------------------------------------------
 
 --
 -- Table structure for table `prospects_country`
@@ -473,7 +503,29 @@ INSERT INTO `role_permissions` (`role_permission_id`, `role_id`, `permission_id`
 (69, 2, 18, 1),
 (70, 2, 22, 1),
 (71, 2, 24, 1),
-(72, 2, 26, 1);
+(72, 2, 26, 1),
+(73, 1, 36, 1);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `system_settings`
+--
+
+CREATE TABLE `system_settings` (
+  `id` int(11) NOT NULL,
+  `setting_name` varchar(100) NOT NULL,
+  `setting_value` text NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `system_settings`
+--
+
+INSERT INTO `system_settings` (`id`, `setting_name`, `setting_value`, `created_at`, `updated_at`) VALUES
+(7, 'ip_control_mode', 'open', '2025-08-25 01:16:14', '2025-08-25 01:37:20');
 
 -- --------------------------------------------------------
 
@@ -545,6 +597,20 @@ ALTER TABLE `crm-users`
   ADD PRIMARY KEY (`user_id`),
   ADD UNIQUE KEY `email_unique` (`email`),
   ADD UNIQUE KEY `username_unique` (`username`);
+
+--
+-- Indexes for table `ip_blacklist`
+--
+ALTER TABLE `ip_blacklist`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `ip_address` (`ip_address`);
+
+--
+-- Indexes for table `ip_whitelist`
+--
+ALTER TABLE `ip_whitelist`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `ip_address` (`ip_address`);
 
 --
 -- Indexes for table `permissions`
@@ -628,6 +694,13 @@ ALTER TABLE `role_permissions`
   ADD KEY `permission_id` (`permission_id`);
 
 --
+-- Indexes for table `system_settings`
+--
+ALTER TABLE `system_settings`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `setting_name` (`setting_name`);
+
+--
 -- Indexes for table `user_requests`
 --
 ALTER TABLE `user_requests`
@@ -656,16 +729,28 @@ ALTER TABLE `crm-users`
   MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
+-- AUTO_INCREMENT for table `ip_blacklist`
+--
+ALTER TABLE `ip_blacklist`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT for table `ip_whitelist`
+--
+ALTER TABLE `ip_whitelist`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+
+--
 -- AUTO_INCREMENT for table `permissions`
 --
 ALTER TABLE `permissions`
-  MODIFY `permission_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=36;
+  MODIFY `permission_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=39;
 
 --
 -- AUTO_INCREMENT for table `permission_modules`
 --
 ALTER TABLE `permission_modules`
-  MODIFY `module_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `module_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT for table `permission_roles`
@@ -677,13 +762,19 @@ ALTER TABLE `permission_roles`
 -- AUTO_INCREMENT for table `prospects`
 --
 ALTER TABLE `prospects`
-  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=91;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=338;
 
 --
 -- AUTO_INCREMENT for table `role_permissions`
 --
 ALTER TABLE `role_permissions`
-  MODIFY `role_permission_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=73;
+  MODIFY `role_permission_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=76;
+
+--
+-- AUTO_INCREMENT for table `system_settings`
+--
+ALTER TABLE `system_settings`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `user_requests`

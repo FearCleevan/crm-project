@@ -10,6 +10,8 @@ import pool from './config/db.js';
 import requestRoutes from './routes/requestRoutes.js';
 import permissionsRoutes from './routes/permissionsRoutes.js';
 import prospectsRoutes from './routes/prospectsRoutes.js';
+import { ipControlMiddleware } from './middlewares/ipControlMiddleware.js';
+import ipManagementRoutes from './routes/ipManagementRoutes.js';
 
 dotenv.config();
 
@@ -26,6 +28,16 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+app.use((req, res, next) => {
+  if (req.path === '/api/auth/login' || req.path === '/api/health' || req.path === '/api/requests/submit') {
+    return next();
+  }
+  ipControlMiddleware(req, res, next);
+});
+
+// Add IP management routes
+app.use('/api/ip-management', ipManagementRoutes);
 
 app.use('/api/requests', requestRoutes);
 

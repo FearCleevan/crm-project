@@ -6,6 +6,7 @@ import UserCreation from './components/UserCreation/UserCreation';
 import PermissionAndRequest from './components/PermissionAndRequest/PermissionAndRequest';
 import ProtectedRoute from './components/ProtectedRoute';
 import LeadsManagement from './components/LeadsManagement/LeadsManagement';
+import IPManagement from './components/IPManagement/IPManagement';
 
 function App() {
   return (
@@ -28,6 +29,10 @@ function App() {
 
         <Route element={<ProtectedRoute requiredPermission="PERMISSIONS" />}>
           <Route path="/permissions" element={<PermissionAndRequest />} />
+        </Route>
+
+        <Route element={<ProtectedRoute requiredPermission="IP_MANAGEMENT" />}>
+          <Route path="/ip-management" element={<IPManagement />} />
         </Route>
 
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
