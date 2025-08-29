@@ -16,6 +16,7 @@ export const getProspects = async (req, res) => {
       sortOrder = "DESC",
     } = req.query;
 
+
     let query = `
       SELECT p.*, 
         pd.DispositionName,
@@ -27,13 +28,13 @@ export const getProspects = async (req, res) => {
       LEFT JOIN prospects_email_status pes ON p.EmailCode = pes.EmailCode
       LEFT JOIN prospects_provider pp ON p.ProviderCode = pp.ProviderCode
       LEFT JOIN prospects_industry pi ON p.Industry = pi.IndustryCode
-      WHERE p.isactive = 1
+      WHERE 1=1
     `;
 
     let countQuery = `
       SELECT COUNT(*) as total 
       FROM prospects p 
-      WHERE p.isactive = 1
+      WHERE 1=1
     `;
 
     let queryParams = [];
@@ -485,17 +486,13 @@ export const bulkDeleteProspects = async (req, res) => {
 
     const placeholders = ids.map(() => "?").join(",");
     const [result] = await pool.query(
-      `
-      UPDATE prospects 
-      SET isactive = 0, UpdatedBy = ?, UpdatedOn = CURRENT_TIMESTAMP
-      WHERE id IN (${placeholders})
-    `,
-      [req.user.userId, ...ids]
+      `DELETE FROM prospects WHERE id IN (${placeholders})`,
+      [...ids]
     );
 
     res.json({
       success: true,
-      message: `${result.affectedRows} prospects deleted successfully`,
+      message: `${result.affectedRows} prospects deleted permanently`,
     });
   } catch (error) {
     console.error("Bulk delete prospects error:", error);

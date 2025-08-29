@@ -1,3 +1,4 @@
+//src/components/LeadsManagement/Prospects.jsx
 import React, { useState, useEffect, useMemo } from 'react';
 import {
     FiSearch,
@@ -78,32 +79,36 @@ const Prospects = () => {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
-            console.log('Fetching prospects with token:', token ? 'Token exists' : 'No token');
+            
+            // Build query parameters
+            const params = new URLSearchParams({
+                page: currentPage,
+                limit: itemsPerPage,
+                ...(searchTerm && { search: searchTerm }),
+                ...(filters.status !== 'all' && { status: filters.status }),
+                ...(filters.industry !== 'all' && { industry: filters.industry }),
+                ...(filters.country !== 'all' && { country: filters.country })
+            });
 
-            const response = await fetch(`/api/prospects?page=${currentPage}&limit=${itemsPerPage}`, {
+            const response = await fetch(`/api/prospects?${params}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 }
             });
 
-            console.log('Response status:', response.status);
-
             if (!response.ok) {
-                // Try to get the error message from the response
                 let errorMessage = `HTTP error! status: ${response.status}`;
                 try {
                     const errorData = await response.json();
                     errorMessage = errorData.error || errorMessage;
                 } catch (e) {
-                    // If we can't parse JSON, use the status text
                     errorMessage = response.statusText || errorMessage;
                 }
                 throw new Error(errorMessage);
             }
 
             const data = await response.json();
-            console.log('Received data:', data);
 
             if (data.success) {
                 setLeads(data.prospects || []);
@@ -155,7 +160,7 @@ const Prospects = () => {
         setCurrentPage(1);
     }, [searchTerm, filters.status, filters.industry, filters.country]);
 
-    // In the useMemo for filteredLeads, update the industry filter condition:
+    // Filter leads based on search and filters
     const filteredLeads = useMemo(() => {
         return leads.filter(lead => {
             const matchesSearch = searchTerm === '' ||
@@ -165,7 +170,6 @@ const Prospects = () => {
                 (lead.Email && lead.Email.toLowerCase().includes(searchTerm.toLowerCase()));
 
             const matchesStatus = filters.status === 'all' || lead.Status === filters.status;
-            // Change from lead.Industry to lead.Industry (assuming your lead data uses IndustryCode)
             const matchesIndustry = filters.industry === 'all' || lead.Industry === filters.industry;
             const matchesCountry = filters.country === 'all' || lead.Country === filters.country;
 
@@ -244,7 +248,6 @@ const Prospects = () => {
                 });
                 break;
             case 'archive':
-                // Implement archive functionality if needed
                 showNotification('Archive functionality not implemented yet', 'info');
                 break;
             default:
@@ -341,7 +344,6 @@ const Prospects = () => {
             if (data.success) {
                 showNotification(`Successfully imported ${data.importedCount} prospects`, 'success');
                 if (data.errors && data.errors.length > 0) {
-                    // Show detailed errors
                     console.error('Import errors:', data.errors);
                     showNotification(`Import completed with ${data.errors.length} errors. Check console for details.`, 'warning');
                 }
