@@ -1017,7 +1017,6 @@ const Prospects = () => {
                             <option value={500}>500 per page</option>
                             <option value={1000}>1000 per page</option>
                             <option value={2000}>2000 per page</option>
-                            <option value={50000}>50000 per page</option>
                         </select>
 
                         <button

@@ -16,6 +16,7 @@ export const getProspects = async (req, res) => {
       sortOrder = "DESC",
     } = req.query;
 
+
     let query = `
       SELECT p.*, 
         pd.DispositionName,
@@ -651,7 +652,6 @@ export const downloadCSVTemplate = async (req, res) => {
 
 // Import prospects from CSV
 export const importProspects = async (req, res) => {
-  let connection;
   try {
     if (!req.file || !req.file.buffer) {
       return res.status(400).json({
@@ -659,10 +659,6 @@ export const importProspects = async (req, res) => {
         error: "CSV file is required",
       });
     }
-
-    console.log(
-      `File received: ${req.file.originalname}, Size: ${req.file.size} bytes`
-    );
 
     // Get valid values from reference tables
     const [validDispositions] = await pool.query(
@@ -691,19 +687,12 @@ export const importProspects = async (req, res) => {
     const errors = [];
 
     // Parse CSV from buffer
-    console.log("Starting CSV parsing...");
     const stream = Readable.from(req.file.buffer.toString());
 
     await new Promise((resolve, reject) => {
       stream
         .pipe(csv.default())
-        .on("data", (data) => {
-          results.push(data);
-          // Progress indicator for parsing
-          if (results.length % 5000 === 0) {
-            console.log(`Parsed ${results.length} rows...`);
-          }
-        })
+        .on("data", (data) => results.push(data))
         .on("end", resolve)
         .on("error", (error) => {
           console.error("CSV parsing error:", error);
@@ -711,133 +700,113 @@ export const importProspects = async (req, res) => {
         });
     });
 
-    console.log(`CSV parsing completed. Total rows: ${results.length}`);
-
-    // Validate and prepare data in batches
-    const BATCH_SIZE = 1000;
     const importedProspects = [];
-    let successfulImports = 0;
-    let totalProcessed = 0;
-    let totalBatches = Math.ceil(results.length / BATCH_SIZE);
 
-    console.log(
-      `Processing ${totalBatches} batches of ${BATCH_SIZE} records each...`
-    );
-
-    for (let i = 0; i < results.length; i += BATCH_SIZE) {
-      const batch = results.slice(i, i + BATCH_SIZE);
-      const batchProspects = [];
-      const batchErrors = [];
-      const currentBatch = Math.floor(i / BATCH_SIZE) + 1;
-
-      console.log(`Processing batch ${currentBatch}/${totalBatches}...`);
-
-      // Validate batch
-      for (const [index, row] of batch.entries()) {
-        const rowNumber = i + index + 1;
-        try {
-          // Validate required fields
-          if (!row.Fullname || !row.Email || !row.Company) {
-            batchErrors.push(
-              `Row ${rowNumber}: Missing required fields (Fullname, Email, or Company)`
-            );
-            continue;
-          }
-
-          // Validate foreign key values
-          const dispositionCode = row.Dispositioncode?.trim() || null;
-          const industryCode = row.Industry?.trim() || null;
-          const emailCode = row.Emailcode?.trim() || null;
-          const providerCode = row.Providercode?.trim() || null;
-
-          if (
-            dispositionCode &&
-            !validDispositionCodes.includes(dispositionCode)
-          ) {
-            batchErrors.push(
-              `Row ${rowNumber}: Invalid Dispositioncode '${dispositionCode}'`
-            );
-            continue;
-          }
-
-          if (industryCode && !validIndustryCodes.includes(industryCode)) {
-            batchErrors.push(
-              `Row ${rowNumber}: Invalid IndustryCode '${industryCode}'`
-            );
-            continue;
-          }
-
-          if (emailCode && !validEmailCodes.includes(emailCode)) {
-            batchErrors.push(
-              `Row ${rowNumber}: Invalid Emailcode '${emailCode}'`
-            );
-            continue;
-          }
-
-          if (providerCode && !validProviderCodes.includes(providerCode)) {
-            batchErrors.push(
-              `Row ${rowNumber}: Invalid Providercode '${providerCode}'`
-            );
-            continue;
-          }
-
-          // Prepare prospect data
-          const prospect = {
-            Fullname: row.Fullname,
-            Firstname: row.Firstname || "",
-            Lastname: row.Lastname || "",
-            Jobtitle: row.Jobtitle || "",
-            Company: row.Company,
-            Website: row.Website || "",
-            Personallinkedin: row.Personallinkedin || "",
-            Companylinkedin: row.Companylinkedin || "",
-            Altphonenumber: row.Altphonenumber || "",
-            Companyphonenumber: row.Companyphonenumber || "",
-            Email: row.Email,
-            Emailcode: emailCode,
-            Address: row.Address || "",
-            Street: row.Street || "",
-            City: row.City || "",
-            State: row.State || "",
-            Postalcode: row.Postalcode || "",
-            Country: row.Country || "",
-            Annualrevenue: parseFloat(row.Annualrevenue) || 0,
-            Industry: industryCode,
-            Employeesize: parseInt(row.Employeesize) || 0,
-            Siccode: parseInt(row.Siccode) || 0,
-            Naicscode: parseInt(row.Naicscode) || 0,
-            Dispositioncode: dispositionCode,
-            Providercode: providerCode,
-            Comments: row.Comments || "",
-            Department: row.Department || "",
-            Seniority: row.Seniority || "",
-            Status: row.Status || "New",
-            CreatedBy: req.user.userId,
-          };
-
-          batchProspects.push(prospect);
-        } catch (error) {
-          batchErrors.push(`Row ${rowNumber}: ${error.message}`);
+    for (const [index, row] of results.entries()) {
+      try {
+        // Validate required fields
+        if (!row.Fullname || !row.Email || !row.Company) {
+          errors.push(
+            `Row ${
+              index + 1
+            }: Missing required fields (Fullname, Email, or Company)`
+          );
+          continue;
         }
+
+        // Validate foreign key values - convert empty strings to null
+        const dispositionCode = row.Dispositioncode?.trim() || null;
+        const industryCode = row.Industry?.trim() || null;
+        const emailCode = row.Emailcode?.trim() || null;
+        const providerCode = row.Providercode?.trim() || null;
+
+        if (
+          dispositionCode &&
+          !validDispositionCodes.includes(dispositionCode)
+        ) {
+          errors.push(
+            `Row ${index + 1}: Invalid Dispositioncode '${dispositionCode}'`
+          );
+          continue;
+        }
+
+        if (industryCode && !validIndustryCodes.includes(industryCode)) {
+          errors.push(
+            `Row ${index + 1}: Invalid Invalid IndustryCode '${industryCode}'`
+          );
+          continue;
+        }
+
+        if (emailCode && !validEmailCodes.includes(emailCode)) {
+          errors.push(`Row ${index + 1}: Invalid Emailcode '${emailCode}'`);
+          continue;
+        }
+
+        if (providerCode && !validProviderCodes.includes(providerCode)) {
+          errors.push(
+            `Row ${index + 1}: Invalid Providercode '${providerCode}'`
+          );
+          continue;
+        }
+
+        // Prepare prospect data
+        const prospect = {
+          Fullname: row.Fullname,
+          Firstname: row.Firstname || "",
+          Lastname: row.Lastname || "",
+          Jobtitle: row.Jobtitle || "",
+          Company: row.Company,
+          Website: row.Website || "",
+          Personallinkedin: row.Personallinkedin || "",
+          Companylinkedin: row.Companylinkedin || "",
+          Altphonenumber: row.Altphonenumber || "",
+          Companyphonenumber: row.Companyphonenumber || "",
+          Email: row.Email,
+          Emailcode: emailCode,
+          Address: row.Address || "",
+          Street: row.Street || "",
+          City: row.City || "",
+          State: row.State || "",
+          Postalcode: row.Postalcode || "",
+          Country: row.Country || "",
+          Annualrevenue: parseFloat(row.Annualrevenue) || 0,
+          Industry: industryCode,
+          Employeesize: parseInt(row.Employeesize) || 0,
+          Siccode: parseInt(row.Siccode) || 0,
+          Naicscode: parseInt(row.Naicscode) || 0,
+          Dispositioncode: dispositionCode,
+          Providercode: providerCode,
+          Comments: row.Comments || "",
+          Department: row.Department || "",
+          Seniority: row.Seniority || "",
+          Status: row.Status || "New",
+          CreatedBy: req.user.userId,
+        };
+
+        importedProspects.push(prospect);
+      } catch (error) {
+        errors.push(`Row ${index + 1}: ${error.message}`);
       }
+    }
 
-      // Insert batch using bulk insert
-      if (batchProspects.length > 0) {
+    // Insert prospects one by one to handle errors individually
+    if (importedProspects.length > 0) {
+      let successfulImports = 0;
+      const importErrors = [];
+
+      for (const [index, prospect] of importedProspects.entries()) {
         try {
-          connection = await pool.getConnection();
-          await connection.beginTransaction();
-
-          // Create bulk insert query
-          const placeholders = batchProspects
-            .map(
-              () =>
-                `(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-            )
-            .join(",");
-
-          const values = [];
-          batchProspects.forEach((prospect) => {
-            values.push(
+          const [result] = await pool.query(
+            `
+            INSERT INTO prospects (
+              Fullname, Firstname, Lastname, Jobtitle, Company, Website,
+              Personallinkedin, Companylinkedin, Altphonenumber, Companyphonenumber,
+              Email, Emailcode, Address, Street, City, State, Postalcode, Country,
+              Annualrevenue, Industry, Employeesize, Siccode, Naicscode,
+              Dispositioncode, Providercode, Comments, Department, Seniority, Status, CreatedBy
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `,
+            [
               prospect.Fullname,
               prospect.Firstname,
               prospect.Lastname,
@@ -867,68 +836,30 @@ export const importProspects = async (req, res) => {
               prospect.Department,
               prospect.Seniority,
               prospect.Status,
-              prospect.CreatedBy
-            );
-          });
-
-          const query = `
-            INSERT INTO prospects (
-              Fullname, Firstname, Lastname, Jobtitle, Company, Website,
-              Personallinkedin, Companylinkedin, Altphonenumber, Companyphonenumber,
-              Email, Emailcode, Address, Street, City, State, Postalcode, Country,
-              Annualrevenue, Industry, Employeesize, Siccode, Naicscode,
-              Dispositioncode, Providercode, Comments, Department, Seniority, Status, CreatedBy
-            ) VALUES ${placeholders}
-          `;
-
-          const [result] = await connection.query(query, values);
-          successfulImports += result.affectedRows;
-          await connection.commit();
-
-          console.log(
-            `✓ Batch ${currentBatch}: Inserted ${batchProspects.length} prospects`
+              prospect.CreatedBy,
+            ]
           );
+          successfulImports++;
         } catch (error) {
-          if (connection) await connection.rollback();
-          batchErrors.push(
-            `Batch ${currentBatch} insert error: ${error.message}`
-          );
-          console.error("Batch insert error:", error);
-        } finally {
-          if (connection) {
-            connection.release();
-            connection = null;
-          }
+          importErrors.push(`Row ${index + 1}: ${error.message}`);
         }
       }
 
-      errors.push(...batchErrors);
-      totalProcessed += batch.length;
-
-      // Progress logging
-      const progress = ((totalProcessed / results.length) * 100).toFixed(1);
-      console.log(
-        `Progress: ${progress}% (${totalProcessed}/${results.length})`
-      );
+      res.json({
+        success: true,
+        message: `Successfully imported ${successfulImports} out of ${importedProspects.length} prospects`,
+        importedCount: successfulImports,
+        errorCount: errors.length + importErrors.length,
+        errors: [...errors, ...importErrors],
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        error: "No valid prospects found in CSV",
+        errors,
+      });
     }
-
-    console.log(
-      `Import completed. Successful: ${successfulImports}, Errors: ${errors.length}`
-    );
-
-    res.json({
-      success: true,
-      message: `Import completed. Successfully imported ${successfulImports} out of ${results.length} prospects`,
-      importedCount: successfulImports,
-      errorCount: errors.length,
-      totalRows: results.length,
-      errors: errors.slice(0, 50), // Return first 50 errors only
-    });
   } catch (error) {
-    if (connection) {
-      await connection.rollback();
-      connection.release();
-    }
     console.error("Import prospects error:", error);
     res.status(500).json({
       success: false,
