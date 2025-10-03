@@ -19,6 +19,7 @@ import {
 import { FiCheckSquare, FiSquare } from 'react-icons/fi';
 import AddNewProspects from './Modals/AddNewProspects';
 import styles from './Prospects.module.css';
+import ImportProcessingModal from './ImportProcessingModal';
 
 const Prospects = () => {
     // State management
@@ -54,6 +55,11 @@ const Prospects = () => {
         country: 'all'
     });
 
+    const [importProcessing, setImportProcessing] = useState({
+        isOpen: false,
+        stats: null
+    });
+
     // Add these state variables
     const [showAddModal, setShowAddModal] = useState(false);
     const [lookupData, setLookupData] = useState({
@@ -79,7 +85,7 @@ const Prospects = () => {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
-            
+
             // Build query parameters
             const params = new URLSearchParams({
                 page: currentPage,
@@ -326,6 +332,26 @@ const Prospects = () => {
         const file = e.target.files[0];
         if (!file) return;
 
+        // Show processing modal
+        setImportProcessing({
+            isOpen: true,
+            stats: {
+                stage: 'preparing',
+                totalRows: 0,
+                validRows: 0,
+                insertedRows: 0,
+                errorCount: 0,
+                logs: [
+                    {
+                        type: 'info',
+                        message: 'Starting import process...',
+                        timestamp: new Date()
+                    }
+                ],
+                errors: []
+            }
+        });
+
         const formData = new FormData();
         formData.append('file', file);
 
@@ -341,19 +367,51 @@ const Prospects = () => {
 
             const data = await response.json();
 
-            if (data.success) {
-                showNotification(`Successfully imported ${data.importedCount} prospects`, 'success');
-                if (data.errors && data.errors.length > 0) {
-                    console.error('Import errors:', data.errors);
-                    showNotification(`Import completed with ${data.errors.length} errors. Check console for details.`, 'warning');
+            // Update modal with final results
+            setImportProcessing(prev => ({
+                ...prev,
+                stats: {
+                    ...prev.stats,
+                    stage: 'completed',
+                    insertedRows: data.importedCount || 0,
+                    errorCount: data.errorCount || 0,
+                    logs: [
+                        ...prev.stats.logs,
+                        {
+                            type: data.success ? 'info' : 'error',
+                            message: data.message || 'Import completed',
+                            timestamp: new Date()
+                        }
+                    ],
+                    errors: data.errors || []
                 }
-                fetchProspects();
-            } else {
-                showNotification(data.error || 'Import failed', 'error');
+            }));
+
+            if (data.success) {
+                // Auto-close after 3 seconds if successful
+                setTimeout(() => {
+                    setImportProcessing({ isOpen: false, stats: null });
+                    fetchProspects();
+                }, 3000);
             }
         } catch (error) {
             console.error('Import error:', error);
-            showNotification('Failed to import prospects', 'error');
+            setImportProcessing(prev => ({
+                ...prev,
+                stats: {
+                    ...prev.stats,
+                    stage: 'completed',
+                    logs: [
+                        ...prev.stats.logs,
+                        {
+                            type: 'error',
+                            message: 'Import failed: ' + error.message,
+                            timestamp: new Date()
+                        }
+                    ],
+                    errors: [error.message]
+                }
+            }));
         }
 
         e.target.value = '';
@@ -991,6 +1049,14 @@ const Prospects = () => {
                     </table>
                 </div>
             </div>
+            
+            {importProcessing.isOpen && (
+                <ImportProcessingModal
+                    isOpen={importProcessing.isOpen}
+                    onClose={() => setImportProcessing({ isOpen: false, stats: null })}
+                    processingStats={importProcessing.stats}
+                />
+            )}
 
             {/* Pagination */}
             {sortedLeads.length > 0 && (
