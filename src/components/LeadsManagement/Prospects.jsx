@@ -973,6 +973,64 @@ const Prospects = () => {
                             </tr>
                         </thead>
                         <tbody>
+                            {/* {currentLeads.map(lead => (
+                                <tr key={lead.id} className={styles.tableRow}>
+                                    <td className={styles.checkboxCell}>
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedLeads.includes(lead.id)}
+                                            onChange={() => handleSelectLead(lead.id)}
+                                            className={styles.checkbox}
+                                        />
+                                    </td>
+
+                                    {columnVisibility.fullname && (
+                                        <td title={lead.Fullname}>
+                                            <div className={styles.leadInfo}>
+                                                <div className={styles.leadName}>{lead.Fullname}</div>
+                                            </div>
+                                        </td>
+                                    )}
+
+                                    {columnVisibility.jobtitle && <td title={lead.Jobtitle}>{lead.Jobtitle}</td>}
+                                    {columnVisibility.company && <td title={lead.Company}>{lead.Company}</td>}
+                                    {columnVisibility.email && <td title={lead.Email}>{lead.Email}</td>}
+                                    {columnVisibility.companyphonenumber && <td title={lead.Companyphonenumber}>{lead.Companyphonenumber}</td>}
+                                    {columnVisibility.city && <td title={lead.City}>{lead.City}</td>}
+                                    {columnVisibility.state && <td title={lead.State}>{lead.State}</td>}
+                                    {columnVisibility.country && <td title={lead.Country}>{lead.Country}</td>}
+                                    {columnVisibility.industry && <td title={getIndustryName(lead.Industry)}>{getIndustryName(lead.Industry)}</td>}
+                                    {columnVisibility.employeesize && <td title={lead.Employeesize}>{lead.Employeesize}</td>}
+                                    {columnVisibility.department && <td title={lead.Department}>{lead.Department}</td>}
+                                    {columnVisibility.seniority && <td title={lead.Seniority}>{lead.Seniority}</td>}
+
+                                    {columnVisibility.status && (
+                                        <td>
+                                            <span className={`${styles.statusBadge} ${styles[lead.Status?.toLowerCase()]}`}>
+                                                {lead.Status}
+                                            </span>
+                                        </td>
+                                    )}
+
+                                    {columnVisibility.createdon && <td title={formatDate(lead.CreatedOn)}>{formatDate(lead.CreatedOn)}</td>}
+
+                                    {columnVisibility.actions && (
+                                        <td>
+                                            <div className={styles.actionButtons}>
+                                                <button className={styles.actionButton} title="View">
+                                                    <FiEye size={14} />
+                                                </button>
+                                                <button className={styles.actionButton} title="Edit">
+                                                    <FiEdit size={14} />
+                                                </button>
+                                                <button className={styles.actionButton} title="Archive">
+                                                    <FiArchive size={14} />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    )}
+                                </tr>
+                            ))} */}
                             {currentLeads.length > 0 ? (
                                 currentLeads.map(lead => (
                                     <tr key={lead.id} className={styles.tableRow}>
@@ -1049,7 +1107,7 @@ const Prospects = () => {
                     </table>
                 </div>
             </div>
-            
+
             {importProcessing.isOpen && (
                 <ImportProcessingModal
                     isOpen={importProcessing.isOpen}
