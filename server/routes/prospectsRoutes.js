@@ -10,7 +10,9 @@ import {
   exportProspects,
   importProspects,
   getLookupData,
-  downloadCSVTemplate
+  downloadCSVTemplate,
+  cleanupImportSessions,
+  checkImportProgress
 } from '../controllers/prospectsController.js';
 import multer from 'multer';
 
@@ -33,6 +35,12 @@ router.get('/import/template', downloadCSVTemplate);
 
 // Get prospects with filtering and pagination
 router.get('/', getProspects);
+
+// Check import progress
+router.get('/import/progress/:sessionId', checkImportProgress);
+
+// Cleanup import sessions (optional)
+router.delete('/import/cleanup', cleanupImportSessions);
 
 // Get single prospect
 router.get('/:id', getProspectById);

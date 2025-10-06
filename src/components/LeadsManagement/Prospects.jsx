@@ -328,11 +328,12 @@ const Prospects = () => {
     };
 
     // Update the handleImport function in Prospects.js
+    // Update the handleImport function in Prospects.jsx
     const handleImport = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
-        // Show processing modal
+        // Show processing modal immediately
         setImportProcessing({
             isOpen: true,
             stats: {
@@ -348,7 +349,8 @@ const Prospects = () => {
                         timestamp: new Date()
                     }
                 ],
-                errors: []
+                errors: [],
+                sessionId: null
             }
         });
 
@@ -367,32 +369,31 @@ const Prospects = () => {
 
             const data = await response.json();
 
-            // Update modal with final results
-            setImportProcessing(prev => ({
-                ...prev,
-                stats: {
-                    ...prev.stats,
-                    stage: 'completed',
-                    insertedRows: data.importedCount || 0,
-                    errorCount: data.errorCount || 0,
-                    logs: [
-                        ...prev.stats.logs,
-                        {
-                            type: data.success ? 'info' : 'error',
-                            message: data.message || 'Import completed',
-                            timestamp: new Date()
-                        }
-                    ],
-                    errors: data.errors || []
-                }
-            }));
-
             if (data.success) {
-                // Auto-close after 3 seconds if successful
-                setTimeout(() => {
-                    setImportProcessing({ isOpen: false, stats: null });
-                    fetchProspects();
-                }, 3000);
+                // Start polling for progress
+                const sessionId = data.sessionId;
+                setImportProcessing(prev => ({
+                    ...prev,
+                    stats: {
+                        ...prev.stats,
+                        sessionId: sessionId,
+                        totalRows: data.totalProspects,
+                        stage: 'processing',
+                        logs: [
+                            ...prev.stats.logs,
+                            {
+                                type: 'info',
+                                message: `Import started. Processing ${data.totalProspects} prospects in ${data.totalChunks} chunks`,
+                                timestamp: new Date()
+                            }
+                        ]
+                    }
+                }));
+
+                // Poll for progress
+                pollImportProgress(sessionId);
+            } else {
+                throw new Error(data.error || 'Import failed');
             }
         } catch (error) {
             console.error('Import error:', error);
@@ -415,6 +416,61 @@ const Prospects = () => {
         }
 
         e.target.value = '';
+    };
+
+    // Add polling function
+    const pollImportProgress = async (sessionId) => {
+        const pollInterval = setInterval(async () => {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`/api/prospects/import/progress/${sessionId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    const progress = data.progress;
+
+                    setImportProcessing(prev => ({
+                        ...prev,
+                        stats: {
+                            ...prev.stats,
+                            stage: progress.status === 'completed' ? 'completed' : 'processing',
+                            insertedRows: progress.successfulImports,
+                            errorCount: progress.failedImports,
+                            logs: [
+                                ...prev.stats.logs,
+                                ...progress.chunkErrors.slice(prev.stats.errors.length).map(error => ({
+                                    type: 'error',
+                                    message: error,
+                                    timestamp: new Date()
+                                }))
+                            ].slice(-50), // Keep last 50 logs
+                            errors: progress.chunkErrors
+                        }
+                    }));
+
+                    if (progress.status === 'completed') {
+                        clearInterval(pollInterval);
+
+                        // Auto-close after 5 seconds if successful
+                        setTimeout(() => {
+                            setImportProcessing({ isOpen: false, stats: null });
+                            fetchProspects(); // Refresh the list
+                        }, 5000);
+                    }
+                } else {
+                    clearInterval(pollInterval);
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                console.error('Progress polling error:', error);
+                clearInterval(pollInterval);
+            }
+        }, 2000); // Poll every 2 seconds
     };
 
     // Handle creating new prospect
@@ -1049,7 +1105,7 @@ const Prospects = () => {
                     </table>
                 </div>
             </div>
-            
+
             {importProcessing.isOpen && (
                 <ImportProcessingModal
                     isOpen={importProcessing.isOpen}
