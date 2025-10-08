@@ -327,11 +327,24 @@ const Prospects = () => {
         }
     };
 
-    // Update the handleImport function in Prospects.js
     // Update the handleImport function in Prospects.jsx
     const handleImport = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
+
+        // Validate file size (100MB limit)
+        if (file.size > 100 * 1024 * 1024) {
+            showNotification('File size too large. Maximum 100MB allowed.', 'error');
+            e.target.value = '';
+            return;
+        }
+
+        // Validate file type
+        if (!file.type.includes('csv') && !file.name.toLowerCase().endsWith('.csv')) {
+            showNotification('Only CSV files are allowed.', 'error');
+            e.target.value = '';
+            return;
+        }
 
         // Show processing modal immediately
         setImportProcessing({
@@ -346,6 +359,16 @@ const Prospects = () => {
                     {
                         type: 'info',
                         message: 'Starting import process...',
+                        timestamp: new Date()
+                    },
+                    {
+                        type: 'info',
+                        message: `Processing file: ${file.name} (${(file.size / (1024 * 1024)).toFixed(2)} MB)`,
+                        timestamp: new Date()
+                    },
+                    {
+                        type: 'info',
+                        message: 'Validating file format and contents...',
                         timestamp: new Date()
                     }
                 ],
@@ -367,6 +390,19 @@ const Prospects = () => {
                 body: formData
             });
 
+            // Check for HTTP errors
+            if (!response.ok) {
+                let errorMessage = `Server error: ${response.status}`;
+                try {
+                    const errorData = await response.json();
+                    errorMessage = errorData.error || errorMessage;
+                } catch (parseError) {
+                    // If response is not JSON, use status text
+                    errorMessage = response.statusText || errorMessage;
+                }
+                throw new Error(errorMessage);
+            }
+
             const data = await response.json();
 
             if (data.success) {
@@ -378,12 +414,23 @@ const Prospects = () => {
                         ...prev.stats,
                         sessionId: sessionId,
                         totalRows: data.totalProspects,
+                        validRows: data.totalProspects - (data.validationErrorCount || 0),
                         stage: 'processing',
                         logs: [
                             ...prev.stats.logs,
                             {
                                 type: 'info',
                                 message: `Import started. Processing ${data.totalProspects} prospects in ${data.totalChunks} chunks`,
+                                timestamp: new Date()
+                            },
+                            ...(data.validationErrorCount > 0 ? [{
+                                type: 'warning',
+                                message: `${data.validationErrorCount} rows failed validation and will be skipped`,
+                                timestamp: new Date()
+                            }] : []),
+                            {
+                                type: 'info',
+                                message: 'Starting background processing...',
                                 timestamp: new Date()
                             }
                         ]
@@ -397,6 +444,17 @@ const Prospects = () => {
             }
         } catch (error) {
             console.error('Import error:', error);
+
+            // Determine error type for better user messaging
+            let userFriendlyError = error.message;
+            if (error.message.includes('Network Error') || error.message.includes('Failed to fetch')) {
+                userFriendlyError = 'Network error: Unable to connect to server. Please check your connection.';
+            } else if (error.message.includes('413')) {
+                userFriendlyError = 'File too large. Please use a smaller file or split your data.';
+            } else if (error.message.includes('415') || error.message.includes('Unsupported Media Type')) {
+                userFriendlyError = 'Invalid file type. Please upload a valid CSV file.';
+            }
+
             setImportProcessing(prev => ({
                 ...prev,
                 stats: {
@@ -406,29 +464,52 @@ const Prospects = () => {
                         ...prev.stats.logs,
                         {
                             type: 'error',
-                            message: 'Import failed: ' + error.message,
+                            message: `Import failed: ${userFriendlyError}`,
+                            timestamp: new Date()
+                        },
+                        {
+                            type: 'info',
+                            message: 'Please try again with a valid CSV file.',
                             timestamp: new Date()
                         }
                     ],
-                    errors: [error.message]
+                    errors: [userFriendlyError]
                 }
             }));
+
+            // Auto-close error modal after 8 seconds
+            setTimeout(() => {
+                setImportProcessing({ isOpen: false, stats: null });
+            }, 8000);
         }
 
+        // Reset file input
         e.target.value = '';
     };
 
     // Add polling function
-    const pollImportProgress = async (sessionId) => {
-        const pollInterval = setInterval(async () => {
-            try {
-                const token = localStorage.getItem('token');
-                const response = await fetch(`/api/prospects/import/progress/${sessionId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
+    const pollImportProgress = async (sessionId, attempt = 0) => {
+        const maxAttempts = 15; // Increased maximum polling attempts
+        const baseDelay = 2000; // Base delay in ms
+        const maxDelay = 30000; // Maximum delay in ms
 
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`/api/prospects/import/progress/${sessionId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                // Handle 500 errors specifically
+                if (response.status === 500) {
+                    console.warn('Progress endpoint returned 500, will retry...');
+                    // Don't throw error, just retry
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+            } else {
                 const data = await response.json();
 
                 if (data.success) {
@@ -442,35 +523,108 @@ const Prospects = () => {
                             insertedRows: progress.successfulImports,
                             errorCount: progress.failedImports,
                             logs: [
-                                ...prev.stats.logs,
-                                ...progress.chunkErrors.slice(prev.stats.errors.length).map(error => ({
-                                    type: 'error',
-                                    message: error,
+                                ...prev.stats.logs.filter(log =>
+                                    !log.message.includes('Processing chunk') &&
+                                    !log.message.includes('Progress update') &&
+                                    !log.message.includes('Retrying')
+                                ),
+                                ...(progress.status === 'processing' ? [{
+                                    type: 'info',
+                                    message: `Processing chunk ${progress.processedChunks}/${progress.totalChunks} (${progress.progressPercentage}%)`,
                                     timestamp: new Date()
-                                }))
-                            ].slice(-50), // Keep last 50 logs
-                            errors: progress.chunkErrors
+                                }] : [])
+                            ].slice(-100),
+                            errors: progress.chunkErrors || []
                         }
                     }));
 
                     if (progress.status === 'completed') {
-                        clearInterval(pollInterval);
+                        // Add completion log
+                        setImportProcessing(prev => ({
+                            ...prev,
+                            stats: {
+                                ...prev.stats,
+                                logs: [
+                                    ...prev.stats.logs,
+                                    {
+                                        type: 'success',
+                                        message: `Import completed! ${progress.successfulImports} prospects imported successfully, ${progress.failedImports} failed.`,
+                                        timestamp: new Date()
+                                    }
+                                ]
+                            }
+                        }));
 
                         // Auto-close after 5 seconds if successful
                         setTimeout(() => {
                             setImportProcessing({ isOpen: false, stats: null });
                             fetchProspects(); // Refresh the list
+                            showNotification(`Imported ${progress.successfulImports} prospects successfully`, 'success');
                         }, 5000);
+
+                        return; // Stop polling
                     }
                 } else {
-                    clearInterval(pollInterval);
-                    throw new Error(data.error);
+                    throw new Error(data.error || 'Failed to check progress');
                 }
-            } catch (error) {
-                console.error('Progress polling error:', error);
-                clearInterval(pollInterval);
             }
-        }, 2000); // Poll every 2 seconds
+
+            // Continue polling if not completed and within attempt limits
+            if (attempt < maxAttempts) {
+                const delay = Math.min(baseDelay * Math.pow(1.5, attempt) + Math.random() * 1000, maxDelay);
+
+                // Add retry log
+                setImportProcessing(prev => ({
+                    ...prev,
+                    stats: {
+                        ...prev.stats,
+                        logs: [
+                            ...prev.stats.logs,
+                            {
+                                type: 'info',
+                                message: `Retrying progress check... (attempt ${attempt + 1}/${maxAttempts})`,
+                                timestamp: new Date()
+                            }
+                        ].slice(-100)
+                    }
+                }));
+
+                setTimeout(() => pollImportProgress(sessionId, attempt + 1), delay);
+            } else {
+                throw new Error('Progress polling timeout - import may still be processing in background');
+            }
+
+        } catch (error) {
+            console.error('Progress polling error:', error);
+
+            if (attempt < maxAttempts) {
+                const delay = Math.min(baseDelay * Math.pow(2, attempt) + Math.random() * 1000, maxDelay);
+                setTimeout(() => pollImportProgress(sessionId, attempt + 1), delay);
+            } else {
+                setImportProcessing(prev => ({
+                    ...prev,
+                    stats: {
+                        ...prev.stats,
+                        stage: 'completed',
+                        logs: [
+                            ...prev.stats.logs,
+                            {
+                                type: 'warning',
+                                message: 'Unable to track progress, but import may still be processing in background.',
+                                timestamp: new Date()
+                            }
+                        ]
+                    }
+                }));
+
+                // Auto-close after 10 seconds
+                setTimeout(() => {
+                    setImportProcessing({ isOpen: false, stats: null });
+                    fetchProspects(); // Refresh the list anyway
+                    showNotification('Import processing completed (progress tracking failed)', 'warning');
+                }, 10000);
+            }
+        }
     };
 
     // Handle creating new prospect

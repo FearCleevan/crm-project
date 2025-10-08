@@ -1,7 +1,7 @@
 import pool from "../config/db.js";
 import { Readable } from "stream";
 import csv from "csv-parser";
-import { importQueue } from '../services/importQueue.js';
+import { importQueue } from "../services/importQueue.js";
 
 // Get all prospects with optional filtering
 export const getProspects = async (req, res) => {
@@ -124,6 +124,7 @@ export const getProspects = async (req, res) => {
 };
 
 // Get single prospect by ID
+// Get single prospect by ID
 export const getProspectById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -133,12 +134,12 @@ export const getProspectById = async (req, res) => {
       SELECT p.*, 
         pd.DispositionName,
         pes.EmailName,
-        pp.ProviderName
+        pp.ProviderName,
         pos.IndustryName
       FROM prospects p
       LEFT JOIN prospects_disposition pd ON p.DispositionCode = pd.DispositionCode
       LEFT JOIN prospects_email_status pes ON p.EmailCode = pes.EmailCode
-      LEFT JOIN prospects_industry pos ON p.IndustryCode = pos.IndustryCode
+      LEFT JOIN prospects_industry pos ON p.Industry = pos.IndustryCode  -- FIXED: p.Industry not p.IndustryCode
       LEFT JOIN prospects_provider pp ON p.ProviderCode = pp.ProviderCode
       WHERE p.id = ? AND p.isactive = 1
     `,
@@ -650,8 +651,57 @@ export const downloadCSVTemplate = async (req, res) => {
   }
 };
 
+// Alternative CSV parsing method - add this function
+// function parseCSV(csvText) {
+//   const lines = csvText.split('\n');
+//   const results = [];
+
+//   if (lines.length === 0) return results;
+
+//   // Extract headers
+//   const headers = lines[0].split(',').map(header => header.trim().replace(/^"|"$/g, ''));
+
+//   for (let i = 1; i < lines.length; i++) {
+//     const line = lines[i].trim();
+//     if (!line) continue;
+
+//     const obj = {};
+//     let current = '';
+//     let inQuotes = false;
+//     let headerIndex = 0;
+
+//     for (let j = 0; j < line.length; j++) {
+//       const char = line[j];
+
+//       if (char === '"') {
+//         inQuotes = !inQuotes;
+//       } else if (char === ',' && !inQuotes) {
+//         obj[headers[headerIndex]] = current.trim().replace(/^"|"$/g, '');
+//         current = '';
+//         headerIndex++;
+//       } else {
+//         current += char;
+//       }
+//     }
+
+//     // Add the last field
+//     if (headerIndex < headers.length) {
+//       obj[headers[headerIndex]] = current.trim().replace(/^"|"$/g, '');
+//     }
+
+//     results.push(obj);
+//   }
+
+//   return results;
+// }
+
+// // Then replace the CSV parsing section with:
+// const csvText = req.file.buffer.toString();
+// const results = parseCSV(csvText);
+
 // Import prospects from CSV
 export const importProspects = async (req, res) => {
+  let connection;
   try {
     if (!req.file || !req.file.buffer) {
       return res.status(400).json({
@@ -660,50 +710,76 @@ export const importProspects = async (req, res) => {
       });
     }
 
-    // Get valid values from reference tables
-    const [validDispositions] = await pool.query(
-      "SELECT DispositionCode FROM prospects_disposition"
-    );
-    const [validEmailStatuses] = await pool.query(
-      "SELECT EmailCode FROM prospects_email_status"
-    );
-    const [validProviders] = await pool.query(
-      "SELECT ProviderCode FROM prospects_provider"
-    );
-    const [validIndustries] = await pool.query(
-      "SELECT IndustryCode FROM prospects_industry"
-    );
+    // Validate file size (max 100MB)
+    const maxFileSize = 100 * 1024 * 1024; // 100MB
+    if (req.file.size > maxFileSize) {
+      return res.status(400).json({
+        success: false,
+        error: "File size too large. Maximum 100MB allowed.",
+      });
+    }
 
-    const validDispositionCodes = validDispositions.map(
+    // Validate file type
+    if (
+      !req.file.mimetype.includes("csv") &&
+      !req.file.originalname.toLowerCase().endsWith(".csv")
+    ) {
+      return res.status(400).json({
+        success: false,
+        error: "Only CSV files are allowed",
+      });
+    }
+
+    // Get valid values from reference tables (cache these)
+    const [
+      validDispositions,
+      validEmailStatuses,
+      validProviders,
+      validIndustries,
+    ] = await Promise.all([
+      pool.query("SELECT DispositionCode FROM prospects_disposition"),
+      pool.query("SELECT EmailCode FROM prospects_email_status"),
+      pool.query("SELECT ProviderCode FROM prospects_provider"),
+      pool.query("SELECT IndustryCode FROM prospects_industry"),
+    ]);
+
+    const validDispositionCodes = validDispositions[0].map(
       (d) => d.DispositionCode
     );
-    const validIndustryCodes = validIndustries.map((i) => i.IndustryCode);
-    const validEmailCodes = validEmailStatuses.map((e) => e.EmailCode);
-    const validProviderCodes = validProviders.map((p) => p.ProviderCode);
-
-    const csv = await import("csv-parser");
+    const validIndustryCodes = validIndustries[0].map((i) => i.IndustryCode);
+    const validEmailCodes = validEmailStatuses[0].map((e) => e.EmailCode);
+    const validProviderCodes = validProviders[0].map((p) => p.ProviderCode);
 
     const results = [];
     const validationErrors = [];
 
-    // Parse CSV from buffer
+    // FIXED: Use csv-parser directly without dynamic import
     const stream = Readable.from(req.file.buffer.toString());
 
     await new Promise((resolve, reject) => {
       stream
-        .pipe(csv.default())
-        .on("data", (data) => results.push(data))
+        .pipe(csv()) // Use csv() directly since we imported it at the top
+        .on("data", (data) => {
+          // Process in chunks to avoid memory buildup
+          if (results.length < 50000) {
+            // Limit to 50k rows
+            results.push(data);
+          }
+        })
         .on("end", resolve)
         .on("error", (error) => {
           console.error("CSV parsing error:", error);
-          reject(error);
+          reject(new Error(`CSV parsing failed: ${error.message}`));
         });
     });
 
+    // Continue with the rest of your existing validation logic...
     // Validate all rows first
     const validatedProspects = [];
+    let rowCount = 0;
 
     for (const [index, row] of results.entries()) {
+      rowCount++;
       try {
         // Validate required fields
         if (!row.Fullname || !row.Email || !row.Company) {
@@ -715,7 +791,16 @@ export const importProspects = async (req, res) => {
           continue;
         }
 
-        // Validate foreign key values - convert empty strings to null
+        // Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(row.Email)) {
+          validationErrors.push(
+            `Row ${index + 1}: Invalid email format '${row.Email}'`
+          );
+          continue;
+        }
+
+        // Trim and validate all fields
         const dispositionCode = row.Dispositioncode?.trim() || null;
         const industryCode = row.Industry?.trim() || null;
         const emailCode = row.Emailcode?.trim() || null;
@@ -752,26 +837,26 @@ export const importProspects = async (req, res) => {
           continue;
         }
 
-        // Prepare prospect data
+        // Prepare prospect data with proper type conversion
         const prospect = {
-          Fullname: row.Fullname,
-          Firstname: row.Firstname || "",
-          Lastname: row.Lastname || "",
-          Jobtitle: row.Jobtitle || "",
-          Company: row.Company,
-          Website: row.Website || "",
-          Personallinkedin: row.Personallinkedin || "",
-          Companylinkedin: row.Companylinkedin || "",
-          Altphonenumber: row.Altphonenumber || "",
-          Companyphonenumber: row.Companyphonenumber || "",
-          Email: row.Email,
+          Fullname: row.Fullname.trim(),
+          Firstname: (row.Firstname || "").trim(),
+          Lastname: (row.Lastname || "").trim(),
+          Jobtitle: (row.Jobtitle || "").trim(),
+          Company: row.Company.trim(),
+          Website: (row.Website || "").trim(),
+          Personallinkedin: (row.Personallinkedin || "").trim(),
+          Companylinkedin: (row.Companylinkedin || "").trim(),
+          Altphonenumber: (row.Altphonenumber || "").trim(),
+          Companyphonenumber: (row.Companyphonenumber || "").trim(),
+          Email: row.Email.trim().toLowerCase(),
           Emailcode: emailCode,
-          Address: row.Address || "",
-          Street: row.Street || "",
-          City: row.City || "",
-          State: row.State || "",
-          Postalcode: row.Postalcode || "",
-          Country: row.Country || "",
+          Address: (row.Address || "").trim(),
+          Street: (row.Street || "").trim(),
+          City: (row.City || "").trim(),
+          State: (row.State || "").trim(),
+          Postalcode: (row.Postalcode || "").trim(),
+          Country: (row.Country || "").trim(),
           Annualrevenue: parseFloat(row.Annualrevenue) || 0,
           Industry: industryCode,
           Employeesize: parseInt(row.Employeesize) || 0,
@@ -779,10 +864,10 @@ export const importProspects = async (req, res) => {
           Naicscode: parseInt(row.Naicscode) || 0,
           Dispositioncode: dispositionCode,
           Providercode: providerCode,
-          Comments: row.Comments || "",
-          Department: row.Department || "",
-          Seniority: row.Seniority || "",
-          Status: row.Status || "New",
+          Comments: (row.Comments || "").trim(),
+          Department: (row.Department || "").trim(),
+          Seniority: (row.Seniority || "").trim(),
+          Status: (row.Status || "New").trim(),
           CreatedBy: req.user.userId,
         };
 
@@ -796,50 +881,41 @@ export const importProspects = async (req, res) => {
       return res.status(400).json({
         success: false,
         error: "No valid prospects found in CSV",
-        errors: validationErrors,
+        errors: validationErrors.slice(0, 50), // Limit error response size
       });
     }
 
-    // Split into chunks
-    const chunkSize = 100;
+    // Use smaller chunks for better performance
+    const chunkSize = 50; // Reduced from 100 for better memory management
     const chunks = [];
     for (let i = 0; i < validatedProspects.length; i += chunkSize) {
       chunks.push(validatedProspects.slice(i, i + chunkSize));
     }
 
-    // Create import session to track progress
+    // Create import session
     const importSessionId = `import_${Date.now()}_${Math.random()
       .toString(36)
       .substr(2, 9)}`;
 
-    // Initialize progress tracking
-    const importProgress = {
-      sessionId: importSessionId,
-      totalChunks: chunks.length,
-      processedChunks: 0,
-      successfulImports: 0,
-      failedImports: 0,
-      chunkErrors: [],
-      startTime: new Date(),
-      status: "processing",
-    };
+    // Use database for session storage instead of memory
+    await initializeImportSession(
+      importSessionId,
+      chunks.length,
+      validatedProspects.length
+    );
 
-    // Store progress in memory (in production, use Redis or database)
-    global.importSessions = global.importSessions || {};
-    global.importSessions[importSessionId] = importProgress;
-
-    // Send immediate response with session ID
+    // Send immediate response
     res.json({
       success: true,
       message: `Import started. Processing ${validatedProspects.length} prospects in ${chunks.length} chunks`,
       sessionId: importSessionId,
       totalProspects: validatedProspects.length,
       totalChunks: chunks.length,
-      validationErrors: validationErrors,
+      validationErrors: validationErrors.slice(0, 20), // Limit response size
       validationErrorCount: validationErrors.length,
     });
 
-    // Process chunks in background using queue
+    // Process chunks in background with better error handling
     processChunksInBackground(chunks, importSessionId, validationErrors);
   } catch (error) {
     console.error("Import prospects error:", error);
@@ -850,70 +926,183 @@ export const importProspects = async (req, res) => {
   }
 };
 
+// function to store session in database
+async function initializeImportSession(sessionId, totalChunks, totalProspects) {
+  const connection = await pool.getConnection();
+  try {
+    await connection.query(
+      `INSERT INTO import_sessions 
+       (session_id, total_chunks, total_prospects, status, created_at) 
+       VALUES (?, ?, ?, 'processing', NOW())`,
+      [sessionId, totalChunks, totalProspects]
+    );
+  } catch (error) {
+    console.error("Error initializing import session:", error);
+    // Fallback to memory storage
+    global.importSessions = global.importSessions || {};
+    global.importSessions[sessionId] = {
+      sessionId,
+      totalChunks,
+      processedChunks: 0,
+      successfulImports: 0,
+      failedImports: 0,
+      chunkErrors: [],
+      startTime: new Date(),
+      status: "processing",
+    };
+  } finally {
+    connection.release();
+  }
+}
+
 // Background chunk processing
 async function processChunksInBackground(chunks, sessionId, validationErrors) {
-  const importProgress = global.importSessions[sessionId];
-  
   for (let i = 0; i < chunks.length; i++) {
     const chunk = chunks[i];
-    
+
     try {
-      // Process chunk with delay to prevent database overload
+      // Increased delay for database breathing room
       if (i > 0) {
-        await new Promise(resolve => setTimeout(resolve, 100)); // 100ms delay between chunks
+        await new Promise((resolve) => setTimeout(resolve, 500)); // 500ms delay
       }
-      
+
       const result = await processChunk(chunk);
-      
-      importProgress.processedChunks++;
-      importProgress.successfulImports += result.successful;
-      
-      if (result.errors && result.errors.length > 0) {
-        importProgress.failedImports += result.errors.length;
-        importProgress.chunkErrors.push(...result.errors);
-      }
-      
-      console.log(`Processed chunk ${i + 1}/${chunks.length}: ${result.successful} successful, ${result.errors?.length || 0} failed`);
-      
+
+      // Update progress in database
+      await updateImportProgress(sessionId, result.successful, result.errors);
+
+      console.log(
+        `Processed chunk ${i + 1}/${chunks.length}: ${
+          result.successful
+        } successful, ${result.errors?.length || 0} failed`
+      );
     } catch (error) {
       console.error(`Error processing chunk ${i + 1}:`, error);
-      importProgress.processedChunks++;
-      importProgress.failedImports += chunk.length;
-      importProgress.chunkErrors.push(`Chunk ${i + 1}: ${error.message}`);
+      await updateImportProgress(
+        sessionId,
+        0,
+        [`Chunk ${i + 1}: ${error.message}`],
+        chunk.length
+      );
     }
   }
-  
+
   // Mark import as completed
-  importProgress.status = 'completed';
-  importProgress.endTime = new Date();
-  importProgress.totalTime = importProgress.endTime - importProgress.startTime;
-  
-  console.log(`Import session ${sessionId} completed: ${importProgress.successfulImports} successful, ${importProgress.failedImports} failed`);
+  await completeImportSession(sessionId);
+  console.log(`Import session ${sessionId} completed`);
+}
+
+async function completeImportSession(sessionId) {
+  const connection = await pool.getConnection();
+  try {
+    await connection.query(
+      `UPDATE import_sessions 
+       SET status = 'completed', completed_at = NOW(), updated_at = NOW()
+       WHERE session_id = ?`,
+      [sessionId]
+    );
+  } catch (error) {
+    console.error("Error completing import session:", error);
+    if (global.importSessions && global.importSessions[sessionId]) {
+      global.importSessions[sessionId].status = "completed";
+      global.importSessions[sessionId].endTime = new Date();
+    }
+  } finally {
+    connection.release();
+  }
+}
+
+// Add these helper functions for database session management
+async function updateImportProgress(
+  sessionId,
+  successful,
+  errors = [],
+  failedCount = null
+) {
+  const connection = await pool.getConnection();
+  try {
+    const [current] = await connection.query(
+      "SELECT processed_chunks, successful_imports, failed_imports, chunk_errors FROM import_sessions WHERE session_id = ?",
+      [sessionId]
+    );
+
+    if (current.length > 0) {
+      const currentSession = current[0];
+      const newProcessedChunks = currentSession.processed_chunks + 1;
+      const newSuccessful = currentSession.successful_imports + successful;
+      const newFailed =
+        failedCount !== null
+          ? currentSession.failed_imports + failedCount
+          : currentSession.failed_imports + (errors?.length || 0);
+
+      // Merge errors
+      const currentErrors = currentSession.chunk_errors
+        ? JSON.parse(currentSession.chunk_errors)
+        : [];
+      const newErrors = [...currentErrors, ...errors];
+
+      await connection.query(
+        `UPDATE import_sessions 
+         SET processed_chunks = ?, successful_imports = ?, failed_imports = ?, chunk_errors = ?, updated_at = NOW()
+         WHERE session_id = ?`,
+        [
+          newProcessedChunks,
+          newSuccessful,
+          newFailed,
+          JSON.stringify(newErrors),
+          sessionId,
+        ]
+      );
+    }
+  } catch (error) {
+    console.error("Error updating import progress:", error);
+    // Fallback to memory storage
+    if (global.importSessions && global.importSessions[sessionId]) {
+      const session = global.importSessions[sessionId];
+      session.processedChunks++;
+      session.successfulImports += successful;
+      session.failedImports +=
+        failedCount !== null ? failedCount : errors.length;
+      session.chunkErrors.push(...errors);
+    }
+  } finally {
+    connection.release();
+  }
 }
 
 // Process a single chunk
 async function processChunk(chunk) {
   const chunkErrors = [];
   let successfulImports = 0;
-  
-  // Use transaction for each chunk
+
   const connection = await pool.getConnection();
-  
+
   try {
     await connection.beginTransaction();
-    
+
     for (const prospect of chunk) {
       try {
+        // Check for duplicate email before insert
+        const [existing] = await connection.query(
+          "SELECT id FROM prospects WHERE Email = ? AND isactive = 1",
+          [prospect.Email]
+        );
+
+        if (existing.length > 0) {
+          chunkErrors.push(
+            `Prospect with email ${prospect.Email} already exists`
+          );
+          continue;
+        }
+
         const [result] = await connection.query(
-          `
-          INSERT INTO prospects (
+          `INSERT INTO prospects (
             Fullname, Firstname, Lastname, Jobtitle, Company, Website,
             Personallinkedin, Companylinkedin, Altphonenumber, Companyphonenumber,
             Email, Emailcode, Address, Street, City, State, Postalcode, Country,
             Annualrevenue, Industry, Employeesize, Siccode, Naicscode,
             Dispositioncode, Providercode, Comments, Department, Seniority, Status, CreatedBy
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          `,
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             prospect.Fullname,
             prospect.Firstname,
@@ -949,72 +1138,147 @@ async function processChunk(chunk) {
         );
         successfulImports++;
       } catch (error) {
-        chunkErrors.push(`Error inserting prospect ${prospect.Email}: ${error.message}`);
-        // Continue with next prospect in chunk
+        if (error.code === "ER_DUP_ENTRY") {
+          chunkErrors.push(`Duplicate entry for email ${prospect.Email}`);
+        } else {
+          chunkErrors.push(
+            `Error inserting prospect ${prospect.Email}: ${error.message}`
+          );
+        }
       }
     }
-    
+
     await connection.commit();
-    
   } catch (error) {
     await connection.rollback();
-    throw error; // Re-throw to handle at chunk level
+    throw error;
   } finally {
     connection.release();
   }
-  
+
   return { successful: successfulImports, errors: chunkErrors };
 }
 
 export const checkImportProgress = async (req, res) => {
   try {
     const { sessionId } = req.params;
-    
-    if (!global.importSessions || !global.importSessions[sessionId]) {
-      return res.status(404).json({
-        success: false,
-        error: "Import session not found",
+
+    // First, check if import_sessions table exists
+    let tableExists = false;
+    const connection = await pool.getConnection();
+
+    try {
+      // Check if table exists
+      const [tables] = await connection.query(
+        "SHOW TABLES LIKE 'import_sessions'"
+      );
+      tableExists = tables.length > 0;
+
+      if (!tableExists) {
+        // Table doesn't exist, use memory storage
+        if (!global.importSessions || !global.importSessions[sessionId]) {
+          return res.status(404).json({
+            success: false,
+            error: "Import session not found - table not created yet",
+          });
+        }
+
+        const progress = global.importSessions[sessionId];
+        return res.json({
+          success: true,
+          progress: formatProgressResponse(progress),
+        });
+      }
+
+      // Table exists, query from database
+      const [sessions] = await connection.query(
+        "SELECT * FROM import_sessions WHERE session_id = ?",
+        [sessionId]
+      );
+
+      if (sessions.length === 0) {
+        // Fallback to memory storage
+        if (!global.importSessions || !global.importSessions[sessionId]) {
+          return res.status(404).json({
+            success: false,
+            error: "Import session not found",
+          });
+        }
+
+        const progress = global.importSessions[sessionId];
+        return res.json({
+          success: true,
+          progress: formatProgressResponse(progress),
+        });
+      }
+
+      const session = sessions[0];
+      const progress = {
+        sessionId: session.session_id,
+        status: session.status,
+        totalChunks: session.total_chunks,
+        processedChunks: session.processed_chunks,
+        successfulImports: session.successful_imports,
+        failedImports: session.failed_imports,
+        chunkErrors: session.chunk_errors
+          ? JSON.parse(session.chunk_errors)
+          : [],
+        startTime: session.created_at,
+        endTime: session.completed_at,
+        totalTime: session.completed_at
+          ? new Date(session.completed_at) - new Date(session.created_at)
+          : null,
+      };
+
+      res.json({
+        success: true,
+        progress: formatProgressResponse(progress),
       });
+    } finally {
+      connection.release();
     }
-    
-    const progress = global.importSessions[sessionId];
-    
-    res.json({
-      success: true,
-      progress: {
-        sessionId: progress.sessionId,
-        status: progress.status,
-        totalChunks: progress.totalChunks,
-        processedChunks: progress.processedChunks,
-        successfulImports: progress.successfulImports,
-        failedImports: progress.failedImports,
-        chunkErrors: progress.chunkErrors,
-        progressPercentage: Math.round((progress.processedChunks / progress.totalChunks) * 100),
-        startTime: progress.startTime,
-        endTime: progress.endTime,
-        totalTime: progress.totalTime,
-      },
-    });
-    
   } catch (error) {
     console.error("Check import progress error:", error);
-    res.status(500).json({
-      success: false,
-      error: "Internal server error",
+
+    // If database error, fall back to memory storage
+    if (
+      !global.importSessions ||
+      !global.importSessions[req.params.sessionId]
+    ) {
+      return res.status(404).json({
+        success: false,
+        error: "Import session not found: " + error.message,
+      });
+    }
+
+    const progress = global.importSessions[req.params.sessionId];
+    res.json({
+      success: true,
+      progress: formatProgressResponse(progress),
     });
   }
 };
+
+function formatProgressResponse(progress) {
+  return {
+    ...progress,
+    progressPercentage:
+      progress.totalChunks > 0
+        ? Math.round((progress.processedChunks / progress.totalChunks) * 100)
+        : 0,
+  };
+}
 
 // Clean up completed imports (optional)
 export const cleanupImportSessions = async (req, res) => {
   try {
     const { olderThanHours = 24 } = req.query;
-    const cutoffTime = new Date(Date.now() - (olderThanHours * 60 * 60 * 1000));
-    
+    const cutoffTime = new Date(Date.now() - olderThanHours * 60 * 60 * 1000);
+
     let cleanedCount = 0;
-    
+
     if (global.importSessions) {
-      Object.keys(global.importSessions).forEach(sessionId => {
+      Object.keys(global.importSessions).forEach((sessionId) => {
         const session = global.importSessions[sessionId];
         if (session.endTime && session.endTime < cutoffTime) {
           delete global.importSessions[sessionId];
@@ -1022,12 +1286,11 @@ export const cleanupImportSessions = async (req, res) => {
         }
       });
     }
-    
+
     res.json({
       success: true,
       message: `Cleaned up ${cleanedCount} import sessions`,
     });
-    
   } catch (error) {
     console.error("Cleanup import sessions error:", error);
     res.status(500).json({
