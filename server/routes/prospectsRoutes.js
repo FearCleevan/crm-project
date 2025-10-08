@@ -27,6 +27,7 @@ router.get('/test', (req, res) => {
     });
 });
 
+
 // All routes require authentication
 router.use(authMiddleware);
 
