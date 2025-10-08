@@ -1,86 +1,111 @@
-//server/services/importQueue.js
-import { EventEmitter } from 'events';
+// services/importQueue.js
+import Queue from 'bull';
+import pool from "../config/db.js";
 
-class ImportQueue extends EventEmitter {
-  constructor() {
-    super();
-    this.queue = [];
-    this.processing = false;
-    this.concurrency = 3; // Process 3 chunks concurrently
-    this.activeProcesses = 0;
-    this.chunkSize = 100; // Records per chunk
+export const importQueue = new Queue('prospect import', {
+  redis: {
+    host: process.env.REDIS_HOST || 'localhost',
+    port: process.env.REDIS_PORT || 6379,
+  },
+  limiter: {
+    max: 1, // Process 1 job at a time
+    duration: 1000 // per second
   }
+});
 
-  addToQueue(data, options = {}) {
-    const job = {
-      id: Date.now() + Math.random(),
-      data,
-      options,
-      status: 'pending',
-      createdAt: new Date()
-    };
+// Process jobs
+importQueue.process('import-chunk', async (job) => {
+  const { chunk, sessionId } = job.data;
+  
+  try {
+    const result = await processChunk(chunk);
     
-    this.queue.push(job);
-    this.processQueue();
+    // Update progress
+    if (global.importSessions && global.importSessions[sessionId]) {
+      global.importSessions[sessionId].processedChunks++;
+      global.importSessions[sessionId].successfulImports += result.successful;
+      global.importSessions[sessionId].failedImports += result.errors.length;
+      global.importSessions[sessionId].chunkErrors.push(...result.errors);
+    }
     
-    return job.id;
+    return result;
+  } catch (error) {
+    console.error(`Error processing chunk in queue:`, error);
+    throw error;
   }
+});
 
-  async processQueue() {
-    if (this.processing || this.activeProcesses >= this.concurrency || this.queue.length === 0) {
-      return;
+async function processChunk(chunk) {
+  const chunkErrors = [];
+  let successfulImports = 0;
+  
+  const connection = await pool.getConnection();
+  
+  try {
+    await connection.beginTransaction();
+    
+    for (const prospect of chunk) {
+      try {
+        const [result] = await connection.query(
+          `
+          INSERT INTO prospects (
+            Fullname, Firstname, Lastname, Jobtitle, Company, Website,
+            Personallinkedin, Companylinkedin, Altphonenumber, Companyphonenumber,
+            Email, Emailcode, Address, Street, City, State, Postalcode, Country,
+            Annualrevenue, Industry, Employeesize, Siccode, Naicscode,
+            Dispositioncode, Providercode, Comments, Department, Seniority, Status, CreatedBy
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `,
+          [
+            prospect.Fullname,
+            prospect.Firstname,
+            prospect.Lastname,
+            prospect.Jobtitle,
+            prospect.Company,
+            prospect.Website,
+            prospect.Personallinkedin,
+            prospect.Companylinkedin,
+            prospect.Altphonenumber,
+            prospect.Companyphonenumber,
+            prospect.Email,
+            prospect.Emailcode,
+            prospect.Address,
+            prospect.Street,
+            prospect.City,
+            prospect.State,
+            prospect.Postalcode,
+            prospect.Country,
+            prospect.Annualrevenue,
+            prospect.Industry,
+            prospect.Employeesize,
+            prospect.Siccode,
+            prospect.Naicscode,
+            prospect.Dispositioncode,
+            prospect.Providercode,
+            prospect.Comments,
+            prospect.Department,
+            prospect.Seniority,
+            prospect.Status,
+            prospect.CreatedBy,
+          ]
+        );
+        successfulImports++;
+      } catch (error) {
+        chunkErrors.push(`Error inserting prospect ${prospect.Email}: ${error.message}`);
+        // Continue with next prospect in chunk
+      }
     }
-
-    this.processing = true;
-
-    while (this.queue.length > 0 && this.activeProcesses < this.concurrency) {
-      const job = this.queue.shift();
-      this.activeProcesses++;
-      
-      this.processJob(job).finally(() => {
-        this.activeProcesses--;
-        this.processQueue();
-      });
-    }
-
-    this.processing = false;
+    
+    await connection.commit();
+    
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
   }
-
-  async processJob(job) {
-    try {
-      job.status = 'processing';
-      this.emit('jobStart', job);
-      
-      const result = await this.processChunk(job.data, job.options);
-      
-      job.status = 'completed';
-      job.result = result;
-      this.emit('jobComplete', job);
-      
-    } catch (error) {
-      job.status = 'failed';
-      job.error = error;
-      this.emit('jobError', job, error);
-    }
-  }
-
-  async processChunk(chunkData, options) {
-    // This will be implemented in the controller
-    return { processed: chunkData.length, success: true };
-  }
-
-  getQueueStatus() {
-    return {
-      pending: this.queue.length,
-      processing: this.activeProcesses,
-      concurrency: this.concurrency,
-      chunkSize: this.chunkSize
-    };
-  }
-
-  clearQueue() {
-    this.queue = [];
-  }
+  
+  return { successful: successfulImports, errors: chunkErrors };
 }
 
-export const importQueue = new ImportQueue();
+export default importQueue;
