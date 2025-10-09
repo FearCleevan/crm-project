@@ -97,9 +97,6 @@ export const getProspects = async (req, res) => {
     queryParams.push(parseInt(limit), offset);
 
     // Execute queries
-    console.log("Executing query:", query);
-    console.log("Query params:", queryParams);
-
     const [prospects] = await pool.query(query, queryParams);
     const [countResult] = await pool.query(countQuery, countParams);
     const total = countResult[0]?.total || 0;
@@ -124,7 +121,6 @@ export const getProspects = async (req, res) => {
 };
 
 // Get single prospect by ID
-// Get single prospect by ID
 export const getProspectById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -139,7 +135,7 @@ export const getProspectById = async (req, res) => {
       FROM prospects p
       LEFT JOIN prospects_disposition pd ON p.DispositionCode = pd.DispositionCode
       LEFT JOIN prospects_email_status pes ON p.EmailCode = pes.EmailCode
-      LEFT JOIN prospects_industry pos ON p.Industry = pos.IndustryCode  -- FIXED: p.Industry not p.IndustryCode
+      LEFT JOIN prospects_industry pos ON p.Industry = pos.IndustryCode
       LEFT JOIN prospects_provider pp ON p.ProviderCode = pp.ProviderCode
       WHERE p.id = ? AND p.isactive = 1
     `,
@@ -223,20 +219,6 @@ export const createProspect = async (req, res) => {
       }
     }
 
-    // Validate foreign keys if provided
-    if (Industry) {
-      const [industryCheck] = await pool.query(
-        "SELECT IndustryCode FROM prospects_industry WHERE IndustryCode = ?",
-        [Industry]
-      );
-      if (industryCheck.length === 0) {
-        return res.status(400).json({
-          success: false,
-          error: "Invalid IndustryCode",
-        });
-      }
-    }
-
     if (Emailcode) {
       const [emailCheck] = await pool.query(
         "SELECT EmailCode FROM prospects_email_status WHERE EmailCode = ?",
@@ -294,7 +276,7 @@ export const createProspect = async (req, res) => {
         Postalcode || "",
         Country || "",
         Annualrevenue || 0,
-        Industry || "",
+        Industry || null,
         Employeesize || 0,
         Siccode || 0,
         Naicscode || 0,
@@ -351,20 +333,6 @@ export const updateProspect = async (req, res) => {
         return res.status(400).json({
           success: false,
           error: "Invalid Dispositioncode",
-        });
-      }
-    }
-
-    // Validate foreign keys if provided
-    if (updates.Industry) {
-      const [industryCheck] = await pool.query(
-        "SELECT IndustryCode FROM prospects_industry WHERE IndustryCode = ?",
-        [updates.Industry]
-      );
-      if (industryCheck.length === 0) {
-        return res.status(400).json({
-          success: false,
-          error: "Invalid Industrycode",
         });
       }
     }
@@ -572,21 +540,6 @@ export const exportProspects = async (req, res) => {
 // Download CSV template
 export const downloadCSVTemplate = async (req, res) => {
   try {
-    // Get valid values from reference tables
-    const [validDispositions] = await pool.query(
-      "SELECT DispositionCode FROM prospects_disposition LIMIT 5"
-    );
-    const [validEmailStatuses] = await pool.query(
-      "SELECT EmailCode FROM prospects_email_status LIMIT 3"
-    );
-    const [validProviders] = await pool.query(
-      "SELECT ProviderCode FROM prospects_provider LIMIT 3"
-    );
-
-    const [validIndustries] = await pool.query(
-      "SELECT IndustryCode FROM prospects_industry LIMIT 3"
-    );
-
     const templateData = [
       {
         Fullname: "John Smith",
@@ -600,7 +553,7 @@ export const downloadCSVTemplate = async (req, res) => {
         Altphonenumber: "555-123-4567",
         Companyphonenumber: "555-111-2222",
         Email: "john.smith@technova.com",
-        Emailcode: validEmailStatuses[0]?.EmailCode || "EMA000",
+        Emailcode: "EMA000",
         Address: "123 Main St",
         Street: "Main Street",
         City: "San Francisco",
@@ -608,12 +561,12 @@ export const downloadCSVTemplate = async (req, res) => {
         Postalcode: "94101",
         Country: "US",
         Annualrevenue: "1000000.00",
-        Industry: validIndustries[0]?.IndustryCode || "IND001",
+        Industry: "TECH",
         Employeesize: "250",
         Siccode: "7372",
         Naicscode: "541511",
-        Dispositioncode: validDispositions[0]?.DispositionCode || "DISC001",
-        Providercode: validProviders[0]?.ProviderCode || "PROV01",
+        Dispositioncode: "DISC001",
+        Providercode: "PROV01",
         Comments: "Interested in our enterprise solution",
         Department: "IT",
         Seniority: "Manager",
@@ -651,55 +604,7 @@ export const downloadCSVTemplate = async (req, res) => {
   }
 };
 
-// Alternative CSV parsing method - add this function
-// function parseCSV(csvText) {
-//   const lines = csvText.split('\n');
-//   const results = [];
-
-//   if (lines.length === 0) return results;
-
-//   // Extract headers
-//   const headers = lines[0].split(',').map(header => header.trim().replace(/^"|"$/g, ''));
-
-//   for (let i = 1; i < lines.length; i++) {
-//     const line = lines[i].trim();
-//     if (!line) continue;
-
-//     const obj = {};
-//     let current = '';
-//     let inQuotes = false;
-//     let headerIndex = 0;
-
-//     for (let j = 0; j < line.length; j++) {
-//       const char = line[j];
-
-//       if (char === '"') {
-//         inQuotes = !inQuotes;
-//       } else if (char === ',' && !inQuotes) {
-//         obj[headers[headerIndex]] = current.trim().replace(/^"|"$/g, '');
-//         current = '';
-//         headerIndex++;
-//       } else {
-//         current += char;
-//       }
-//     }
-
-//     // Add the last field
-//     if (headerIndex < headers.length) {
-//       obj[headers[headerIndex]] = current.trim().replace(/^"|"$/g, '');
-//     }
-
-//     results.push(obj);
-//   }
-
-//   return results;
-// }
-
-// // Then replace the CSV parsing section with:
-// const csvText = req.file.buffer.toString();
-// const results = parseCSV(csvText);
-
-// Import prospects from CSV
+// Import prospects from CSV - ULTIMATE FIXED VERSION
 export const importProspects = async (req, res) => {
   let connection;
   try {
@@ -711,7 +616,7 @@ export const importProspects = async (req, res) => {
     }
 
     // Validate file size (max 100MB)
-    const maxFileSize = 100 * 1024 * 1024; // 100MB
+    const maxFileSize = 100 * 1024 * 1024;
     if (req.file.size > maxFileSize) {
       return res.status(400).json({
         success: false,
@@ -730,39 +635,58 @@ export const importProspects = async (req, res) => {
       });
     }
 
-    // Get valid values from reference tables (cache these)
+    // Get valid values from reference tables
     const [
       validDispositions,
       validEmailStatuses,
       validProviders,
       validIndustries,
     ] = await Promise.all([
-      pool.query("SELECT DispositionCode FROM prospects_disposition"),
-      pool.query("SELECT EmailCode FROM prospects_email_status"),
-      pool.query("SELECT ProviderCode FROM prospects_provider"),
-      pool.query("SELECT IndustryCode FROM prospects_industry"),
+      pool.query(
+        "SELECT DispositionCode, DispositionName FROM prospects_disposition"
+      ),
+      pool.query("SELECT EmailCode, EmailName FROM prospects_email_status"),
+      pool.query("SELECT ProviderCode, ProviderName FROM prospects_provider"),
+      pool.query("SELECT IndustryCode, IndustryName FROM prospects_industry"),
     ]);
 
-    const validDispositionCodes = validDispositions[0].map(
-      (d) => d.DispositionCode
-    );
-    const validIndustryCodes = validIndustries[0].map((i) => i.IndustryCode);
-    const validEmailCodes = validEmailStatuses[0].map((e) => e.EmailCode);
-    const validProviderCodes = validProviders[0].map((p) => p.ProviderCode);
+    // Create lookup maps for flexible validation
+    const validDispositionMap = new Map();
+    validDispositions[0].forEach((d) => {
+      validDispositionMap.set(d.DispositionCode, true);
+      validDispositionMap.set(d.DispositionName, d.DispositionCode);
+    });
+
+    const validEmailMap = new Map();
+    validEmailStatuses[0].forEach((e) => {
+      validEmailMap.set(e.EmailCode, true);
+      validEmailMap.set(e.EmailName, e.EmailCode);
+    });
+
+    const validProviderMap = new Map();
+    validProviders[0].forEach((p) => {
+      validProviderMap.set(p.ProviderCode, true);
+      validProviderMap.set(p.ProviderName, p.ProviderCode);
+    });
+
+    const validIndustryMap = new Map();
+    validIndustries[0].forEach((i) => {
+      validIndustryMap.set(i.IndustryCode, true);
+      validIndustryMap.set(i.IndustryName, i.IndustryCode);
+    });
 
     const results = [];
     const validationErrors = [];
 
-    // FIXED: Use csv-parser directly without dynamic import
+    // Parse CSV
     const stream = Readable.from(req.file.buffer.toString());
 
     await new Promise((resolve, reject) => {
       stream
-        .pipe(csv()) // Use csv() directly since we imported it at the top
+        .pipe(csv())
         .on("data", (data) => {
-          // Process in chunks to avoid memory buildup
-          if (results.length < 50000) {
-            // Limit to 50k rows
+          if (results.length < 100000) {
+            // Increased limit
             results.push(data);
           }
         })
@@ -773,8 +697,7 @@ export const importProspects = async (req, res) => {
         });
     });
 
-    // Continue with the rest of your existing validation logic...
-    // Validate all rows first
+    // Validate and process all rows
     const validatedProspects = [];
     let rowCount = 0;
 
@@ -800,57 +723,86 @@ export const importProspects = async (req, res) => {
           continue;
         }
 
-        // Trim and validate all fields
-        const dispositionCode = row.Dispositioncode?.trim() || null;
-        const industryCode = row.Industry?.trim() || null;
-        const emailCode = row.Emailcode?.trim() || null;
-        const providerCode = row.Providercode?.trim() || null;
+        // Flexible validation for foreign keys
+        const dispositionValue = row.Dispositioncode?.trim() || null;
+        const industryValue = row.Industry?.trim() || null;
+        const emailValue = row.Emailcode?.trim() || null;
+        const providerValue = row.Providercode?.trim() || null;
 
-        if (
-          dispositionCode &&
-          !validDispositionCodes.includes(dispositionCode)
-        ) {
-          validationErrors.push(
-            `Row ${index + 1}: Invalid Dispositioncode '${dispositionCode}'`
-          );
-          continue;
+        let finalDispositionCode = null;
+        let finalIndustryCode = null;
+        let finalEmailCode = null;
+        let finalProviderCode = null;
+
+        // Validate and map disposition
+        if (dispositionValue) {
+          if (validDispositionMap.has(dispositionValue)) {
+            finalDispositionCode =
+              validDispositionMap.get(dispositionValue) || dispositionValue;
+          } else {
+            validationErrors.push(
+              `Row ${index + 1}: Invalid Disposition '${dispositionValue}'`
+            );
+            continue;
+          }
         }
 
-        if (industryCode && !validIndustryCodes.includes(industryCode)) {
-          validationErrors.push(
-            `Row ${index + 1}: Invalid IndustryCode '${industryCode}'`
-          );
-          continue;
+        // Validate and map industry - MAKE THIS OPTIONAL
+        if (industryValue) {
+          if (validIndustryMap.has(industryValue)) {
+            finalIndustryCode =
+              validIndustryMap.get(industryValue) || industryValue;
+          } else {
+            // Industry is optional, so don't fail the row, just set to null
+            finalIndustryCode = null;
+            validationErrors.push(
+              `Row ${
+                index + 1
+              }: Invalid Industry '${industryValue}' - setting to NULL`
+            );
+            // Don't continue - allow the row to be imported without industry
+          }
         }
 
-        if (emailCode && !validEmailCodes.includes(emailCode)) {
-          validationErrors.push(
-            `Row ${index + 1}: Invalid Emailcode '${emailCode}'`
-          );
-          continue;
+        // Validate and map email status
+        if (emailValue) {
+          if (validEmailMap.has(emailValue)) {
+            finalEmailCode = validEmailMap.get(emailValue) || emailValue;
+          } else {
+            validationErrors.push(
+              `Row ${index + 1}: Invalid Email Status '${emailValue}'`
+            );
+            continue;
+          }
         }
 
-        if (providerCode && !validProviderCodes.includes(providerCode)) {
-          validationErrors.push(
-            `Row ${index + 1}: Invalid Providercode '${providerCode}'`
-          );
-          continue;
+        // Validate and map provider
+        if (providerValue) {
+          if (validProviderMap.has(providerValue)) {
+            finalProviderCode =
+              validProviderMap.get(providerValue) || providerValue;
+          } else {
+            validationErrors.push(
+              `Row ${index + 1}: Invalid Provider '${providerValue}'`
+            );
+            continue;
+          }
         }
 
-        // Prepare prospect data with proper type conversion
+        // Prepare prospect data with proper type conversion and NULL handling
         const prospect = {
-          Fullname: row.Fullname.trim(),
+          Fullname: (row.Fullname || "").trim(),
           Firstname: (row.Firstname || "").trim(),
           Lastname: (row.Lastname || "").trim(),
           Jobtitle: (row.Jobtitle || "").trim(),
-          Company: row.Company.trim(),
+          Company: (row.Company || "").trim(),
           Website: (row.Website || "").trim(),
           Personallinkedin: (row.Personallinkedin || "").trim(),
           Companylinkedin: (row.Companylinkedin || "").trim(),
           Altphonenumber: (row.Altphonenumber || "").trim(),
           Companyphonenumber: (row.Companyphonenumber || "").trim(),
-          Email: row.Email.trim().toLowerCase(),
-          Emailcode: emailCode,
+          Email: (row.Email || "").trim().toLowerCase(),
+          Emailcode: finalEmailCode,
           Address: (row.Address || "").trim(),
           Street: (row.Street || "").trim(),
           City: (row.City || "").trim(),
@@ -858,12 +810,12 @@ export const importProspects = async (req, res) => {
           Postalcode: (row.Postalcode || "").trim(),
           Country: (row.Country || "").trim(),
           Annualrevenue: parseFloat(row.Annualrevenue) || 0,
-          Industry: industryCode,
+          Industry: finalIndustryCode, // Can be null
           Employeesize: parseInt(row.Employeesize) || 0,
           Siccode: parseInt(row.Siccode) || 0,
           Naicscode: parseInt(row.Naicscode) || 0,
-          Dispositioncode: dispositionCode,
-          Providercode: providerCode,
+          Dispositioncode: finalDispositionCode,
+          Providercode: finalProviderCode,
           Comments: (row.Comments || "").trim(),
           Department: (row.Department || "").trim(),
           Seniority: (row.Seniority || "").trim(),
@@ -881,12 +833,12 @@ export const importProspects = async (req, res) => {
       return res.status(400).json({
         success: false,
         error: "No valid prospects found in CSV",
-        errors: validationErrors.slice(0, 50), // Limit error response size
+        errors: validationErrors.slice(0, 50),
       });
     }
 
-    // Use smaller chunks for better performance
-    const chunkSize = 50; // Reduced from 100 for better memory management
+    // Use optimized chunk size
+    const chunkSize = 100;
     const chunks = [];
     for (let i = 0; i < validatedProspects.length; i += chunkSize) {
       chunks.push(validatedProspects.slice(i, i + chunkSize));
@@ -897,7 +849,6 @@ export const importProspects = async (req, res) => {
       .toString(36)
       .substr(2, 9)}`;
 
-    // Use database for session storage instead of memory
     await initializeImportSession(
       importSessionId,
       chunks.length,
@@ -911,11 +862,11 @@ export const importProspects = async (req, res) => {
       sessionId: importSessionId,
       totalProspects: validatedProspects.length,
       totalChunks: chunks.length,
-      validationErrors: validationErrors.slice(0, 20), // Limit response size
+      validationErrors: validationErrors.slice(0, 20),
       validationErrorCount: validationErrors.length,
     });
 
-    // Process chunks in background with better error handling
+    // Process chunks in background
     processChunksInBackground(chunks, importSessionId, validationErrors);
   } catch (error) {
     console.error("Import prospects error:", error);
@@ -926,7 +877,7 @@ export const importProspects = async (req, res) => {
   }
 };
 
-// function to store session in database
+// Database session management functions
 async function initializeImportSession(sessionId, totalChunks, totalProspects) {
   const connection = await pool.getConnection();
   try {
@@ -938,7 +889,6 @@ async function initializeImportSession(sessionId, totalChunks, totalProspects) {
     );
   } catch (error) {
     console.error("Error initializing import session:", error);
-    // Fallback to memory storage
     global.importSessions = global.importSessions || {};
     global.importSessions[sessionId] = {
       sessionId,
@@ -955,20 +905,16 @@ async function initializeImportSession(sessionId, totalChunks, totalProspects) {
   }
 }
 
-// Background chunk processing
 async function processChunksInBackground(chunks, sessionId, validationErrors) {
   for (let i = 0; i < chunks.length; i++) {
     const chunk = chunks[i];
 
     try {
-      // Increased delay for database breathing room
       if (i > 0) {
-        await new Promise((resolve) => setTimeout(resolve, 500)); // 500ms delay
+        await new Promise((resolve) => setTimeout(resolve, 200));
       }
 
       const result = await processChunk(chunk);
-
-      // Update progress in database
       await updateImportProgress(sessionId, result.successful, result.errors);
 
       console.log(
@@ -987,7 +933,6 @@ async function processChunksInBackground(chunks, sessionId, validationErrors) {
     }
   }
 
-  // Mark import as completed
   await completeImportSession(sessionId);
   console.log(`Import session ${sessionId} completed`);
 }
@@ -1012,7 +957,6 @@ async function completeImportSession(sessionId) {
   }
 }
 
-// Add these helper functions for database session management
 async function updateImportProgress(
   sessionId,
   successful,
@@ -1035,7 +979,6 @@ async function updateImportProgress(
           ? currentSession.failed_imports + failedCount
           : currentSession.failed_imports + (errors?.length || 0);
 
-      // Merge errors
       const currentErrors = currentSession.chunk_errors
         ? JSON.parse(currentSession.chunk_errors)
         : [];
@@ -1056,7 +999,6 @@ async function updateImportProgress(
     }
   } catch (error) {
     console.error("Error updating import progress:", error);
-    // Fallback to memory storage
     if (global.importSessions && global.importSessions[sessionId]) {
       const session = global.importSessions[sessionId];
       session.processedChunks++;
@@ -1070,7 +1012,7 @@ async function updateImportProgress(
   }
 }
 
-// Process a single chunk
+// Process a single chunk - ULTIMATE FIXED VERSION
 async function processChunk(chunk) {
   const chunkErrors = [];
   let successfulImports = 0;
@@ -1123,7 +1065,7 @@ async function processChunk(chunk) {
             prospect.Postalcode,
             prospect.Country,
             prospect.Annualrevenue,
-            prospect.Industry,
+            prospect.Industry, // Can be NULL now
             prospect.Employeesize,
             prospect.Siccode,
             prospect.Naicscode,
@@ -1163,26 +1105,22 @@ export const checkImportProgress = async (req, res) => {
   try {
     const { sessionId } = req.params;
 
-    // First, check if import_sessions table exists
     let tableExists = false;
     const connection = await pool.getConnection();
 
     try {
-      // Check if table exists
       const [tables] = await connection.query(
         "SHOW TABLES LIKE 'import_sessions'"
       );
       tableExists = tables.length > 0;
 
       if (!tableExists) {
-        // Table doesn't exist, use memory storage
         if (!global.importSessions || !global.importSessions[sessionId]) {
           return res.status(404).json({
             success: false,
-            error: "Import session not found - table not created yet",
+            error: "Import session not found",
           });
         }
-
         const progress = global.importSessions[sessionId];
         return res.json({
           success: true,
@@ -1190,21 +1128,18 @@ export const checkImportProgress = async (req, res) => {
         });
       }
 
-      // Table exists, query from database
       const [sessions] = await connection.query(
         "SELECT * FROM import_sessions WHERE session_id = ?",
         [sessionId]
       );
 
       if (sessions.length === 0) {
-        // Fallback to memory storage
         if (!global.importSessions || !global.importSessions[sessionId]) {
           return res.status(404).json({
             success: false,
             error: "Import session not found",
           });
         }
-
         const progress = global.importSessions[sessionId];
         return res.json({
           success: true,
@@ -1230,17 +1165,13 @@ export const checkImportProgress = async (req, res) => {
           : null,
       };
 
-      res.json({
-        success: true,
-        progress: formatProgressResponse(progress),
-      });
+      res.json({ success: true, progress: formatProgressResponse(progress) });
     } finally {
       connection.release();
     }
   } catch (error) {
     console.error("Check import progress error:", error);
 
-    // If database error, fall back to memory storage
     if (
       !global.importSessions ||
       !global.importSessions[req.params.sessionId]
@@ -1252,10 +1183,7 @@ export const checkImportProgress = async (req, res) => {
     }
 
     const progress = global.importSessions[req.params.sessionId];
-    res.json({
-      success: true,
-      progress: formatProgressResponse(progress),
-    });
+    res.json({ success: true, progress: formatProgressResponse(progress) });
   }
 };
 
@@ -1269,7 +1197,7 @@ function formatProgressResponse(progress) {
   };
 }
 
-// Clean up completed imports (optional)
+// Clean up completed imports
 export const cleanupImportSessions = async (req, res) => {
   try {
     const { olderThanHours = 24 } = req.query;
@@ -1312,8 +1240,6 @@ export const getLookupData = async (req, res) => {
     const [providers] = await pool.query(
       "SELECT * FROM prospects_provider ORDER BY ProviderName"
     );
-
-    // Get industry data - use IndustryCode as value and IndustryName as display text
     const [industries] = await pool.query(
       "SELECT * FROM prospects_industry ORDER BY IndustryName"
     );
@@ -1334,7 +1260,7 @@ export const getLookupData = async (req, res) => {
         dispositions,
         emailStatuses,
         providers,
-        industries, // This contains {IndustryCode, IndustryName}
+        industries,
         countries,
         statuses,
       },
