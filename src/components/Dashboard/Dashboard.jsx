@@ -1,72 +1,11 @@
 //src/assets/components/Dashboard/Dashboard.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styles from './Dashboard.module.css';
 import RightDashboard from '../RightDashboard/RightDashboard';
 import LeftDashboard from '../LeftDashboard/LeftDashboard';
 import Header from '../Header/Header';
 import { DashboardSkeleton } from '../Common/SkeletonLoading';
 import useAuth from '../../hooks/useAuth';
-
-
-// Mock data for dashboard stats and activities
-const mockDashboardData = {
-  stats: {
-    totalLeads: 1248,
-    totalLeadsChange: 12,
-    totalEmails: 2475,
-    totalEmailsChange: 8,
-    totalPhones: 1982,
-    totalPhonesChange: 5,
-    totalCompanies: 428,
-    totalCompaniesChange: 3,
-    duplicateLeads: 87,
-    duplicateLeadsChange: -2,
-    junkLeads: 42,
-    junkLeadsChange: -15
-  },
-  recentActivity: [
-    {
-      id: 1,
-      type: "call",
-      icon: "📞",
-      description: "Call with Acme Corp completed",
-      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-      user: "John Doe"
-    },
-    {
-      id: 2,
-      type: "email",
-      icon: "✉️",
-      description: "Proposal sent to XYZ Ltd",
-      timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
-      user: "Jane Smith"
-    },
-    {
-      id: 3,
-      type: "meeting",
-      icon: "📅",
-      description: "Meeting scheduled with ABC Inc",
-      timestamp: new Date(Date.now() + 24 * 60 * 60 * 1000), // 1 day from now
-      user: "John Doe"
-    },
-    {
-      id: 4,
-      type: "task",
-      icon: "✅",
-      description: "Completed customer onboarding process",
-      timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
-      user: "Mike Johnson"
-    },
-    {
-      id: 5,
-      type: "note",
-      icon: "📝",
-      description: "Added new notes to Johnson account",
-      timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
-      user: "Sarah Wilson"
-    }
-  ]
-};
 
 // Logout Confirmation Modal Component
 const LogoutConfirmationModal = ({ isOpen, onConfirm, onCancel, userName }) => {
@@ -107,11 +46,65 @@ const Dashboard = () => {
     const [rightCollapsed, setRightCollapsed] = useState(true);
     const [showLeftToggle, setShowLeftToggle] = useState(false);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
+    const [statsLoading, setStatsLoading] = useState(true);
+    const [statsError, setStatsError] = useState(null);
 
-    // Set mock data for dashboard stats and activities
-    useState(() => {
-      setDashboardData(mockDashboardData);
-    }, []);
+    // Fetch real dashboard data from API
+    const fetchDashboardData = async () => {
+        try {
+            setStatsLoading(true);
+            setStatsError(null);
+            
+            const token = localStorage.getItem('token');
+            const response = await fetch('/api/dashboard/stats', {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to fetch dashboard data: ${response.status}`);
+            }
+
+            const data = await response.json();
+            
+            if (data.success) {
+                setDashboardData(data.data);
+            } else {
+                throw new Error(data.error || 'Failed to load dashboard data');
+            }
+        } catch (error) {
+            console.error('Error fetching dashboard data:', error);
+            setStatsError(error.message);
+            // Fallback to empty data structure
+            setDashboardData({
+                stats: {
+                    totalLeads: 0,
+                    totalLeadsChange: 0,
+                    totalEmails: 0,
+                    totalEmailsChange: 0,
+                    totalPhones: 0,
+                    totalPhonesChange: 0,
+                    totalCompanies: 0,
+                    totalCompaniesChange: 0,
+                    duplicateLeads: 0,
+                    duplicateLeadsChange: 0,
+                    junkLeads: 0,
+                    junkLeadsChange: 0
+                },
+                recentActivity: []
+            });
+        } finally {
+            setStatsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (user) {
+            fetchDashboardData();
+        }
+    }, [user]);
 
     const handleLogoutClick = () => {
         setShowLogoutModal(true);
@@ -137,7 +130,6 @@ const Dashboard = () => {
         const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
         
         if (date > now) {
-            // Future date
             return 'Tomorrow, ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         } else if (diffHours < 24) {
             return 'Today, ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -150,7 +142,27 @@ const Dashboard = () => {
         }
     };
 
-    if (isLoading || !user || !dashboardData) {
+    // Mock recent activity (you can replace this with real data later)
+    const mockRecentActivity = [
+        {
+            id: 1,
+            type: "import",
+            icon: "📥",
+            description: "New prospects imported from CSV",
+            timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
+            user: `${user?.firstName} ${user?.lastName}`
+        },
+        {
+            id: 2,
+            type: "update",
+            icon: "✏️",
+            description: "Updated prospect information",
+            timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000),
+            user: `${user?.firstName} ${user?.lastName}`
+        }
+    ];
+
+    if (isLoading || !user) {
         return <DashboardSkeleton />;
     }
 
@@ -207,73 +219,97 @@ const Dashboard = () => {
 
                 <main className={styles.mainContent}>
                     {/* Stats Grid */}
-                    <div className={styles.statsGrid}>
-                        <div className={styles.statCard}>
-                            <div className={styles.statHeader}>
-                                <h3>Total Leads</h3>
-                            </div>
-                            <p className={styles.statValue}>{formatNumber(dashboardData.stats.totalLeads)}</p>
-                            <p className={dashboardData.stats.totalLeadsChange >= 0 ? styles.statChangePositive : styles.statChangeNegative}>
-                                {dashboardData.stats.totalLeadsChange >= 0 ? '↑' : '↓'} {Math.abs(dashboardData.stats.totalLeadsChange)}% from last month
-                            </p>
-                            <button className={styles.moreInfoBtn}>More info</button>
+                    {statsError && (
+                        <div className={styles.errorMessage}>
+                            <p>Error loading dashboard stats: {statsError}</p>
+                            <button onClick={fetchDashboardData} className={styles.retryButton}>
+                                Retry
+                            </button>
                         </div>
-                        <div className={styles.statCard}>
-                            <div className={styles.statHeader}>
-                                <h3>Total Emails</h3>
-                            </div>
-                            <p className={styles.statValue}>{formatNumber(dashboardData.stats.totalEmails)}</p>
-                            <p className={dashboardData.stats.totalEmailsChange >= 0 ? styles.statChangePositive : styles.statChangeNegative}>
-                                {dashboardData.stats.totalEmailsChange >= 0 ? '↑' : '↓'} {Math.abs(dashboardData.stats.totalEmailsChange)}% from last week
-                            </p>
-                            <button className={styles.moreInfoBtn}>More info</button>
+                    )}
+                    
+                    {statsLoading ? (
+                        <div className={styles.statsGrid}>
+                            {[...Array(6)].map((_, index) => (
+                                <div key={index} className={styles.statCard}>
+                                    <div className={styles.statHeader}>
+                                        <h3>Loading...</h3>
+                                    </div>
+                                    <div className={styles.statSkeleton}></div>
+                                    <div className={styles.changeSkeleton}></div>
+                                    <div className={styles.buttonSkeleton}></div>
+                                </div>
+                            ))}
                         </div>
-                        <div className={styles.statCard}>
-                            <div className={styles.statHeader}>
-                                <h3>Total Phone Numbers</h3>
+                    ) : (
+                        <div className={styles.statsGrid}>
+                            <div className={styles.statCard}>
+                                <div className={styles.statHeader}>
+                                    <h3>Total Leads</h3>
+                                </div>
+                                <p className={styles.statValue}>{formatNumber(dashboardData?.stats?.totalLeads || 0)}</p>
+                                <p className={dashboardData?.stats?.totalLeadsChange >= 0 ? styles.statChangePositive : styles.statChangeNegative}>
+                                    {dashboardData?.stats?.totalLeadsChange >= 0 ? '↑' : '↓'} {Math.abs(dashboardData?.stats?.totalLeadsChange || 0)}% from last month
+                                </p>
+                                <button className={styles.moreInfoBtn}>More info</button>
                             </div>
-                            <p className={styles.statValue}>{formatNumber(dashboardData.stats.totalPhones)}</p>
-                            <p className={dashboardData.stats.totalPhonesChange >= 0 ? styles.statChangePositive : styles.statChangeNegative}>
-                                {dashboardData.stats.totalPhonesChange >= 0 ? '↑' : '↓'} {Math.abs(dashboardData.stats.totalPhonesChange)}% from yesterday
-                            </p>
-                            <button className={styles.moreInfoBtn}>More info</button>
-                        </div>
-                        <div className={styles.statCard}>
-                            <div className={styles.statHeader}>
-                                <h3>Total Company</h3>
+                            <div className={styles.statCard}>
+                                <div className={styles.statHeader}>
+                                    <h3>Total Emails</h3>
+                                </div>
+                                <p className={styles.statValue}>{formatNumber(dashboardData?.stats?.totalEmails || 0)}</p>
+                                <p className={dashboardData?.stats?.totalEmailsChange >= 0 ? styles.statChangePositive : styles.statChangeNegative}>
+                                    {dashboardData?.stats?.totalEmailsChange >= 0 ? '↑' : '↓'} {Math.abs(dashboardData?.stats?.totalEmailsChange || 0)}% from last week
+                                </p>
+                                <button className={styles.moreInfoBtn}>More info</button>
                             </div>
-                            <p className={styles.statValue}>{formatNumber(dashboardData.stats.totalCompanies)}</p>
-                            <p className={dashboardData.stats.totalCompaniesChange >= 0 ? styles.statChangePositive : styles.statChangeNegative}>
-                                {dashboardData.stats.totalCompaniesChange >= 0 ? '↑' : '↓'} {Math.abs(dashboardData.stats.totalCompaniesChange)}% from last quarter
-                            </p>
-                            <button className={styles.moreInfoBtn}>More info</button>
-                        </div>
-                        <div className={styles.statCard}>
-                            <div className={styles.statHeader}>
-                                <h3>Duplicate Leads</h3>
+                            <div className={styles.statCard}>
+                                <div className={styles.statHeader}>
+                                    <h3>Total Phone Numbers</h3>
+                                </div>
+                                <p className={styles.statValue}>{formatNumber(dashboardData?.stats?.totalPhones || 0)}</p>
+                                <p className={dashboardData?.stats?.totalPhonesChange >= 0 ? styles.statChangePositive : styles.statChangeNegative}>
+                                    {dashboardData?.stats?.totalPhonesChange >= 0 ? '↑' : '↓'} {Math.abs(dashboardData?.stats?.totalPhonesChange || 0)}% from yesterday
+                                </p>
+                                <button className={styles.moreInfoBtn}>More info</button>
                             </div>
-                            <p className={styles.statValue}>{formatNumber(dashboardData.stats.duplicateLeads)}</p>
-                            <p className={dashboardData.stats.duplicateLeadsChange >= 0 ? styles.statChangePositive : styles.statChangeNegative}>
-                                {dashboardData.stats.duplicateLeadsChange >= 0 ? '↑' : '↓'} {Math.abs(dashboardData.stats.duplicateLeadsChange)}% from last month
-                            </p>
-                            <button className={styles.moreInfoBtn}>More info</button>
-                        </div>
-                        <div className={styles.statCard}>
-                            <div className={styles.statHeader}>
-                                <h3>Junk Leads</h3>
+                            <div className={styles.statCard}>
+                                <div className={styles.statHeader}>
+                                    <h3>Total Companies</h3>
+                                </div>
+                                <p className={styles.statValue}>{formatNumber(dashboardData?.stats?.totalCompanies || 0)}</p>
+                                <p className={dashboardData?.stats?.totalCompaniesChange >= 0 ? styles.statChangePositive : styles.statChangeNegative}>
+                                    {dashboardData?.stats?.totalCompaniesChange >= 0 ? '↑' : '↓'} {Math.abs(dashboardData?.stats?.totalCompaniesChange || 0)}% from last quarter
+                                </p>
+                                <button className={styles.moreInfoBtn}>More info</button>
                             </div>
-                            <p className={styles.statValue}>{formatNumber(dashboardData.stats.junkLeads)}</p>
-                            <p className={dashboardData.stats.junkLeadsChange >= 0 ? styles.statChangePositive : styles.statChangeNegative}>
-                                {dashboardData.stats.junkLeadsChange >= 0 ? '↑' : '↓'} {Math.abs(dashboardData.stats.junkLeadsChange)}% from last week
-                            </p>
-                            <button className={styles.moreInfoBtn}>More info</button>
+                            <div className={styles.statCard}>
+                                <div className={styles.statHeader}>
+                                    <h3>Duplicate Leads</h3>
+                                </div>
+                                <p className={styles.statValue}>{formatNumber(dashboardData?.stats?.duplicateLeads || 0)}</p>
+                                <p className={dashboardData?.stats?.duplicateLeadsChange >= 0 ? styles.statChangePositive : styles.statChangeNegative}>
+                                    {dashboardData?.stats?.duplicateLeadsChange >= 0 ? '↑' : '↓'} {Math.abs(dashboardData?.stats?.duplicateLeadsChange || 0)}% from last month
+                                </p>
+                                <button className={styles.moreInfoBtn}>More info</button>
+                            </div>
+                            <div className={styles.statCard}>
+                                <div className={styles.statHeader}>
+                                    <h3>Junk Leads</h3>
+                                </div>
+                                <p className={styles.statValue}>{formatNumber(dashboardData?.stats?.junkLeads || 0)}</p>
+                                <p className={dashboardData?.stats?.junkLeadsChange >= 0 ? styles.statChangePositive : styles.statChangeNegative}>
+                                    {dashboardData?.stats?.junkLeadsChange >= 0 ? '↑' : '↓'} {Math.abs(dashboardData?.stats?.junkLeadsChange || 0)}% from last week
+                                </p>
+                                <button className={styles.moreInfoBtn}>More info</button>
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     <div className={styles.recentActivity}>
                         <h3>Recent Activity</h3>
                         <div className={styles.activityList}>
-                            {dashboardData.recentActivity.map(activity => (
+                            {mockRecentActivity.map(activity => (
                                 <div key={activity.id} className={styles.activityItem}>
                                     <div className={styles.activityIcon}>{activity.icon}</div>
                                     <div className={styles.activityDetails}>
