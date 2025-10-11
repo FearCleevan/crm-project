@@ -15,7 +15,7 @@ const usePermissions = () => {
           throw new Error('No authentication token found');
         }
 
-        const response = await fetch('http://localhost:5001/api/permissions/my-permissions', {
+        const response = await fetch('http://localhost:5000/api/permissions/my-permissions', {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'

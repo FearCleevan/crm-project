@@ -773,3 +773,295 @@
         align-items: center;
     }
 }
+
+/* src/components/LeadsManagement/Prospects.module.css */
+/* Add these new styles to your existing CSS file */
+
+.prospectsLayout {
+    display: flex;
+    gap: 1.5rem;
+    min-height: calc(100vh - 3rem);
+}
+
+.filterSidebar {
+    width: 350px;
+    flex-shrink: 0;
+}
+
+.mainContent {
+    flex: 1;
+    min-width: 0;
+}
+
+.filterCard {
+    background: #2a2a3a;
+    border: 1px solid #3a3a4a;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.cardHeader {
+    background: #4a6fa5;
+    color: white;
+    padding: 12px 16px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.filterIcon {
+    font-size: 14px;
+}
+
+.prospectsCardBody {
+    padding: 16px;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+/* Accordion Styles */
+.zpAccordion {
+    margin-bottom: 12px;
+    border: 1px solid #3a3a4a;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.zpAccordionHeader {
+    background: #2a2a3a;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.zpAccordionHeader:hover {
+    background: #3a3a4a;
+}
+
+.accordionTitleWrapper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.accordionTitle {
+    font-weight: 500;
+    color: #e0e0e0;
+}
+
+.zpChevron {
+    transition: transform 0.2s ease;
+    color: #b0b0b0;
+}
+
+.chevronOpen {
+    transform: rotate(-90deg);
+}
+
+.chevronClosed {
+    transform: rotate(0deg);
+}
+
+.zpAccordionContent {
+    background: #2a2a3a;
+    border-top: 1px solid #3a3a4a;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+}
+
+.accordionOpen {
+    max-height: 500px;
+    padding: 16px;
+}
+
+.accordionClosed {
+    max-height: 0;
+    padding: 0 16px;
+}
+
+/* Form Styles */
+.dBlock {
+    display: block;
+    margin-bottom: 8px;
+    color: #e0e0e0;
+    font-size: 12px;
+}
+
+.radioGroup {
+    display: flex;
+    gap: 16px;
+}
+
+.formCheck {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.formCheck input[type="radio"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #4a6fa5;
+}
+
+.formCheck label {
+    color: #e0e0e0;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.formGroup {
+    margin-bottom: 12px;
+}
+
+.formGroup label {
+    display: block;
+    margin-bottom: 4px;
+    color: #e0e0e0;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.filterSelect {
+    width: 100%;
+    background: #1a1a2a;
+    border: 1px solid #3a3a4a;
+    border-radius: 4px;
+    color: #e0e0e0;
+    padding: 8px 12px;
+    font-size: 12px;
+    min-height: 80px;
+}
+
+.filterSelect:focus {
+    outline: none;
+    border-color: #4a6fa5;
+}
+
+.formControl {
+    width: 100%;
+    background: #1a1a2a;
+    border: 1px solid #3a3a4a;
+    border-radius: 4px;
+    color: #e0e0e0;
+    padding: 8px 12px;
+    font-size: 12px;
+}
+
+.formControl:focus {
+    outline: none;
+    border-color: #4a6fa5;
+}
+
+.formControl::placeholder {
+    color: #6b7280;
+}
+
+/* Label Styles */
+.empsizelabelmin,
+.empsizelabelmax,
+.fullnamelabel,
+.companylabel,
+.emaillabel {
+    font-size: 11px;
+    color: #b0b0b0;
+}
+
+.cardFooter {
+    padding: 16px;
+    border-top: 1px solid #3a3a4a;
+    background: #2a2a3a;
+}
+
+.row {
+    display: flex;
+    gap: 8px;
+}
+
+.colMd12 {
+    width: 100%;
+}
+
+.filterSearchButton {
+    width: 100%;
+    padding: 10px 16px;
+    background: #48bb78;
+    border: none;
+    border-radius: 6px;
+    color: white;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 12px;
+}
+
+.filterSearchButton:disabled {
+    background: #3a3a4a;
+    color: #6b7280;
+    cursor: not-allowed;
+}
+
+.filterSearchButton:not(:disabled):hover {
+    background: #38a169;
+}
+
+.clearFiltersButton {
+    width: 100%;
+    padding: 8px 16px;
+    background: transparent;
+    border: 1px solid #3a3a4a;
+    border-radius: 6px;
+    color: #b0b0b0;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 8px;
+    font-size: 12px;
+}
+
+.clearFiltersButton:hover {
+    background: #3a3a4a;
+    color: #e0e0e0;
+}
+
+/* No Filter Message */
+.noFilterMessage {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    background: #2a2a3a;
+    border-radius: 8px;
+    border: 1px solid #3a3a4a;
+}
+
+.noFilterContent {
+    text-align: center;
+    color: #b0b0b0;
+}
+
+.noFilterIcon {
+    margin-bottom: 16px;
+    color: #4a4a5a;
+}
+
+.noFilterContent h3 {
+    margin-bottom: 8px;
+    color: #e0e0e0;
+}
+
+.noFilterContent p {
+    max-width: 400px;
+    line-height: 1.5;
+}
+
+/* Keep all your existing styles and add the new ones above */
+/* Your existing CSS styles remain the same... */

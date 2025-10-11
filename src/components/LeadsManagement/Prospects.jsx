@@ -1,4 +1,4 @@
-//src/components/LeadsManagement/Prospects.jsx
+// src/components/LeadsManagement/Prospects.jsx
 import React, { useState, useEffect, useMemo } from 'react';
 import {
     FiSearch,
@@ -14,12 +14,43 @@ import {
     FiTrash2,
     FiArchive,
     FiUser,
-    FiX
+    FiX,
+    FiChevronLeft,
+    FiChevronRight
 } from 'react-icons/fi';
 import { FiCheckSquare, FiSquare } from 'react-icons/fi';
 import AddNewProspects from './Modals/AddNewProspects';
 import styles from './Prospects.module.css';
 import ImportProcessingModal from './ImportProcessingModal';
+
+const FilterAccordion = ({ title, children, isOpen, onToggle, id }) => {
+    return (
+        <div className={styles.zpAccordion}>
+            <div
+                className={styles.zpAccordionHeader}
+                onClick={onToggle}
+                role="button"
+                aria-expanded={isOpen}
+                aria-controls={`accordion-content-${id}`}
+                id={`accordion-header-${id}`}
+            >
+                <span className={styles.accordionTitleWrapper}>
+                    <div className={styles.accordionTitle}><span>{title}</span></div>
+                    <i className={`${styles.zpChevron} ${isOpen ? styles.chevronOpen : styles.chevronClosed}`}>
+                        <FiChevronLeft size={14} />
+                    </i>
+                </span>
+            </div>
+            <div
+                className={`${styles.zpAccordionContent} ${isOpen ? styles.accordionOpen : styles.accordionClosed}`}
+                id={`accordion-content-${id}`}
+                aria-labelledby={`accordion-header-${id}`}
+            >
+                {children}
+            </div>
+        </div>
+    );
+};
 
 const Prospects = () => {
     // State management
@@ -49,10 +80,31 @@ const Prospects = () => {
     });
     const [showColumnMenu, setShowColumnMenu] = useState(false);
     const [showBulkActionPopup, setShowBulkActionPopup] = useState(false);
-    const [filters, setFilters] = useState({
-        status: 'all',
-        industry: 'all',
-        country: 'all'
+
+    // Filter accordion states
+    const [openAccordions, setOpenAccordions] = useState({});
+    const [filterValues, setFilterValues] = useState({
+        exportHeaders: '1',
+        jobTitles: [],
+        industries: [],
+        departments: [],
+        seniorities: [],
+        employeeSizeMin: '',
+        employeeSizeMax: '',
+        annualRevenueMin: '',
+        annualRevenueMax: '',
+        fullname: '',
+        firstname: '',
+        lastname: '',
+        company: '',
+        state: '',
+        country: '',
+        altPhoneNumber: '',
+        companyNumber: '',
+        email: '',
+        website: '',
+        sicCode: '',
+        naicsCode: ''
     });
 
     const [importProcessing, setImportProcessing] = useState({
@@ -68,7 +120,10 @@ const Prospects = () => {
         providers: [],
         industries: [],
         countries: [],
-        statuses: []
+        statuses: [],
+        jobTitles: [],
+        departments: [],
+        seniorities: []
     });
     const [notification, setNotification] = useState({ show: false, message: '', type: '' });
 
@@ -80,20 +135,69 @@ const Prospects = () => {
         count: 0
     });
 
+    // Check if any filter is active
+    const isFilterActive = useMemo(() => {
+        return Object.values(filterValues).some(value => {
+            if (Array.isArray(value)) return value.length > 0;
+            if (typeof value === 'string') return value.trim() !== '';
+            return false;
+        });
+    }, [filterValues]);
+
+    // Toggle accordion
+    const toggleAccordion = (id) => {
+        setOpenAccordions(prev => ({
+            ...prev,
+            [id]: !prev[id]
+        }));
+    };
+
+    // Handle filter changes
+    const handleFilterChange = (field, value) => {
+        setFilterValues(prev => ({
+            ...prev,
+            [field]: value
+        }));
+    };
+
     // Fetch prospects from API
     const fetchProspects = async () => {
+        // Don't fetch if no filters are active
+        if (!isFilterActive) {
+            setLeads([]);
+            setLoading(false);
+            return;
+        }
+
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
 
-            // Build query parameters
+            // Build query parameters with all filters
             const params = new URLSearchParams({
                 page: currentPage,
                 limit: itemsPerPage,
                 ...(searchTerm && { search: searchTerm }),
-                ...(filters.status !== 'all' && { status: filters.status }),
-                ...(filters.industry !== 'all' && { industry: filters.industry }),
-                ...(filters.country !== 'all' && { country: filters.country })
+                ...(filterValues.jobTitles.length > 0 && { jobTitles: filterValues.jobTitles.join(',') }),
+                ...(filterValues.industries.length > 0 && { industries: filterValues.industries.join(',') }),
+                ...(filterValues.departments.length > 0 && { departments: filterValues.departments.join(',') }),
+                ...(filterValues.seniorities.length > 0 && { seniorities: filterValues.seniorities.join(',') }),
+                ...(filterValues.employeeSizeMin && { employeeSizeMin: filterValues.employeeSizeMin }),
+                ...(filterValues.employeeSizeMax && { employeeSizeMax: filterValues.employeeSizeMax }),
+                ...(filterValues.annualRevenueMin && { annualRevenueMin: filterValues.annualRevenueMin }),
+                ...(filterValues.annualRevenueMax && { annualRevenueMax: filterValues.annualRevenueMax }),
+                ...(filterValues.fullname && { fullname: filterValues.fullname }),
+                ...(filterValues.firstname && { firstname: filterValues.firstname }),
+                ...(filterValues.lastname && { lastname: filterValues.lastname }),
+                ...(filterValues.company && { company: filterValues.company }),
+                ...(filterValues.state && { state: filterValues.state }),
+                ...(filterValues.country && { country: filterValues.country }),
+                ...(filterValues.altPhoneNumber && { altPhoneNumber: filterValues.altPhoneNumber }),
+                ...(filterValues.companyNumber && { companyNumber: filterValues.companyNumber }),
+                ...(filterValues.email && { email: filterValues.email }),
+                ...(filterValues.website && { website: filterValues.website }),
+                ...(filterValues.sicCode && { sicCode: filterValues.sicCode }),
+                ...(filterValues.naicsCode && { naicsCode: filterValues.naicsCode })
             });
 
             const response = await fetch(`/api/prospects?${params}`, {
@@ -158,13 +262,51 @@ const Prospects = () => {
 
     useEffect(() => {
         fetchLookupData();
-        fetchProspects();
-    }, [currentPage, itemsPerPage]);
+    }, []);
 
     useEffect(() => {
-        // Reset to first page when filters or search term change
+        fetchProspects();
+    }, [currentPage, itemsPerPage, isFilterActive, filterValues]);
+
+    // Handle search with filters
+    const handleFilterSearch = () => {
         setCurrentPage(1);
-    }, [searchTerm, filters.status, filters.industry, filters.country]);
+        fetchProspects();
+    };
+
+    // Clear all filters
+    const clearAllFilters = () => {
+        setFilterValues({
+            exportHeaders: '1',
+            jobTitles: [],
+            industries: [],
+            departments: [],
+            seniorities: [],
+            employeeSizeMin: '',
+            employeeSizeMax: '',
+            annualRevenueMin: '',
+            annualRevenueMax: '',
+            fullname: '',
+            firstname: '',
+            lastname: '',
+            company: '',
+            state: '',
+            country: '',
+            altPhoneNumber: '',
+            companyNumber: '',
+            email: '',
+            website: '',
+            sicCode: '',
+            naicsCode: ''
+        });
+        setOpenAccordions({});
+    };
+
+    // FIXED: Removed the problematic useEffect that was using undefined 'filters'
+    useEffect(() => {
+        // Reset to first page when search term changes
+        setCurrentPage(1);
+    }, [searchTerm]);
 
     // Filter leads based on search and filters
     const filteredLeads = useMemo(() => {
@@ -175,13 +317,9 @@ const Prospects = () => {
                 (lead.Company && lead.Company.toLowerCase().includes(searchTerm.toLowerCase())) ||
                 (lead.Email && lead.Email.toLowerCase().includes(searchTerm.toLowerCase()));
 
-            const matchesStatus = filters.status === 'all' || lead.Status === filters.status;
-            const matchesIndustry = filters.industry === 'all' || lead.Industry === filters.industry;
-            const matchesCountry = filters.country === 'all' || lead.Country === filters.country;
-
-            return matchesSearch && matchesStatus && matchesIndustry && matchesCountry;
+            return matchesSearch;
         });
-    }, [leads, searchTerm, filters]);
+    }, [leads, searchTerm]);
 
     const getIndustryName = (industryCode) => {
         const industry = lookupData.industries?.find(ind => ind.IndustryCode === industryCode);
@@ -701,22 +839,6 @@ const Prospects = () => {
         }
     };
 
-    // Get unique values for filter dropdowns
-    const industries = useMemo(() => {
-        const uniqueIndustries = [...new Set(leads.map(lead => lead.Industry).filter(Boolean))];
-        return ['all', ...uniqueIndustries];
-    }, [leads]);
-
-    const countries = useMemo(() => {
-        const uniqueCountries = [...new Set(leads.map(lead => lead.Country).filter(Boolean))];
-        return ['all', ...uniqueCountries];
-    }, [leads]);
-
-    const statuses = useMemo(() => {
-        const uniqueStatuses = [...new Set(leads.map(lead => lead.Status).filter(Boolean))];
-        return ['all', ...uniqueStatuses];
-    }, [leads]);
-
     // Calculate pagination values
     const startItem = (currentPage - 1) * itemsPerPage + 1;
     const endItem = Math.min(currentPage * itemsPerPage, sortedLeads.length);
@@ -739,132 +861,893 @@ const Prospects = () => {
 
     return (
         <div className={styles.prospects}>
-            {/* Controls Section */}
-            <div className={styles.controls}>
-                <div className={styles.searchContainer}>
-                    <FiSearch className={styles.searchIcon} />
-                    <input
-                        type="text"
-                        placeholder="Search by name, job title, company, or email..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className={styles.searchInput}
-                    />
-                </div>
-
-                <div className={styles.controlButtons}>
-                    <div className={styles.filterSection}>
-                        <select
-                            value={filters.status}
-                            onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
-                            className={styles.filterSelect}
-                        >
-                            <option value="all">All Statuses</option>
-                            {statuses.filter(s => s !== 'all').map(status => (
-                                <option key={status} value={status}>{status}</option>
-                            ))}
-                        </select>
-
-                        <select
-                            value={filters.industry}
-                            onChange={(e) => setFilters(prev => ({ ...prev, industry: e.target.value }))}
-                            className={styles.filterSelect}
-                        >
-                            <option value="all">All Industries</option>
-                            {lookupData.industries?.map(industry => (
-                                <option key={industry.IndustryCode} value={industry.IndustryName}>
-                                    {industry.IndustryName}
-                                </option>
-                            ))}
-                        </select>
-
-                        <select
-                            value={filters.country}
-                            onChange={(e) => setFilters(prev => ({ ...prev, country: e.target.value }))}
-                            className={styles.filterSelect}
-                        >
-                            <option value="all">All Countries</option>
-                            {countries.filter(c => c !== 'all').map(country => (
-                                <option key={country} value={country}>{country}</option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div className={styles.actionButtons}>
-                        <button
-                            className={styles.importButton}
-                            onClick={() => document.getElementById('csv-import').click()}
-                        >
-                            <FiUpload size={16} />
-                            Import
-                        </button>
-                        <input
-                            type="file"
-                            id="csv-import"
-                            accept=".csv"
-                            onChange={handleImport}
-                            style={{ display: 'none' }}
-                        />
-
-                        <button
-                            className={styles.exportButton}
-                            onClick={() => exportToCSV()}
-                        >
-                            <FiDownload size={16} />
-                            Export
-                        </button>
-
-                        <AddNewProspects
-                            isOpen={showAddModal}
-                            onClose={() => setShowAddModal(false)}
-                            onSave={handleCreateProspect}
-                            lookupData={lookupData}
-                        />
-
-                        <button
-                            className={styles.addButton}
-                            onClick={() => setShowAddModal(true)}
-                        >
-                            <FiUser size={16} />
-                            Add Prospect
-                        </button>
-
-                        <button
-                            className={styles.addButton}
-                            onClick={downloadTemplate}
-                        >
-                            <FiDownload size={16} />
-                            Download Template
-                        </button>
-
-                        <div className={styles.columnMenu}>
-                            <button
-                                className={styles.settingsButton}
-                                onClick={() => setShowColumnMenu(!showColumnMenu)}
+            <div className={styles.prospectsLayout}>
+                {/* Filter Sidebar */}
+                <div className={styles.filterSidebar}>
+                    <div className={styles.filterCard}>
+                        <div className={styles.cardHeader}>
+                            <FiFilter className={styles.filterIcon} />
+                            Filter
+                        </div>
+                        <div className={styles.prospectsCardBody}>
+                            {/* Export Options */}
+                            <FilterAccordion
+                                title="Export Options"
+                                isOpen={openAccordions.export}
+                                onToggle={() => toggleAccordion('export')}
+                                id="export"
                             >
-                                <FiSettings size={16} />
-                                Columns
-                            </button>
-
-                            {showColumnMenu && (
-                                <div className={styles.columnMenuDropdown}>
-                                    {Object.entries(columnVisibility).map(([key, visible]) => (
-                                        <label key={key} className={styles.columnMenuItem}>
-                                            <input
-                                                type="checkbox"
-                                                checked={visible}
-                                                onChange={() => setColumnVisibility(prev => ({
-                                                    ...prev,
-                                                    [key]: !prev[key]
-                                                }))}
-                                            />
-                                            {key.charAt(0).toUpperCase() + key.slice(1)}
-                                        </label>
-                                    ))}
+                                <label className={styles.dBlock}>Export Include Headers</label>
+                                <div className={styles.radioGroup}>
+                                    <div className={styles.formCheck}>
+                                        <input
+                                            type="radio"
+                                            id="withHeaders"
+                                            name="exportHeaders"
+                                            value="1"
+                                            checked={filterValues.exportHeaders === '1'}
+                                            onChange={(e) => handleFilterChange('exportHeaders', e.target.value)}
+                                        />
+                                        <label htmlFor="withHeaders">With Headers</label>
+                                    </div>
+                                    <div className={styles.formCheck}>
+                                        <input
+                                            type="radio"
+                                            id="noHeaders"
+                                            name="exportHeaders"
+                                            value="0"
+                                            checked={filterValues.exportHeaders === '0'}
+                                            onChange={(e) => handleFilterChange('exportHeaders', e.target.value)}
+                                        />
+                                        <label htmlFor="noHeaders">No Headers</label>
+                                    </div>
                                 </div>
-                            )}
+                            </FilterAccordion>
+
+                            {/* Job Title */}
+                            <FilterAccordion
+                                title="Job Title"
+                                isOpen={openAccordions.jobTitle}
+                                onToggle={() => toggleAccordion('jobTitle')}
+                                id="jobTitle"
+                            >
+                                <div className={styles.formGroup}>
+                                    <label>Search Suggestion/Dropdown</label>
+                                    <select
+                                        multiple
+                                        value={filterValues.jobTitles}
+                                        onChange={(e) => handleFilterChange('jobTitles', Array.from(e.target.selectedOptions, option => option.value))}
+                                        className={styles.filterSelect}
+                                    >
+                                        {lookupData.jobTitles?.map(title => (
+                                            <option key={title} value={title}>{title}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </FilterAccordion>
+
+                            {/* Industry */}
+                            <FilterAccordion
+                                title="Industry"
+                                isOpen={openAccordions.industry}
+                                onToggle={() => toggleAccordion('industry')}
+                                id="industry"
+                            >
+                                <div className={styles.formGroup}>
+                                    <label>Search Suggestion/Dropdown</label>
+                                    <select
+                                        multiple
+                                        value={filterValues.industries}
+                                        onChange={(e) => handleFilterChange('industries', Array.from(e.target.selectedOptions, option => option.value))}
+                                        className={styles.filterSelect}
+                                    >
+                                        {lookupData.industries?.map(industry => (
+                                            <option key={industry.IndustryCode} value={industry.IndustryName}>
+                                                {industry.IndustryName}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </FilterAccordion>
+
+                            {/* Department */}
+                            <FilterAccordion
+                                title="Department"
+                                isOpen={openAccordions.department}
+                                onToggle={() => toggleAccordion('department')}
+                                id="department"
+                            >
+                                <div className={styles.formGroup}>
+                                    <label>Search Suggestion/Dropdown</label>
+                                    <select
+                                        multiple
+                                        value={filterValues.departments}
+                                        onChange={(e) => handleFilterChange('departments', Array.from(e.target.selectedOptions, option => option.value))}
+                                        className={styles.filterSelect}
+                                    >
+                                        {lookupData.departments?.map(dept => (
+                                            <option key={dept} value={dept}>{dept}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </FilterAccordion>
+
+                            {/* Seniority */}
+                            <FilterAccordion
+                                title="Seniority"
+                                isOpen={openAccordions.seniority}
+                                onToggle={() => toggleAccordion('seniority')}
+                                id="seniority"
+                            >
+                                <div className={styles.formGroup}>
+                                    <label>Search Suggestion/Dropdown</label>
+                                    <select
+                                        multiple
+                                        value={filterValues.seniorities}
+                                        onChange={(e) => handleFilterChange('seniorities', Array.from(e.target.selectedOptions, option => option.value))}
+                                        className={styles.filterSelect}
+                                    >
+                                        {lookupData.seniorities?.map(seniority => (
+                                            <option key={seniority} value={seniority}>{seniority}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </FilterAccordion>
+
+                            {/* Employee Size */}
+                            <FilterAccordion
+                                title="Employee Size"
+                                isOpen={openAccordions.employeeSize}
+                                onToggle={() => toggleAccordion('employeeSize')}
+                                id="employeeSize"
+                            >
+                                <div className={styles.formGroup}>
+                                    <label htmlFor="EmployeeSizeMin" className={styles.empsizelabelmin}>Min</label>
+                                    <input
+                                        type="number"
+                                        name="employeesize_min"
+                                        className={styles.formControl}
+                                        placeholder="(e.g 1)"
+                                        id="EmployeeSizeMin"
+                                        value={filterValues.employeeSizeMin}
+                                        onChange={(e) => handleFilterChange('employeeSizeMin', e.target.value)}
+                                    />
+                                </div>
+                                <div className={styles.formGroup}>
+                                    <label htmlFor="EmployeeSizeMax" className={styles.empsizelabelmax}>Max</label>
+                                    <input
+                                        type="number"
+                                        name="employeesize_max"
+                                        className={styles.formControl}
+                                        placeholder="(e.g 10)"
+                                        id="EmployeeSizeMax"
+                                        value={filterValues.employeeSizeMax}
+                                        onChange={(e) => handleFilterChange('employeeSizeMax', e.target.value)}
+                                    />
+                                </div>
+                            </FilterAccordion>
+
+                            {/* Annual Revenue */}
+                            <FilterAccordion
+                                title="Annual Revenue"
+                                isOpen={openAccordions.annualRevenue}
+                                onToggle={() => toggleAccordion('annualRevenue')}
+                                id="annualRevenue"
+                            >
+                                <div className={styles.formGroup}>
+                                    <label htmlFor="AnnualRevenueMin" className={styles.annsizelabelmin}>Min</label>
+                                    <input
+                                        type="number"
+                                        name="annualrevenue_min"
+                                        className={styles.formControl}
+                                        placeholder="(e.g 1)"
+                                        id="AnnualRevenueMin"
+                                        value={filterValues.annualRevenueMin}
+                                        onChange={(e) => handleFilterChange('annualRevenueMin', e.target.value)}
+                                    />
+                                </div>
+                                <div className={styles.formGroup}>
+                                    <label htmlFor="AnnualRevenueMax" className={styles.annsizelabelmax}>Max</label>
+                                    <input
+                                        type="number"
+                                        name="annualrevenue_max"
+                                        className={styles.formControl}
+                                        placeholder="(e.g 10)"
+                                        id="AnnualRevenueMax"
+                                        value={filterValues.annualRevenueMax}
+                                        onChange={(e) => handleFilterChange('annualRevenueMax', e.target.value)}
+                                    />
+                                </div>
+                            </FilterAccordion>
+
+                            {/* Fullname */}
+                            <FilterAccordion
+                                title="Fullname"
+                                isOpen={openAccordions.fullname}
+                                onToggle={() => toggleAccordion('fullname')}
+                                id="fullname"
+                            >
+                                <div className={styles.formGroup}>
+                                    <label htmlFor="SFullname" className={styles.fullnamelabel}>Input</label>
+                                    <input
+                                        type="text"
+                                        name="full_name"
+                                        className={styles.formControl}
+                                        placeholder="(e.g John Doe)"
+                                        id="SFullname"
+                                        value={filterValues.fullname}
+                                        onChange={(e) => handleFilterChange('fullname', e.target.value)}
+                                    />
+                                </div>
+                            </FilterAccordion>
+
+                            {/* Firstname */}
+                            <FilterAccordion
+                                title="Firstname"
+                                isOpen={openAccordions.firstname}
+                                onToggle={() => toggleAccordion('firstname')}
+                                id="firstname"
+                            >
+                                <div className={styles.formGroup}>
+                                    <label htmlFor="SFirstname" className={styles.firstnamelabel}>Input</label>
+                                    <input
+                                        type="text"
+                                        name="first_name"
+                                        className={styles.formControl}
+                                        placeholder="(e.g John)"
+                                        id="SFirstname"
+                                        value={filterValues.firstname}
+                                        onChange={(e) => handleFilterChange('firstname', e.target.value)}
+                                    />
+                                </div>
+                            </FilterAccordion>
+
+                            {/* Lastname */}
+                            <FilterAccordion
+                                title="Lastname"
+                                isOpen={openAccordions.lastname}
+                                onToggle={() => toggleAccordion('lastname')}
+                                id="lastname"
+                            >
+                                <div className={styles.formGroup}>
+                                    <label htmlFor="SLastname" className={styles.lastnamelabel}>Input</label>
+                                    <input
+                                        type="text"
+                                        name="last_name"
+                                        className={styles.formControl}
+                                        placeholder="(e.g Doe)"
+                                        id="SLastname"
+                                        value={filterValues.lastname}
+                                        onChange={(e) => handleFilterChange('lastname', e.target.value)}
+                                    />
+                                </div>
+                            </FilterAccordion>
+
+                            {/* Company */}
+                            <FilterAccordion
+                                title="Company"
+                                isOpen={openAccordions.company}
+                                onToggle={() => toggleAccordion('company')}
+                                id="company"
+                            >
+                                <div className={styles.formGroup}>
+                                    <label htmlFor="SCompany" className={styles.companylabel}>Input</label>
+                                    <input
+                                        type="text"
+                                        name="s_company"
+                                        className={styles.formControl}
+                                        placeholder="(e.g ABC Corporation)"
+                                        id="SCompany"
+                                        value={filterValues.company}
+                                        onChange={(e) => handleFilterChange('company', e.target.value)}
+                                    />
+                                </div>
+                            </FilterAccordion>
+
+                            {/* State */}
+                            <FilterAccordion
+                                title="State"
+                                isOpen={openAccordions.state}
+                                onToggle={() => toggleAccordion('state')}
+                                id="state"
+                            >
+                                <div className={styles.formGroup}>
+                                    <label htmlFor="SState" className={styles.statelabel}>Input</label>
+                                    <input
+                                        type="text"
+                                        name="s_state"
+                                        className={styles.formControl}
+                                        placeholder="(e.g ABC State)"
+                                        id="SState"
+                                        value={filterValues.state}
+                                        onChange={(e) => handleFilterChange('state', e.target.value)}
+                                    />
+                                </div>
+                            </FilterAccordion>
+
+                            {/* Country */}
+                            <FilterAccordion
+                                title="Country"
+                                isOpen={openAccordions.country}
+                                onToggle={() => toggleAccordion('country')}
+                                id="country"
+                            >
+                                <div className={styles.formGroup}>
+                                    <label htmlFor="SCountry" className={styles.countrylabel}>Input</label>
+                                    <input
+                                        type="text"
+                                        name="s_country"
+                                        className={styles.formControl}
+                                        placeholder="(e.g ABC Country)"
+                                        id="SCountry"
+                                        value={filterValues.country}
+                                        onChange={(e) => handleFilterChange('country', e.target.value)}
+                                    />
+                                </div>
+                            </FilterAccordion>
+
+                            {/* Email Address */}
+                            <FilterAccordion
+                                title="Email Address"
+                                isOpen={openAccordions.email}
+                                onToggle={() => toggleAccordion('email')}
+                                id="email"
+                            >
+                                <div className={styles.formGroup}>
+                                    <label htmlFor="SEmail" className={styles.emaillabel}>Input</label>
+                                    <input
+                                        type="text"
+                                        name="s_emailaddress"
+                                        className={styles.formControl}
+                                        placeholder="(e.g abc@example.com)"
+                                        id="SEmail"
+                                        value={filterValues.email}
+                                        onChange={(e) => handleFilterChange('email', e.target.value)}
+                                    />
+                                </div>
+                            </FilterAccordion>
+
+                            {/* Add more filter sections as needed... */}
+
+                        </div>
+                        <div className={styles.cardFooter}>
+                            <div className={styles.row}>
+                                <div className={styles.colMd12}>
+                                    <button
+                                        type="button"
+                                        onClick={handleFilterSearch}
+                                        className={styles.filterSearchButton}
+                                        disabled={!isFilterActive}
+                                    >
+                                        <FiSearch />
+                                        Search
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={clearAllFilters}
+                                        className={styles.clearFiltersButton}
+                                    >
+                                        Clear Filters
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
+                </div>
+
+                {/* Main Content */}
+                <div className={styles.mainContent}>
+                    {/* Controls Section */}
+                    <div className={styles.controls}>
+                        <div className={styles.searchContainer}>
+                            <FiSearch className={styles.searchIcon} />
+                            <input
+                                type="text"
+                                placeholder="Search by name, job title, company, or email..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className={styles.searchInput}
+                            />
+                        </div>
+
+                        <div className={styles.controlButtons}>
+                            <div className={styles.actionButtons}>
+                                <button
+                                    className={styles.importButton}
+                                    onClick={() => document.getElementById('csv-import').click()}
+                                >
+                                    <FiUpload size={16} />
+                                    Import
+                                </button>
+                                <input
+                                    type="file"
+                                    id="csv-import"
+                                    accept=".csv"
+                                    onChange={handleImport}
+                                    style={{ display: 'none' }}
+                                />
+
+                                <button
+                                    className={styles.exportButton}
+                                    onClick={() => exportToCSV()}
+                                >
+                                    <FiDownload size={16} />
+                                    Export
+                                </button>
+
+                                <AddNewProspects
+                                    isOpen={showAddModal}
+                                    onClose={() => setShowAddModal(false)}
+                                    onSave={handleCreateProspect}
+                                    lookupData={lookupData}
+                                />
+
+                                <button
+                                    className={styles.addButton}
+                                    onClick={() => setShowAddModal(true)}
+                                >
+                                    <FiUser size={16} />
+                                    Add Prospect
+                                </button>
+
+                                <button
+                                    className={styles.addButton}
+                                    onClick={downloadTemplate}
+                                >
+                                    <FiDownload size={16} />
+                                    Download Template
+                                </button>
+
+                                <div className={styles.columnMenu}>
+                                    <button
+                                        className={styles.settingsButton}
+                                        onClick={() => setShowColumnMenu(!showColumnMenu)}
+                                    >
+                                        <FiSettings size={16} />
+                                        Columns
+                                    </button>
+
+                                    {showColumnMenu && (
+                                        <div className={styles.columnMenuDropdown}>
+                                            {Object.entries(columnVisibility).map(([key, visible]) => (
+                                                <label key={key} className={styles.columnMenuItem}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={visible}
+                                                        onChange={() => setColumnVisibility(prev => ({
+                                                            ...prev,
+                                                            [key]: !prev[key]
+                                                        }))}
+                                                    />
+                                                    {key.charAt(0).toUpperCase() + key.slice(1)}
+                                                </label>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* No Data Message */}
+                    {!isFilterActive && (
+                        <div className={styles.noFilterMessage}>
+                            <div className={styles.noFilterContent}>
+                                <FiFilter size={48} className={styles.noFilterIcon} />
+                                <h3>No Filters Applied</h3>
+                                <p>Please apply filters to see prospect data. Use the filter panel on the left to specify your search criteria.</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Table - Only show when filters are active */}
+                    {isFilterActive && (
+                        <>
+                            {/* Bulk Actions Popup */}
+                            {selectedLeads.length > 0 && (
+                                <div className={`${styles.bulkActionsPopup} ${showBulkActionPopup ? styles.show : ''}`}>
+                                    <div className={styles.bulkActionsPopupContent}>
+                                        <div className={styles.bulkActionsPopupHeader}>
+                                            <h3>Bulk Actions ({selectedLeads.length} selected)</h3>
+                                            <button
+                                                className={styles.closeButton}
+                                                onClick={() => setShowBulkActionPopup(false)}
+                                            >
+                                                <FiX size={20} />
+                                            </button>
+                                        </div>
+                                        <div className={styles.bulkActionsPopupButtons}>
+                                            <button
+                                                className={styles.bulkActionPopupButton}
+                                                onClick={() => handleBulkAction('export')}
+                                            >
+                                                <FiDownload size={16} />
+                                                Export Selected
+                                            </button>
+                                            <button
+                                                className={styles.bulkActionPopupButton}
+                                                onClick={() => handleBulkAction('archive')}
+                                            >
+                                                <FiArchive size={16} />
+                                                Archive Selected
+                                            </button>
+                                            <button
+                                                className={`${styles.bulkActionPopupButton} ${styles.deleteAction}`}
+                                                onClick={() => handleBulkAction('delete')}
+                                            >
+                                                <FiTrash2 size={16} />
+                                                Delete Selected
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Show Bulk Actions Button */}
+                            {selectedLeads.length > 0 && (
+                                <div className={styles.bulkActionsButtonContainer}>
+                                    <button
+                                        className={styles.showBulkActionsButton}
+                                        onClick={() => setShowBulkActionPopup(true)}
+                                    >
+                                        {selectedLeads.length} Selected - Show Actions
+                                    </button>
+                                </div>
+                            )}
+
+                            <div className={styles.tableWrapper}>
+                                <div className={styles.tableContainer}>
+                                    <table className={styles.leadsTable}>
+                                        <thead>
+                                            <tr>
+                                                <th className={styles.checkboxCell}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedLeads.length === currentLeads.length && currentLeads.length > 0}
+                                                        onChange={handleSelectAll}
+                                                        className={styles.checkbox}
+                                                    />
+                                                </th>
+
+                                                {columnVisibility.fullname && (
+                                                    <th
+                                                        className={styles.sortableHeader}
+                                                        onClick={() => handleSort('Fullname')}
+                                                    >
+                                                        <div className={styles.headerContent}>
+                                                            <span>Full Name</span>
+                                                            {sortConfig.key === 'Fullname' && (
+                                                                sortConfig.direction === 'ascending' ?
+                                                                    <FiChevronUp size={14} /> : <FiChevronDown size={14} />
+                                                            )}
+                                                        </div>
+                                                    </th>
+                                                )}
+
+                                                {columnVisibility.jobtitle && (
+                                                    <th
+                                                        className={styles.sortableHeader}
+                                                        onClick={() => handleSort('Jobtitle')}
+                                                    >
+                                                        <div className={styles.headerContent}>
+                                                            <span>Job Title</span>
+                                                            {sortConfig.key === 'Jobtitle' && (
+                                                                sortConfig.direction === 'ascending' ?
+                                                                    <FiChevronUp size={14} /> : <FiChevronDown size={14} />
+                                                            )}
+                                                        </div>
+                                                    </th>
+                                                )}
+
+                                                {columnVisibility.company && (
+                                                    <th
+                                                        className={styles.sortableHeader}
+                                                        onClick={() => handleSort('Company')}
+                                                    >
+                                                        <div className={styles.headerContent}>
+                                                            <span>Company</span>
+                                                            {sortConfig.key === 'Company' && (
+                                                                sortConfig.direction === 'ascending' ?
+                                                                    <FiChevronUp size={14} /> : <FiChevronDown size={14} />
+                                                            )}
+                                                        </div>
+                                                    </th>
+                                                )}
+
+                                                {columnVisibility.email && (
+                                                    <th
+                                                        className={styles.sortableHeader}
+                                                        onClick={() => handleSort('Email')}
+                                                    >
+                                                        <div className={styles.headerContent}>
+                                                            <span>Email</span>
+                                                            {sortConfig.key === 'Email' && (
+                                                                sortConfig.direction === 'ascending' ?
+                                                                    <FiChevronUp size={14} /> : <FiChevronDown size={14} />
+                                                            )}
+                                                        </div>
+                                                    </th>
+                                                )}
+
+                                                {columnVisibility.companyphonenumber && (
+                                                    <th
+                                                        className={styles.sortableHeader}
+                                                        onClick={() => handleSort('Companyphonenumber')}
+                                                    >
+                                                        <div className={styles.headerContent}>
+                                                            <span>Company Phone</span>
+                                                            {sortConfig.key === 'Companyphonenumber' && (
+                                                                sortConfig.direction === 'ascending' ?
+                                                                    <FiChevronUp size={14} /> : <FiChevronDown size={14} />
+                                                            )}
+                                                        </div>
+                                                    </th>
+                                                )}
+
+                                                {columnVisibility.city && (
+                                                    <th
+                                                        className={styles.sortableHeader}
+                                                        onClick={() => handleSort('City')}
+                                                    >
+                                                        <div className={styles.headerContent}>
+                                                            <span>City</span>
+                                                            {sortConfig.key === 'City' && (
+                                                                sortConfig.direction === 'ascending' ?
+                                                                    <FiChevronUp size={14} /> : <FiChevronDown size={14} />
+                                                            )}
+                                                        </div>
+                                                    </th>
+                                                )}
+
+                                                {columnVisibility.state && (
+                                                    <th
+                                                        className={styles.sortableHeader}
+                                                        onClick={() => handleSort('State')}
+                                                    >
+                                                        <div className={styles.headerContent}>
+                                                            <span>State</span>
+                                                            {sortConfig.key === 'State' && (
+                                                                sortConfig.direction === 'ascending' ?
+                                                                    <FiChevronUp size={14} /> : <FiChevronDown size={14} />
+                                                            )}
+                                                        </div>
+                                                    </th>
+                                                )}
+
+                                                {columnVisibility.country && (
+                                                    <th
+                                                        className={styles.sortableHeader}
+                                                        onClick={() => handleSort('Country')}
+                                                    >
+                                                        <div className={styles.headerContent}>
+                                                            <span>Country</span>
+                                                            {sortConfig.key === 'Country' && (
+                                                                sortConfig.direction === 'ascending' ?
+                                                                    <FiChevronUp size={14} /> : <FiChevronDown size={14} />
+                                                            )}
+                                                        </div>
+                                                    </th>
+                                                )}
+
+                                                {columnVisibility.industry && (
+                                                    <th
+                                                        className={styles.sortableHeader}
+                                                        onClick={() => handleSort('Industry')}
+                                                    >
+                                                        <div className={styles.headerContent}>
+                                                            <span>Industry</span>
+                                                            {sortConfig.key === 'Industry' && (
+                                                                sortConfig.direction === 'ascending' ?
+                                                                    <FiChevronUp size={14} /> : <FiChevronDown size={14} />
+                                                            )}
+                                                        </div>
+                                                    </th>
+                                                )}
+
+                                                {columnVisibility.employeesize && (
+                                                    <th
+                                                        className={styles.sortableHeader}
+                                                        onClick={() => handleSort('Employeesize')}
+                                                    >
+                                                        <div className={styles.headerContent}>
+                                                            <span>Employee Size</span>
+                                                            {sortConfig.key === 'Employeesize' && (
+                                                                sortConfig.direction === 'ascending' ?
+                                                                    <FiChevronUp size={14} /> : <FiChevronDown size={14} />
+                                                            )}
+                                                        </div>
+                                                    </th>
+                                                )}
+
+                                                {columnVisibility.department && (
+                                                    <th
+                                                        className={styles.sortableHeader}
+                                                        onClick={() => handleSort('Department')}
+                                                    >
+                                                        <div className={styles.headerContent}>
+                                                            <span>Department</span>
+                                                            {sortConfig.key === 'Department' && (
+                                                                sortConfig.direction === 'ascending' ?
+                                                                    <FiChevronUp size={14} /> : <FiChevronDown size={14} />
+                                                            )}
+                                                        </div>
+                                                    </th>
+                                                )}
+
+                                                {columnVisibility.seniority && (
+                                                    <th
+                                                        className={styles.sortableHeader}
+                                                        onClick={() => handleSort('Seniority')}
+                                                    >
+                                                        <div className={styles.headerContent}>
+                                                            <span>Seniority</span>
+                                                            {sortConfig.key === 'Seniority' && (
+                                                                sortConfig.direction === 'ascending' ?
+                                                                    <FiChevronUp size={14} /> : <FiChevronDown size={14} />
+                                                            )}
+                                                        </div>
+                                                    </th>
+                                                )}
+
+                                                {columnVisibility.status && (
+                                                    <th
+                                                        className={styles.sortableHeader}
+                                                        onClick={() => handleSort('Status')}
+                                                    >
+                                                        <div className={styles.headerContent}>
+                                                            <span>Status</span>
+                                                            {sortConfig.key === 'Status' && (
+                                                                sortConfig.direction === 'ascending' ?
+                                                                    <FiChevronUp size={14} /> : <FiChevronDown size={14} />
+                                                            )}
+                                                        </div>
+                                                    </th>
+                                                )}
+
+                                                {columnVisibility.createdon && (
+                                                    <th
+                                                        className={styles.sortableHeader}
+                                                        onClick={() => handleSort('CreatedOn')}
+                                                    >
+                                                        <div className={styles.headerContent}>
+                                                            <span>Created On</span>
+                                                            {sortConfig.key === 'CreatedOn' && (
+                                                                sortConfig.direction === 'ascending' ?
+                                                                    <FiChevronUp size={14} /> : <FiChevronDown size={14} />
+                                                            )}
+                                                        </div>
+                                                    </th>
+                                                )}
+
+                                                {columnVisibility.actions && (
+                                                    <th className={styles.actionsHeader}>Actions</th>
+                                                )}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {currentLeads.length > 0 ? (
+                                                currentLeads.map(lead => (
+                                                    <tr key={lead.id} className={styles.tableRow}>
+                                                        <td className={styles.checkboxCell}>
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={selectedLeads.includes(lead.id)}
+                                                                onChange={() => handleSelectLead(lead.id)}
+                                                                className={styles.checkbox}
+                                                            />
+                                                        </td>
+
+                                                        {columnVisibility.fullname && (
+                                                            <td>
+                                                                <div className={styles.leadInfo}>
+                                                                    <div className={styles.leadName}>{lead.Fullname}</div>
+                                                                </div>
+                                                            </td>
+                                                        )}
+
+                                                        {columnVisibility.jobtitle && <td>{lead.Jobtitle}</td>}
+                                                        {columnVisibility.company && <td>{lead.Company}</td>}
+                                                        {columnVisibility.email && <td>{lead.Email}</td>}
+                                                        {columnVisibility.companyphonenumber && <td>{lead.Companyphonenumber}</td>}
+                                                        {columnVisibility.city && <td>{lead.City}</td>}
+                                                        {columnVisibility.state && <td>{lead.State}</td>}
+                                                        {columnVisibility.country && <td>{lead.Country}</td>}
+                                                        {columnVisibility.industry && <td>{getIndustryName(lead.Industry)}</td>}
+                                                        {columnVisibility.employeesize && <td>{lead.Employeesize}</td>}
+                                                        {columnVisibility.department && <td>{lead.Department}</td>}
+                                                        {columnVisibility.seniority && <td>{lead.Seniority}</td>}
+
+                                                        {columnVisibility.status && (
+                                                            <td>
+                                                                <span className={`${styles.statusBadge} ${styles[lead.Status?.toLowerCase()]}`}>
+                                                                    {lead.Status}
+                                                                </span>
+                                                            </td>
+                                                        )}
+
+                                                        {columnVisibility.createdon && <td>{formatDate(lead.CreatedOn)}</td>}
+
+                                                        {columnVisibility.actions && (
+                                                            <td>
+                                                                <div className={styles.actionButtons}>
+                                                                    <button className={styles.actionButton} title="View">
+                                                                        <FiEye size={14} />
+                                                                    </button>
+                                                                    <button className={styles.actionButton} title="Edit">
+                                                                        <FiEdit size={14} />
+                                                                    </button>
+                                                                    <button className={styles.actionButton} title="Archive">
+                                                                        <FiArchive size={14} />
+                                                                    </button>
+                                                                </div>
+                                                            </td>
+                                                        )}
+                                                    </tr>
+                                                ))
+                                            ) : (
+                                                <tr>
+                                                    <td
+                                                        colSpan={Object.values(columnVisibility).filter(v => v).length + 1}
+                                                        className={styles.noData}
+                                                    >
+                                                        No leads found matching your filters
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            {/* Pagination - Only show when filters are active and data exists */}
+                            {sortedLeads.length > 0 && (
+                                <div className={styles.pagination}>
+                                    <div className={styles.paginationInfo}>
+                                        Showing {startItem} to {endItem} of {totalItems} entries
+                                    </div>
+                                    <div className={styles.paginationControls}>
+                                        <select
+                                            value={itemsPerPage}
+                                            onChange={(e) => {
+                                                setItemsPerPage(Number(e.target.value));
+                                                setCurrentPage(1);
+                                            }}
+                                            className={styles.itemsPerPageSelect}
+                                        >
+                                            <option value={5}>5 per page</option>
+                                            <option value={10}>10 per page</option>
+                                            <option value={25}>25 per page</option>
+                                            <option value={50}>50 per page</option>
+                                            <option value={100}>100 per page</option>
+                                        </select>
+                                        <button
+                                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                            disabled={currentPage === 1}
+                                            className={styles.paginationButton}
+                                        >
+                                            Previous
+                                        </button>
+                                        {pageNumbers.map(page => (
+                                            <button
+                                                key={page}
+                                                onClick={() => setCurrentPage(page)}
+                                                className={`${styles.paginationButton} ${currentPage === page ? styles.active : ''}`}
+                                            >
+                                                {page}
+                                            </button>
+                                        ))}
+                                        <button
+                                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                            disabled={currentPage === totalPages}
+                                            className={styles.paginationButton}
+                                        >
+                                            Next
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </>
+                    )}
                 </div>
             </div>
 
@@ -894,372 +1777,6 @@ const Prospects = () => {
                 </div>
             )}
 
-            {/* Bulk Actions Popup */}
-            {selectedLeads.length > 0 && (
-                <div className={`${styles.bulkActionsPopup} ${showBulkActionPopup ? styles.show : ''}`}>
-                    <div className={styles.bulkActionsPopupContent}>
-                        <div className={styles.bulkActionsPopupHeader}>
-                            <h3>Bulk Actions ({selectedLeads.length} selected)</h3>
-                            <button
-                                className={styles.closeButton}
-                                onClick={() => setShowBulkActionPopup(false)}
-                            >
-                                <FiX size={20} />
-                            </button>
-                        </div>
-                        <div className={styles.bulkActionsPopupButtons}>
-                            <button
-                                className={styles.bulkActionPopupButton}
-                                onClick={() => handleBulkAction('export')}
-                            >
-                                <FiDownload size={16} />
-                                Export Selected
-                            </button>
-                            <button
-                                className={styles.bulkActionPopupButton}
-                                onClick={() => handleBulkAction('archive')}
-                            >
-                                <FiArchive size={16} />
-                                Archive Selected
-                            </button>
-                            <button
-                                className={`${styles.bulkActionPopupButton} ${styles.deleteAction}`}
-                                onClick={() => handleBulkAction('delete')}
-                            >
-                                <FiTrash2 size={16} />
-                                Delete Selected
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Show Bulk Actions Button */}
-            {selectedLeads.length > 0 && (
-                <div className={styles.bulkActionsButtonContainer}>
-                    <button
-                        className={styles.showBulkActionsButton}
-                        onClick={() => setShowBulkActionPopup(true)}
-                    >
-                        {selectedLeads.length} Selected - Show Actions
-                    </button>
-                </div>
-            )}
-
-            {notification.show && (
-                <div className={`${styles.notification} ${styles[notification.type]}`}>
-                    {notification.message}
-                </div>
-            )}
-
-            {/* Table */}
-            <div className={styles.tableWrapper}>
-                <div className={styles.tableContainer}>
-                    <table className={styles.leadsTable}>
-                        <thead>
-                            <tr>
-                                <th className={styles.checkboxCell}>
-                                    <input
-                                        type="checkbox"
-                                        checked={selectedLeads.length === currentLeads.length && currentLeads.length > 0}
-                                        onChange={handleSelectAll}
-                                        className={styles.checkbox}
-                                    />
-                                </th>
-
-                                {columnVisibility.fullname && (
-                                    <th
-                                        className={styles.sortableHeader}
-                                        onClick={() => handleSort('Fullname')}
-                                    >
-                                        <div className={styles.headerContent}>
-                                            <span>Full Name</span>
-                                            {sortConfig.key === 'Fullname' && (
-                                                sortConfig.direction === 'ascending' ?
-                                                    <FiChevronUp size={14} /> : <FiChevronDown size={14} />
-                                            )}
-                                        </div>
-                                    </th>
-                                )}
-
-                                {columnVisibility.jobtitle && (
-                                    <th
-                                        className={styles.sortableHeader}
-                                        onClick={() => handleSort('Jobtitle')}
-                                    >
-                                        <div className={styles.headerContent}>
-                                            <span>Job Title</span>
-                                            {sortConfig.key === 'Jobtitle' && (
-                                                sortConfig.direction === 'ascending' ?
-                                                    <FiChevronUp size={14} /> : <FiChevronDown size={14} />
-                                            )}
-                                        </div>
-                                    </th>
-                                )}
-
-                                {columnVisibility.company && (
-                                    <th
-                                        className={styles.sortableHeader}
-                                        onClick={() => handleSort('Company')}
-                                    >
-                                        <div className={styles.headerContent}>
-                                            <span>Company</span>
-                                            {sortConfig.key === 'Company' && (
-                                                sortConfig.direction === 'ascending' ?
-                                                    <FiChevronUp size={14} /> : <FiChevronDown size={14} />
-                                            )}
-                                        </div>
-                                    </th>
-                                )}
-
-                                {columnVisibility.email && (
-                                    <th
-                                        className={styles.sortableHeader}
-                                        onClick={() => handleSort('Email')}
-                                    >
-                                        <div className={styles.headerContent}>
-                                            <span>Email</span>
-                                            {sortConfig.key === 'Email' && (
-                                                sortConfig.direction === 'ascending' ?
-                                                    <FiChevronUp size={14} /> : <FiChevronDown size={14} />
-                                            )}
-                                        </div>
-                                    </th>
-                                )}
-
-                                {columnVisibility.companyphonenumber && (
-                                    <th
-                                        className={styles.sortableHeader}
-                                        onClick={() => handleSort('Companyphonenumber')}
-                                    >
-                                        <div className={styles.headerContent}>
-                                            <span>Company Phone</span>
-                                            {sortConfig.key === 'Companyphonenumber' && (
-                                                sortConfig.direction === 'ascending' ?
-                                                    <FiChevronUp size={14} /> : <FiChevronDown size={14} />
-                                            )}
-                                        </div>
-                                    </th>
-                                )}
-
-                                {columnVisibility.city && (
-                                    <th
-                                        className={styles.sortableHeader}
-                                        onClick={() => handleSort('City')}
-                                    >
-                                        <div className={styles.headerContent}>
-                                            <span>City</span>
-                                            {sortConfig.key === 'City' && (
-                                                sortConfig.direction === 'ascending' ?
-                                                    <FiChevronUp size={14} /> : <FiChevronDown size={14} />
-                                            )}
-                                        </div>
-                                    </th>
-                                )}
-
-                                {columnVisibility.state && (
-                                    <th
-                                        className={styles.sortableHeader}
-                                        onClick={() => handleSort('State')}
-                                    >
-                                        <div className={styles.headerContent}>
-                                            <span>State</span>
-                                            {sortConfig.key === 'State' && (
-                                                sortConfig.direction === 'ascending' ?
-                                                    <FiChevronUp size={14} /> : <FiChevronDown size={14} />
-                                            )}
-                                        </div>
-                                    </th>
-                                )}
-
-                                {columnVisibility.country && (
-                                    <th
-                                        className={styles.sortableHeader}
-                                        onClick={() => handleSort('Country')}
-                                    >
-                                        <div className={styles.headerContent}>
-                                            <span>Country</span>
-                                            {sortConfig.key === 'Country' && (
-                                                sortConfig.direction === 'ascending' ?
-                                                    <FiChevronUp size={14} /> : <FiChevronDown size={14} />
-                                            )}
-                                        </div>
-                                    </th>
-                                )}
-
-                                {columnVisibility.industry && (
-                                    <th
-                                        className={styles.sortableHeader}
-                                        onClick={() => handleSort('Industry')}
-                                    >
-                                        <div className={styles.headerContent}>
-                                            <span>Industry</span>
-                                            {sortConfig.key === 'Industry' && (
-                                                sortConfig.direction === 'ascending' ?
-                                                    <FiChevronUp size={14} /> : <FiChevronDown size={14} />
-                                            )}
-                                        </div>
-                                    </th>
-                                )}
-
-                                {columnVisibility.employeesize && (
-                                    <th
-                                        className={styles.sortableHeader}
-                                        onClick={() => handleSort('Employeesize')}
-                                    >
-                                        <div className={styles.headerContent}>
-                                            <span>Employee Size</span>
-                                            {sortConfig.key === 'Employeesize' && (
-                                                sortConfig.direction === 'ascending' ?
-                                                    <FiChevronUp size={14} /> : <FiChevronDown size={14} />
-                                            )}
-                                        </div>
-                                    </th>
-                                )}
-
-                                {columnVisibility.department && (
-                                    <th
-                                        className={styles.sortableHeader}
-                                        onClick={() => handleSort('Department')}
-                                    >
-                                        <div className={styles.headerContent}>
-                                            <span>Department</span>
-                                            {sortConfig.key === 'Department' && (
-                                                sortConfig.direction === 'ascending' ?
-                                                    <FiChevronUp size={14} /> : <FiChevronDown size={14} />
-                                            )}
-                                        </div>
-                                    </th>
-                                )}
-
-                                {columnVisibility.seniority && (
-                                    <th
-                                        className={styles.sortableHeader}
-                                        onClick={() => handleSort('Seniority')}
-                                    >
-                                        <div className={styles.headerContent}>
-                                            <span>Seniority</span>
-                                            {sortConfig.key === 'Seniority' && (
-                                                sortConfig.direction === 'ascending' ?
-                                                    <FiChevronUp size={14} /> : <FiChevronDown size={14} />
-                                            )}
-                                        </div>
-                                    </th>
-                                )}
-
-                                {columnVisibility.status && (
-                                    <th
-                                        className={styles.sortableHeader}
-                                        onClick={() => handleSort('Status')}
-                                    >
-                                        <div className={styles.headerContent}>
-                                            <span>Status</span>
-                                            {sortConfig.key === 'Status' && (
-                                                sortConfig.direction === 'ascending' ?
-                                                    <FiChevronUp size={14} /> : <FiChevronDown size={14} />
-                                            )}
-                                        </div>
-                                    </th>
-                                )}
-
-                                {columnVisibility.createdon && (
-                                    <th
-                                        className={styles.sortableHeader}
-                                        onClick={() => handleSort('CreatedOn')}
-                                    >
-                                        <div className={styles.headerContent}>
-                                            <span>Created On</span>
-                                            {sortConfig.key === 'CreatedOn' && (
-                                                sortConfig.direction === 'ascending' ?
-                                                    <FiChevronUp size={14} /> : <FiChevronDown size={14} />
-                                            )}
-                                        </div>
-                                    </th>
-                                )}
-
-                                {columnVisibility.actions && (
-                                    <th className={styles.actionsHeader}>Actions</th>
-                                )}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {currentLeads.length > 0 ? (
-                                currentLeads.map(lead => (
-                                    <tr key={lead.id} className={styles.tableRow}>
-                                        <td className={styles.checkboxCell}>
-                                            <input
-                                                type="checkbox"
-                                                checked={selectedLeads.includes(lead.id)}
-                                                onChange={() => handleSelectLead(lead.id)}
-                                                className={styles.checkbox}
-                                            />
-                                        </td>
-
-                                        {columnVisibility.fullname && (
-                                            <td>
-                                                <div className={styles.leadInfo}>
-                                                    {/* <div className={styles.avatar}>
-                                                        {lead.Firstname?.[0]}{lead.Lastname?.[0]}
-                                                    </div> */}
-                                                    <div className={styles.leadName}>{lead.Fullname}</div>
-                                                </div>
-                                            </td>
-                                        )}
-
-                                        {columnVisibility.jobtitle && <td>{lead.Jobtitle}</td>}
-                                        {columnVisibility.company && <td>{lead.Company}</td>}
-                                        {columnVisibility.email && <td>{lead.Email}</td>}
-                                        {columnVisibility.companyphonenumber && <td>{lead.Companyphonenumber}</td>}
-                                        {columnVisibility.city && <td>{lead.City}</td>}
-                                        {columnVisibility.state && <td>{lead.State}</td>}
-                                        {columnVisibility.country && <td>{lead.Country}</td>}
-                                        {columnVisibility.industry && <td>{getIndustryName(lead.Industry)}</td>}
-                                        {columnVisibility.employeesize && <td>{lead.Employeesize}</td>}
-                                        {columnVisibility.department && <td>{lead.Department}</td>}
-                                        {columnVisibility.seniority && <td>{lead.Seniority}</td>}
-
-                                        {columnVisibility.status && (
-                                            <td>
-                                                <span className={`${styles.statusBadge} ${styles[lead.Status?.toLowerCase()]}`}>
-                                                    {lead.Status}
-                                                </span>
-                                            </td>
-                                        )}
-
-                                        {columnVisibility.createdon && <td>{formatDate(lead.CreatedOn)}</td>}
-
-                                        {columnVisibility.actions && (
-                                            <td>
-                                                <div className={styles.actionButtons}>
-                                                    <button className={styles.actionButton} title="View">
-                                                        <FiEye size={14} />
-                                                    </button>
-                                                    <button className={styles.actionButton} title="Edit">
-                                                        <FiEdit size={14} />
-                                                    </button>
-                                                    <button className={styles.actionButton} title="Archive">
-                                                        <FiArchive size={14} />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        )}
-                                    </tr>
-                                ))
-                            ) : (
-                                <tr>
-                                    <td
-                                        colSpan={Object.values(columnVisibility).filter(v => v).length + 1}
-                                        className={styles.noData}
-                                    >
-                                        No leads found
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
             {importProcessing.isOpen && (
                 <ImportProcessingModal
                     isOpen={importProcessing.isOpen}
@@ -1268,60 +1785,9 @@ const Prospects = () => {
                 />
             )}
 
-            {/* Pagination */}
-            {sortedLeads.length > 0 && (
-                <div className={styles.pagination}>
-                    <div className={styles.paginationInfo}>
-                        Showing {startItem} to {endItem} of {totalItems} entries
-                    </div>
-
-                    <div className={styles.paginationControls}>
-                        <select
-                            value={itemsPerPage}
-                            onChange={(e) => {
-                                setItemsPerPage(Number(e.target.value));
-                                setCurrentPage(1);
-                            }}
-                            className={styles.itemsPerPageSelect}
-                        >
-                            <option value={5}>5 per page</option>
-                            <option value={10}>10 per page</option>
-                            <option value={25}>25 per page</option>
-                            <option value={50}>50 per page</option>
-                            <option value={100}>100 per page</option>
-                            <option value={200}>200 per page</option>
-                            <option value={500}>500 per page</option>
-                            <option value={1000}>1000 per page</option>
-                            <option value={2000}>2000 per page</option>
-                            <option value={50000}>50000 per page</option>
-                        </select>
-
-                        <button
-                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                            disabled={currentPage === 1}
-                            className={styles.paginationButton}
-                        >
-                            Previous
-                        </button>
-
-                        {pageNumbers.map(page => (
-                            <button
-                                key={page}
-                                onClick={() => setCurrentPage(page)}
-                                className={`${styles.paginationButton} ${currentPage === page ? styles.active : ''}`}
-                            >
-                                {page}
-                            </button>
-                        ))}
-
-                        <button
-                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                            disabled={currentPage === totalPages}
-                            className={styles.paginationButton}
-                        >
-                            Next
-                        </button>
-                    </div>
+            {notification.show && (
+                <div className={`${styles.notification} ${styles[notification.type]}`}>
+                    {notification.message}
                 </div>
             )}
         </div>

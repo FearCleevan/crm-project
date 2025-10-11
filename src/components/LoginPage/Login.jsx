@@ -70,14 +70,22 @@ const Login = () => {
         setError("");
 
         try {
-            const response = await fetch("http://localhost:5001/api/auth/login", {
+            const response = await fetch("http://localhost:5000/api/auth/login", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ username, password }),
             });
 
+            // Check if we got any response at all
+            if (!response) {
+                throw new Error("Cannot connect to server. Please make sure the backend is running.");
+            }
+
             const data = await response.json();
-            if (!response.ok) throw new Error(data.error || "Login failed");
+
+            if (!response.ok) {
+                throw new Error(data.error || "Login failed");
+            }
 
             localStorage.setItem("token", data.token);
             localStorage.setItem("user", JSON.stringify(data.user));
@@ -88,7 +96,12 @@ const Login = () => {
 
             navigate("/dashboard");
         } catch (err) {
-            setError(err.message || "Login failed. Please try again.");
+            // More specific error messages
+            if (err.message.includes("Failed to fetch") || err.message.includes("CONNECTION_REFUSED")) {
+                setError("Cannot connect to server. Please make sure the backend is running on port 5000.");
+            } else {
+                setError(err.message || "Login failed. Please try again.");
+            }
             console.error("Login error:", err);
         } finally {
             setIsLoading(false);
@@ -98,14 +111,14 @@ const Login = () => {
     const handleRequestSubmit = async (e) => {
         e.preventDefault();
         setError("");
-        
+
         // Validate email format
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(requestForm.email)) {
             setError("Please enter a valid email address");
             return;
         }
-        
+
         // Validate username format
         if (requestForm.username.length < 3 || !/^[a-zA-Z0-9_]+$/.test(requestForm.username)) {
             setError("Username must be at least 3 characters and contain only letters, numbers, and underscores");
@@ -113,14 +126,14 @@ const Login = () => {
         }
 
         try {
-            const response = await fetch("http://localhost:5001/api/requests/submit", {
+            const response = await fetch("http://localhost:5000/api/requests/submit", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(requestForm),
             });
 
             const data = await response.json();
-            
+
             if (!response.ok) {
                 throw new Error(data.error || "Failed to submit request");
             }
@@ -318,19 +331,19 @@ const Login = () => {
                                         ? "Forgot Password"
                                         : "Request Account"}
                                 </h2>
-                                
+
                                 {error && (
                                     <div className={styles.errorMessage}>
                                         {error.includes("already exists") ? (
                                             <>
-                                                <strong>Account already exists:</strong> 
-                                                {error.includes("Username") ? "Username" : "Email"} is already registered. 
+                                                <strong>Account already exists:</strong>
+                                                {error.includes("Username") ? "Username" : "Email"} is already registered.
                                                 Please <a href="#" onClick={() => setActiveForm("login")}>login</a> instead.
                                             </>
                                         ) : error.includes("No account found") ? (
                                             <>
-                                                <strong>Account not found:</strong> 
-                                                No account exists with this username and email combination. 
+                                                <strong>Account not found:</strong>
+                                                No account exists with this username and email combination.
                                                 Please check your details or <a href="#" onClick={() => setActiveForm("contactAdmin")}>request an account</a>.
                                             </>
                                         ) : (
@@ -338,59 +351,59 @@ const Login = () => {
                                         )}
                                     </div>
                                 )}
-                                
+
                                 <form onSubmit={handleRequestSubmit} className={styles.loginForm}>
                                     <div className={styles.inputGroup}>
                                         <label className={styles.inputLabel}>First Name</label>
-                                        <input 
-                                            type="text" 
+                                        <input
+                                            type="text"
                                             name="firstName"
                                             value={requestForm.firstName}
                                             onChange={handleInputChange}
-                                            className={styles.inputField} 
-                                            required 
+                                            className={styles.inputField}
+                                            required
                                         />
                                     </div>
                                     <div className={styles.inputGroup}>
                                         <label className={styles.inputLabel}>Last Name</label>
-                                        <input 
-                                            type="text" 
+                                        <input
+                                            type="text"
                                             name="lastName"
                                             value={requestForm.lastName}
                                             onChange={handleInputChange}
-                                            className={styles.inputField} 
-                                            required 
+                                            className={styles.inputField}
+                                            required
                                         />
                                     </div>
                                     <div className={styles.inputGroup}>
                                         <label className={styles.inputLabel}>Email</label>
-                                        <input 
-                                            type="email" 
+                                        <input
+                                            type="email"
                                             name="email"
                                             value={requestForm.email}
                                             onChange={handleInputChange}
-                                            className={styles.inputField} 
-                                            required 
+                                            className={styles.inputField}
+                                            required
                                         />
                                     </div>
                                     <div className={styles.inputGroup}>
                                         <label className={styles.inputLabel}>Username</label>
-                                        <input 
-                                            type="text" 
+                                        <input
+                                            type="text"
                                             name="username"
                                             value={requestForm.username}
                                             onChange={handleInputChange}
-                                            className={styles.inputField} 
-                                            required 
+                                            className={styles.inputField}
+                                            required
                                         />
                                     </div>
                                     <div className={styles.inputGroup}>
                                         <label className={styles.inputLabel}>Reason</label>
-                                        <select 
+                                        <select
                                             name="reason"
                                             value={requestForm.reason}
                                             onChange={handleInputChange}
-                                            className={styles.inputField} 
+                                            className={styles.inputField}
                                             required
                                         >
                                             <option value="forgot">I forgot my Password</option>

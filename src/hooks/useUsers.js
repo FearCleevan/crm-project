@@ -11,7 +11,7 @@ const useUsers = () => {
       setLoading(true);
       const token = localStorage.getItem('token');
       
-      const response = await fetch('http://localhost:5001/api/users', {
+      const response = await fetch('http://localhost:5000/api/users', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

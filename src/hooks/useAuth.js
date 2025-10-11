@@ -22,7 +22,7 @@ const useAuth = () => {
           setUser(JSON.parse(storedUser));
         }
 
-        const response = await fetch('http://localhost:5001/api/auth/protected', {
+        const response = await fetch('http://localhost:5000/api/auth/protected', {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -53,7 +53,7 @@ const useAuth = () => {
 
   const logout = async () => {
     try {
-      await fetch('http://localhost:5001/api/auth/logout', {
+      await fetch('http://localhost:5000/api/auth/logout', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
