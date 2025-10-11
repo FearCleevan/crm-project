@@ -1,5 +1,4 @@
-// src/components/LeadsManagement/Prospects.jsx
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
     FiSearch,
     FiFilter,
@@ -16,7 +15,9 @@ import {
     FiUser,
     FiX,
     FiChevronLeft,
-    FiChevronRight
+    FiChevronRight,
+    FiCheck,
+    FiXCircle
 } from 'react-icons/fi';
 import { FiCheckSquare, FiSquare } from 'react-icons/fi';
 import AddNewProspects from './Modals/AddNewProspects';
@@ -52,59 +53,321 @@ const FilterAccordion = ({ title, children, isOpen, onToggle, id }) => {
     );
 };
 
+// Enhanced SearchableDropdown Component
+const SearchableDropdown = ({ 
+    field, 
+    selectedValues, 
+    onSelectionChange, 
+    placeholder = "Type to search...",
+    disabled = false
+}) => {
+    const [searchTerm, setSearchTerm] = useState('');
+    const [suggestions, setSuggestions] = useState([]);
+    const [isOpen, setIsOpen] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const dropdownRef = useRef(null);
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setIsOpen(false);
+                setError(null);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
+    const fetchSuggestions = useCallback(async (search) => {
+        if (!search.trim()) {
+            setSuggestions([]);
+            setError(null);
+            return;
+        }
+
+        setLoading(true);
+        setError(null);
+        
+        try {
+            console.log(`🔍 Fetching suggestions for ${field}:`, search);
+            
+            const token = localStorage.getItem('token');
+            const response = await fetch(
+                `/api/prospects/filter/options?field=${encodeURIComponent(field)}&search=${encodeURIComponent(search)}`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+
+            console.log('📡 Response status:', response.status);
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('❌ Server error response:', errorText);
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            console.log('✅ Response data:', data);
+
+            if (data.success) {
+                // Filter out already selected values and empty/null values
+                const filteredSuggestions = (data.options || [])
+                    .filter(option => 
+                        option && 
+                        option.trim() !== '' && 
+                        !selectedValues.includes(option)
+                    );
+                
+                console.log(`🎯 Filtered suggestions for ${field}:`, filteredSuggestions);
+                setSuggestions(filteredSuggestions);
+            } else {
+                throw new Error(data.error || 'Failed to fetch suggestions from server');
+            }
+        } catch (error) {
+            console.error(`💥 Error fetching ${field} suggestions:`, error);
+            setError(error.message);
+            setSuggestions([]);
+        } finally {
+            setLoading(false);
+        }
+    }, [field, selectedValues]);
+
+    // Debounced search
+    useEffect(() => {
+        const delayDebounceFn = setTimeout(() => {
+            if (searchTerm.trim() && isOpen) {
+                fetchSuggestions(searchTerm);
+            } else {
+                setSuggestions([]);
+                setError(null);
+            }
+        }, 300);
+
+        return () => clearTimeout(delayDebounceFn);
+    }, [searchTerm, isOpen, fetchSuggestions]);
+
+    const handleSelect = (value) => {
+        console.log(`✅ Selected ${field}:`, value);
+        if (!selectedValues.includes(value)) {
+            onSelectionChange([...selectedValues, value]);
+        }
+        setSearchTerm('');
+        setSuggestions([]);
+        setError(null);
+        setIsOpen(false);
+    };
+
+    const handleRemove = (valueToRemove) => {
+        console.log(`❌ Removing ${field}:`, valueToRemove);
+        onSelectionChange(selectedValues.filter(value => value !== valueToRemove));
+    };
+
+    const handleInputFocus = () => {
+        console.log(`👁️ Input focused for ${field}`);
+        setIsOpen(true);
+        setError(null);
+        if (searchTerm.trim()) {
+            fetchSuggestions(searchTerm);
+        }
+    };
+
+    const handleInputChange = (e) => {
+        const value = e.target.value;
+        console.log(`⌨️ Input changed for ${field}:`, value);
+        setSearchTerm(value);
+        setError(null);
+        if (value.trim()) {
+            setIsOpen(true);
+        }
+    };
+
+    const handleInputKeyDown = (e) => {
+        if (e.key === 'Enter' && searchTerm.trim() && suggestions.length > 0) {
+            e.preventDefault();
+            handleSelect(suggestions[0]);
+        } else if (e.key === 'Escape') {
+            setIsOpen(false);
+            setError(null);
+        }
+    };
+
+    const clearSearch = () => {
+        setSearchTerm('');
+        setSuggestions([]);
+        setError(null);
+        setIsOpen(false);
+    };
+
+    return (
+        <div className={styles.searchableDropdown} ref={dropdownRef}>
+            {/* Selected Tags */}
+            <div className={styles.selectedTags}>
+                {selectedValues.map(value => (
+                    <span key={value} className={styles.selectedTag}>
+                        {value}
+                        <button
+                            type="button"
+                            onClick={() => handleRemove(value)}
+                            className={styles.removeTag}
+                            disabled={disabled}
+                            title={`Remove ${value}`}
+                        >
+                            <FiX size={12} />
+                        </button>
+                    </span>
+                ))}
+            </div>
+
+            {/* Search Input */}
+            <div className={styles.searchInputContainer}>
+                <input
+                    type="text"
+                    placeholder={placeholder}
+                    value={searchTerm}
+                    onChange={handleInputChange}
+                    onFocus={handleInputFocus}
+                    onKeyDown={handleInputKeyDown}
+                    className={styles.searchInput}
+                    disabled={disabled}
+                />
+                
+                {searchTerm && (
+                    <button
+                        type="button"
+                        onClick={clearSearch}
+                        className={styles.clearSearchButton}
+                        title="Clear search"
+                    >
+                        <FiX size={14} />
+                    </button>
+                )}
+
+                {/* Suggestions Dropdown */}
+                {isOpen && (
+                    <div className={styles.suggestionsDropdown}>
+                        {error ? (
+                            <div className={styles.suggestionError}>
+                                <FiXCircle size={16} />
+                                <span>Error: {error}</span>
+                            </div>
+                        ) : loading ? (
+                            <div className={styles.suggestionLoading}>
+                                <div className={styles.loadingSpinner}></div>
+                                <span>Searching...</span>
+                            </div>
+                        ) : suggestions.length > 0 ? (
+                            <>
+                                <div className={styles.suggestionHeader}>
+                                    Found {suggestions.length} results
+                                </div>
+                                {suggestions.map(suggestion => (
+                                    <div
+                                        key={suggestion}
+                                        className={styles.suggestionItem}
+                                        onClick={() => handleSelect(suggestion)}
+                                    >
+                                        {suggestion}
+                                    </div>
+                                ))}
+                            </>
+                        ) : searchTerm.trim() ? (
+                            <div className={styles.suggestionEmpty}>
+                                No results found for "{searchTerm}"
+                            </div>
+                        ) : (
+                            <div className={styles.suggestionEmpty}>
+                                Start typing to search...
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
 const Prospects = () => {
-    // State management
+    // State management with localStorage persistence
     const [leads, setLeads] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
-    const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage, setItemsPerPage] = useState(10);
-    const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
-    const [selectedLeads, setSelectedLeads] = useState([]);
-    const [columnVisibility, setColumnVisibility] = useState({
-        fullname: true,
-        jobtitle: true,
-        company: true,
-        email: true,
-        companyphonenumber: true,
-        city: true,
-        state: true,
-        country: true,
-        industry: true,
-        employeesize: true,
-        department: true,
-        seniority: true,
-        status: true,
-        createdon: true,
-        actions: true
+    const [currentPage, setCurrentPage] = useState(() => {
+        const saved = localStorage.getItem('prospects_currentPage');
+        return saved ? parseInt(saved) : 1;
     });
+    const [itemsPerPage, setItemsPerPage] = useState(() => {
+        const saved = localStorage.getItem('prospects_itemsPerPage');
+        return saved ? parseInt(saved) : 10;
+    });
+    const [sortConfig, setSortConfig] = useState(() => {
+        const saved = localStorage.getItem('prospects_sortConfig');
+        return saved ? JSON.parse(saved) : { key: null, direction: 'ascending' };
+    });
+    const [selectedLeads, setSelectedLeads] = useState([]);
+    const [columnVisibility, setColumnVisibility] = useState(() => {
+        const saved = localStorage.getItem('prospects_columnVisibility');
+        return saved ? JSON.parse(saved) : {
+            fullname: true,
+            jobtitle: true,
+            company: true,
+            email: true,
+            companyphonenumber: true,
+            city: true,
+            state: true,
+            country: true,
+            industry: true,
+            employeesize: true,
+            department: true,
+            seniority: true,
+            status: true,
+            createdon: true,
+            actions: true
+        };
+    });
+
     const [showColumnMenu, setShowColumnMenu] = useState(false);
     const [showBulkActionPopup, setShowBulkActionPopup] = useState(false);
 
-    // Filter accordion states
-    const [openAccordions, setOpenAccordions] = useState({});
-    const [filterValues, setFilterValues] = useState({
-        exportHeaders: '1',
-        jobTitles: [],
-        industries: [],
-        departments: [],
-        seniorities: [],
-        employeeSizeMin: '',
-        employeeSizeMax: '',
-        annualRevenueMin: '',
-        annualRevenueMax: '',
-        fullname: '',
-        firstname: '',
-        lastname: '',
-        company: '',
-        state: '',
-        country: '',
-        altPhoneNumber: '',
-        companyNumber: '',
-        email: '',
-        website: '',
-        sicCode: '',
-        naicsCode: ''
+    // Enhanced filter state with localStorage
+    const [openAccordions, setOpenAccordions] = useState(() => {
+        const saved = localStorage.getItem('prospects_openAccordions');
+        return saved ? JSON.parse(saved) : {};
+    });
+
+    const [filterValues, setFilterValues] = useState(() => {
+        const saved = localStorage.getItem('prospects_filterValues');
+        return saved ? JSON.parse(saved) : {
+            exportHeaders: '1',
+            jobTitles: [],
+            industries: [],
+            departments: [],
+            seniorities: [],
+            employeeSizeMin: '',
+            employeeSizeMax: '',
+            annualRevenueMin: '',
+            annualRevenueMax: '',
+            fullname: '',
+            firstname: '',
+            lastname: '',
+            company: '',
+            state: '',
+            country: '',
+            altPhoneNumber: '',
+            companyNumber: '',
+            email: '',
+            website: '',
+            sicCode: '',
+            naicsCode: ''
+        };
     });
 
     const [importProcessing, setImportProcessing] = useState({
@@ -112,7 +375,6 @@ const Prospects = () => {
         stats: null
     });
 
-    // Add these state variables
     const [showAddModal, setShowAddModal] = useState(false);
     const [lookupData, setLookupData] = useState({
         dispositions: [],
@@ -120,14 +382,9 @@ const Prospects = () => {
         providers: [],
         industries: [],
         countries: [],
-        statuses: [],
-        jobTitles: [],
-        departments: [],
-        seniorities: []
+        statuses: []
     });
     const [notification, setNotification] = useState({ show: false, message: '', type: '' });
-
-    // Add this to your state variables
     const [confirmationModal, setConfirmationModal] = useState({
         show: false,
         action: null,
@@ -135,11 +392,38 @@ const Prospects = () => {
         count: 0
     });
 
+    // Persist state to localStorage
+    useEffect(() => {
+        localStorage.setItem('prospects_currentPage', currentPage.toString());
+    }, [currentPage]);
+
+    useEffect(() => {
+        localStorage.setItem('prospects_itemsPerPage', itemsPerPage.toString());
+    }, [itemsPerPage]);
+
+    useEffect(() => {
+        localStorage.setItem('prospects_sortConfig', JSON.stringify(sortConfig));
+    }, [sortConfig]);
+
+    useEffect(() => {
+        localStorage.setItem('prospects_columnVisibility', JSON.stringify(columnVisibility));
+    }, [columnVisibility]);
+
+    useEffect(() => {
+        localStorage.setItem('prospects_openAccordions', JSON.stringify(openAccordions));
+    }, [openAccordions]);
+
+    useEffect(() => {
+        localStorage.setItem('prospects_filterValues', JSON.stringify(filterValues));
+    }, [filterValues]);
+
     // Check if any filter is active
     const isFilterActive = useMemo(() => {
-        return Object.values(filterValues).some(value => {
+        return Object.entries(filterValues).some(([key, value]) => {
+            if (key === 'exportHeaders') return false; // Skip export headers
             if (Array.isArray(value)) return value.length > 0;
             if (typeof value === 'string') return value.trim() !== '';
+            if (typeof value === 'number') return value !== 0;
             return false;
         });
     }, [filterValues]);
@@ -152,7 +436,7 @@ const Prospects = () => {
         }));
     };
 
-    // Handle filter changes
+    // Enhanced filter change handlers
     const handleFilterChange = (field, value) => {
         setFilterValues(prev => ({
             ...prev,
@@ -160,8 +444,15 @@ const Prospects = () => {
         }));
     };
 
-    // Fetch prospects from API
-    const fetchProspects = async () => {
+    const handleArrayFilterChange = (field, values) => {
+        setFilterValues(prev => ({
+            ...prev,
+            [field]: values
+        }));
+    };
+
+    // Enhanced fetch prospects with comprehensive filtering
+    const fetchProspects = useCallback(async () => {
         // Don't fetch if no filters are active
         if (!isFilterActive) {
             setLeads([]);
@@ -192,12 +483,7 @@ const Prospects = () => {
                 ...(filterValues.company && { company: filterValues.company }),
                 ...(filterValues.state && { state: filterValues.state }),
                 ...(filterValues.country && { country: filterValues.country }),
-                ...(filterValues.altPhoneNumber && { altPhoneNumber: filterValues.altPhoneNumber }),
-                ...(filterValues.companyNumber && { companyNumber: filterValues.companyNumber }),
-                ...(filterValues.email && { email: filterValues.email }),
-                ...(filterValues.website && { website: filterValues.website }),
-                ...(filterValues.sicCode && { sicCode: filterValues.sicCode }),
-                ...(filterValues.naicsCode && { naicsCode: filterValues.naicsCode })
+                ...(filterValues.email && { email: filterValues.email })
             });
 
             const response = await fetch(`/api/prospects?${params}`, {
@@ -231,7 +517,7 @@ const Prospects = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [isFilterActive, currentPage, itemsPerPage, searchTerm, filterValues]);
 
     // Fetch lookup data
     const fetchLookupData = async () => {
@@ -266,7 +552,7 @@ const Prospects = () => {
 
     useEffect(() => {
         fetchProspects();
-    }, [currentPage, itemsPerPage, isFilterActive, filterValues]);
+    }, [fetchProspects]);
 
     // Handle search with filters
     const handleFilterSearch = () => {
@@ -300,13 +586,8 @@ const Prospects = () => {
             naicsCode: ''
         });
         setOpenAccordions({});
-    };
-
-    // FIXED: Removed the problematic useEffect that was using undefined 'filters'
-    useEffect(() => {
-        // Reset to first page when search term changes
         setCurrentPage(1);
-    }, [searchTerm]);
+    };
 
     // Filter leads based on search and filters
     const filteredLeads = useMemo(() => {
@@ -868,6 +1149,11 @@ const Prospects = () => {
                         <div className={styles.cardHeader}>
                             <FiFilter className={styles.filterIcon} />
                             Filter
+                            {isFilterActive && (
+                                <span className={styles.activeFilterBadge}>
+                                    Active
+                                </span>
+                            )}
                         </div>
                         <div className={styles.prospectsCardBody}>
                             {/* Export Options */}
@@ -913,16 +1199,12 @@ const Prospects = () => {
                             >
                                 <div className={styles.formGroup}>
                                     <label>Search Suggestion/Dropdown</label>
-                                    <select
-                                        multiple
-                                        value={filterValues.jobTitles}
-                                        onChange={(e) => handleFilterChange('jobTitles', Array.from(e.target.selectedOptions, option => option.value))}
-                                        className={styles.filterSelect}
-                                    >
-                                        {lookupData.jobTitles?.map(title => (
-                                            <option key={title} value={title}>{title}</option>
-                                        ))}
-                                    </select>
+                                    <SearchableDropdown
+                                        field="Jobtitle"
+                                        selectedValues={filterValues.jobTitles}
+                                        onSelectionChange={(values) => handleArrayFilterChange('jobTitles', values)}
+                                        placeholder="Type job title..."
+                                    />
                                 </div>
                             </FilterAccordion>
 
@@ -935,18 +1217,12 @@ const Prospects = () => {
                             >
                                 <div className={styles.formGroup}>
                                     <label>Search Suggestion/Dropdown</label>
-                                    <select
-                                        multiple
-                                        value={filterValues.industries}
-                                        onChange={(e) => handleFilterChange('industries', Array.from(e.target.selectedOptions, option => option.value))}
-                                        className={styles.filterSelect}
-                                    >
-                                        {lookupData.industries?.map(industry => (
-                                            <option key={industry.IndustryCode} value={industry.IndustryName}>
-                                                {industry.IndustryName}
-                                            </option>
-                                        ))}
-                                    </select>
+                                    <SearchableDropdown
+                                        field="Industry"
+                                        selectedValues={filterValues.industries}
+                                        onSelectionChange={(values) => handleArrayFilterChange('industries', values)}
+                                        placeholder="Type industry..."
+                                    />
                                 </div>
                             </FilterAccordion>
 
@@ -959,16 +1235,12 @@ const Prospects = () => {
                             >
                                 <div className={styles.formGroup}>
                                     <label>Search Suggestion/Dropdown</label>
-                                    <select
-                                        multiple
-                                        value={filterValues.departments}
-                                        onChange={(e) => handleFilterChange('departments', Array.from(e.target.selectedOptions, option => option.value))}
-                                        className={styles.filterSelect}
-                                    >
-                                        {lookupData.departments?.map(dept => (
-                                            <option key={dept} value={dept}>{dept}</option>
-                                        ))}
-                                    </select>
+                                    <SearchableDropdown
+                                        field="Department"
+                                        selectedValues={filterValues.departments}
+                                        onSelectionChange={(values) => handleArrayFilterChange('departments', values)}
+                                        placeholder="Type department..."
+                                    />
                                 </div>
                             </FilterAccordion>
 
@@ -981,16 +1253,12 @@ const Prospects = () => {
                             >
                                 <div className={styles.formGroup}>
                                     <label>Search Suggestion/Dropdown</label>
-                                    <select
-                                        multiple
-                                        value={filterValues.seniorities}
-                                        onChange={(e) => handleFilterChange('seniorities', Array.from(e.target.selectedOptions, option => option.value))}
-                                        className={styles.filterSelect}
-                                    >
-                                        {lookupData.seniorities?.map(seniority => (
-                                            <option key={seniority} value={seniority}>{seniority}</option>
-                                        ))}
-                                    </select>
+                                    <SearchableDropdown
+                                        field="Seniority"
+                                        selectedValues={filterValues.seniorities}
+                                        onSelectionChange={(values) => handleArrayFilterChange('seniorities', values)}
+                                        placeholder="Type seniority..."
+                                    />
                                 </div>
                             </FilterAccordion>
 
@@ -1207,8 +1475,6 @@ const Prospects = () => {
                                 </div>
                             </FilterAccordion>
 
-                            {/* Add more filter sections as needed... */}
-
                         </div>
                         <div className={styles.cardFooter}>
                             <div className={styles.row}>
@@ -1336,6 +1602,15 @@ const Prospects = () => {
                                 <FiFilter size={48} className={styles.noFilterIcon} />
                                 <h3>No Filters Applied</h3>
                                 <p>Please apply filters to see prospect data. Use the filter panel on the left to specify your search criteria.</p>
+                                <div className={styles.filterTips}>
+                                    <h4>Filter Tips:</h4>
+                                    <ul>
+                                        <li>Use the searchable dropdowns to find specific values</li>
+                                        <li>Combine multiple filters for precise results</li>
+                                        <li>Use range filters for numerical values like Employee Size</li>
+                                        <li>Your filter selections are saved automatically</li>
+                                    </ul>
+                                </div>
                             </div>
                         </div>
                     )}

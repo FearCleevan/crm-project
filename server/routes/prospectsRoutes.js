@@ -12,13 +12,16 @@ import {
   getLookupData,
   downloadCSVTemplate,
   cleanupImportSessions,
-  checkImportProgress
+  checkImportProgress,
+  getFilterOptions,
+  debugFilterOptions
 } from '../controllers/prospectsController.js';
 import multer from 'multer';
 
 const upload = multer({ storage: multer.memoryStorage() });
 const router = express.Router();
 
+// Test route (no auth)
 router.get('/test', (req, res) => {
     res.json({ 
         success: true, 
@@ -27,11 +30,17 @@ router.get('/test', (req, res) => {
     });
 });
 
+router.get('/debug/filter-options', debugFilterOptions);
 
-// All routes require authentication
+// PUBLIC ROUTES - No authentication required for filter options
+router.get('/filter/options', getFilterOptions);
+
+// Apply authentication middleware to all routes below
 router.use(authMiddleware);
 
-// Template download route should come BEFORE parameterized routes
+// PROTECTED ROUTES - All routes below require authentication
+
+// Template download
 router.get('/import/template', downloadCSVTemplate);
 
 // Get prospects with filtering and pagination
@@ -40,7 +49,7 @@ router.get('/', getProspects);
 // Check import progress
 router.get('/import/progress/:sessionId', checkImportProgress);
 
-// Cleanup import sessions (optional)
+// Cleanup import sessions
 router.delete('/import/cleanup', cleanupImportSessions);
 
 // Get single prospect

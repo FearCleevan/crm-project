@@ -1065,3 +1065,163 @@
 
 /* Keep all your existing styles and add the new ones above */
 /* Your existing CSS styles remain the same... */
+/* Enhanced Searchable Dropdown Styles */
+.searchableDropdown {
+    position: relative;
+    width: 100%;
+}
+
+.selectedTags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+    min-height: 32px;
+}
+
+.selectedTag {
+    display: inline-flex;
+    align-items: center;
+    background: #e3f2fd;
+    border: 1px solid #2196f3;
+    border-radius: 16px;
+    padding: 4px 10px;
+    font-size: 12px;
+    color: #1976d2;
+    font-weight: 500;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.removeTag {
+    background: none;
+    border: none;
+    color: #1976d2;
+    cursor: pointer;
+    margin-left: 6px;
+    display: flex;
+    align-items: center;
+    padding: 2px;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+}
+
+.removeTag:hover {
+    background: #bbdefb;
+    color: #d32f2f;
+}
+
+.searchInputContainer {
+    position: relative;
+}
+
+.searchInput {
+    width: 100%;
+    padding: 10px 35px 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: all 0.2s;
+    background: white;
+}
+
+.searchInput:focus {
+    outline: none;
+    border-color: #2196f3;
+    box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+}
+
+.clearSearchButton {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #999;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+}
+
+.clearSearchButton:hover {
+    background: #f5f5f5;
+    color: #666;
+}
+
+.suggestionsDropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    margin-top: 4px;
+}
+
+.suggestionHeader {
+    padding: 8px 12px;
+    background: #f8f9fa;
+    color: #666;
+    font-size: 12px;
+    font-weight: 600;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.suggestionItem {
+    padding: 10px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #f8f9fa;
+    font-size: 14px;
+    transition: background-color 0.2s;
+}
+
+.suggestionItem:hover {
+    background: #e3f2fd;
+    color: #1976d2;
+}
+
+.suggestionItem:last-child {
+    border-bottom: none;
+}
+
+.suggestionLoading, .suggestionEmpty, .suggestionError {
+    padding: 12px;
+    color: #666;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.suggestionError {
+    color: #d32f2f;
+    background: #ffebee;
+}
+
+.suggestionEmpty {
+    font-style: italic;
+}
+
+.loadingSpinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #2196f3;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}

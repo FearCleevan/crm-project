@@ -3,6 +3,204 @@ import { Readable } from "stream";
 import csv from "csv-parser";
 import { importQueue } from "../services/importQueue.js";
 
+// Add this function to your prospectsController.js
+export const getFilterOptions = async (req, res) => {
+  let connection;
+  try {
+    const { field, search } = req.query;
+
+    console.log('🔍 Filter options request received:', { field, search });
+
+    const validFields = [
+      'Jobtitle', 'Industry', 'Department', 'Seniority', 
+      'Fullname', 'Firstname', 'Lastname', 'Company', 
+      'State', 'Country', 'Email'
+    ];
+
+    if (!validFields.includes(field)) {
+      console.log('❌ Invalid field requested:', field);
+      return res.status(400).json({
+        success: false,
+        error: `Invalid field specified. Valid fields: ${validFields.join(', ')}`
+      });
+    }
+
+    // Get database connection
+    connection = await pool.getConnection();
+    
+    let query;
+    let params = [];
+
+    console.log('📊 Building query for field:', field);
+
+    // Special handling for Industry field
+    if (field === 'Industry') {
+      query = `
+        SELECT DISTINCT 
+          COALESCE(pi.IndustryName, p.Industry) as value 
+        FROM prospects p
+        LEFT JOIN prospects_industry pi ON p.Industry = pi.IndustryCode
+        WHERE p.isactive = 1 
+        AND (pi.IndustryName IS NOT NULL OR p.Industry IS NOT NULL)
+        AND (pi.IndustryName != '' OR p.Industry != '')
+      `;
+      
+      if (search && search.trim() !== '') {
+        query += ` AND (pi.IndustryName LIKE ? OR p.Industry LIKE ?)`;
+        params.push(`%${search}%`, `%${search}%`);
+      }
+      
+      query += ` ORDER BY value LIMIT 50`;
+    } 
+    // Special handling for other fields that might be codes
+    else if (field === 'Department' || field === 'Seniority') {
+      query = `
+        SELECT DISTINCT ${field} as value 
+        FROM prospects 
+        WHERE isactive = 1 
+        AND ${field} IS NOT NULL 
+        AND ${field} != ''
+      `;
+      
+      if (search && search.trim() !== '') {
+        query += ` AND ${field} LIKE ?`;
+        params.push(`%${search}%`);
+      }
+      
+      query += ` ORDER BY ${field} LIMIT 50`;
+    }
+    // For all other text fields
+    else {
+      query = `
+        SELECT DISTINCT ${field} as value 
+        FROM prospects 
+        WHERE isactive = 1 
+        AND ${field} IS NOT NULL 
+        AND ${field} != ''
+      `;
+      
+      if (search && search.trim() !== '') {
+        query += ` AND ${field} LIKE ?`;
+        params.push(`%${search}%`);
+      }
+      
+      query += ` ORDER BY ${field} LIMIT 50`;
+    }
+
+    console.log('🚀 Executing query:', query);
+    console.log('📋 Query parameters:', params);
+
+    const [results] = await connection.query(query, params);
+    
+    console.log('✅ Query successful, results count:', results.length);
+
+    // Process results
+    const options = results
+      .map(row => {
+        const value = row.value;
+        return value && typeof value === 'string' ? value.trim() : value;
+      })
+      .filter(value => value && value !== '')
+      .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+
+    console.log('🎯 Final options count:', options.length);
+    console.log('📝 Options preview:', options.slice(0, 5));
+
+    res.json({
+      success: true,
+      options,
+      count: options.length,
+      field,
+      searchTerm: search
+    });
+
+  } catch (error) {
+    console.error('💥 Get filter options error:', error);
+    
+    // More detailed error information
+    const errorInfo = {
+      message: error.message,
+      code: error.code,
+      sqlMessage: error.sqlMessage,
+      sqlState: error.sqlState
+    };
+    
+    console.error('🔧 Error details:', errorInfo);
+
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error while fetching filter options',
+      details: process.env.NODE_ENV === 'development' ? errorInfo : undefined
+    });
+  } finally {
+    if (connection) {
+      connection.release();
+      console.log('🔗 Database connection released');
+    }
+  }
+};
+
+// Test function to debug database connection and data
+export const debugFilterOptions = async (req, res) => {
+  try {
+    const { field = 'Industry', search = '' } = req.query;
+    
+    console.log('🐛 DEBUG: Checking database state for field:', field);
+    
+    const connection = await pool.getConnection();
+    
+    // Check if prospects table has data
+    const [prospectCount] = await connection.query('SELECT COUNT(*) as count FROM prospects WHERE isactive = 1');
+    console.log('📊 Total active prospects:', prospectCount[0].count);
+    
+    // Check if industry table has data
+    const [industryData] = await connection.query('SELECT * FROM prospects_industry LIMIT 5');
+    console.log('🏭 Industry table sample:', industryData);
+    
+    // Check distinct values for the requested field
+    let distinctQuery;
+    if (field === 'Industry') {
+      distinctQuery = `
+        SELECT DISTINCT p.Industry as industry_code, pi.IndustryName as industry_name
+        FROM prospects p
+        LEFT JOIN prospects_industry pi ON p.Industry = pi.IndustryCode
+        WHERE p.isactive = 1 AND (p.Industry IS NOT NULL OR pi.IndustryName IS NOT NULL)
+        LIMIT 10
+      `;
+    } else {
+      distinctQuery = `
+        SELECT DISTINCT ${field} as value 
+        FROM prospects 
+        WHERE isactive = 1 AND ${field} IS NOT NULL
+        LIMIT 10
+      `;
+    }
+    
+    const [distinctValues] = await connection.query(distinctQuery);
+    console.log(`🔍 Distinct ${field} values:`, distinctValues);
+    
+    connection.release();
+    
+    res.json({
+      success: true,
+      debug: {
+        totalProspects: prospectCount[0].count,
+        industrySample: industryData,
+        distinctValues: distinctValues,
+        field: field,
+        search: search
+      }
+    });
+    
+  } catch (error) {
+    console.error('💥 Debug error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Debug failed: ' + error.message
+    });
+  }
+};
+
 // Get all prospects with optional filtering
 export const getProspects = async (req, res) => {
   try {
@@ -10,11 +208,24 @@ export const getProspects = async (req, res) => {
       page = 1,
       limit = 10,
       search,
-      status,
-      industry,
-      country,
       sortBy = "CreatedOn",
       sortOrder = "DESC",
+      // New filter parameters
+      jobTitles,
+      industries,
+      departments,
+      seniorities,
+      employeeSizeMin,
+      employeeSizeMax,
+      annualRevenueMin,
+      annualRevenueMax,
+      fullname,
+      firstname,
+      lastname,
+      company,
+      state,
+      country,
+      email,
     } = req.query;
 
     let query = `
@@ -28,19 +239,14 @@ export const getProspects = async (req, res) => {
       LEFT JOIN prospects_email_status pes ON p.EmailCode = pes.EmailCode
       LEFT JOIN prospects_provider pp ON p.ProviderCode = pp.ProviderCode
       LEFT JOIN prospects_industry pi ON p.Industry = pi.IndustryCode
-      WHERE 1=1
+      WHERE p.isactive = 1
     `;
 
-    let countQuery = `
-      SELECT COUNT(*) as total 
-      FROM prospects p 
-      WHERE 1=1
-    `;
-
+    let countQuery = `SELECT COUNT(*) as total FROM prospects p WHERE p.isactive = 1`;
     let queryParams = [];
     let countParams = [];
 
-    // Apply filters
+    // Apply search filter
     if (search) {
       const searchCondition = `
         (p.Fullname LIKE ? OR p.Company LIKE ? OR p.Email LIKE ? OR p.Jobtitle LIKE ?)
@@ -52,26 +258,69 @@ export const getProspects = async (req, res) => {
       countParams.push(searchParam, searchParam, searchParam, searchParam);
     }
 
-    if (status && status !== "all") {
-      query += ` AND p.Status = ?`;
-      countQuery += ` AND p.Status = ?`;
-      queryParams.push(status);
-      countParams.push(status);
-    }
+    // Apply advanced filters
+    const applyArrayFilter = (field, values, isIndustry = false) => {
+      if (values && values.length > 0) {
+        const placeholders = values.map(() => "?").join(",");
+        if (isIndustry) {
+          query += ` AND pi.IndustryName IN (${placeholders})`;
+          countQuery += ` AND pi.IndustryName IN (${placeholders})`;
+        } else {
+          query += ` AND p.${field} IN (${placeholders})`;
+          countQuery += ` AND p.${field} IN (${placeholders})`;
+        }
+        values.forEach((val) => {
+          queryParams.push(val);
+          countParams.push(val);
+        });
+      }
+    };
 
-    if (industry && industry !== "all") {
-      query += ` AND p.Industry = ?`;
-      countQuery += ` AND p.Industry = ?`;
-      queryParams.push(industry);
-      countParams.push(industry);
-    }
+    const applyTextFilter = (field, value) => {
+      if (value && value.trim() !== "") {
+        query += ` AND p.${field} LIKE ?`;
+        countQuery += ` AND p.${field} LIKE ?`;
+        queryParams.push(`%${value}%`);
+        countParams.push(`%${value}%`);
+      }
+    };
 
-    if (country && country !== "all") {
-      query += ` AND p.Country = ?`;
-      countQuery += ` AND p.Country = ?`;
-      queryParams.push(country);
-      countParams.push(country);
-    }
+    const applyRangeFilter = (field, min, max) => {
+      if (min || max) {
+        const conditions = [];
+        if (min) {
+          conditions.push(`p.${field} >= ?`);
+          queryParams.push(parseFloat(min));
+          countParams.push(parseFloat(min));
+        }
+        if (max) {
+          conditions.push(`p.${field} <= ?`);
+          queryParams.push(parseFloat(max));
+          countParams.push(parseFloat(max));
+        }
+        if (conditions.length > 0) {
+          query += ` AND ${conditions.join(" AND ")}`;
+          countQuery += ` AND ${conditions.join(" AND ")}`;
+        }
+      }
+    };
+
+    // Apply all filters
+    applyArrayFilter("Jobtitle", jobTitles?.split(","));
+    applyArrayFilter("Industry", industries?.split(","), true);
+    applyArrayFilter("Department", departments?.split(","));
+    applyArrayFilter("Seniority", seniorities?.split(","));
+
+    applyRangeFilter("Employeesize", employeeSizeMin, employeeSizeMax);
+    applyRangeFilter("Annualrevenue", annualRevenueMin, annualRevenueMax);
+
+    applyTextFilter("Fullname", fullname);
+    applyTextFilter("Firstname", firstname);
+    applyTextFilter("Lastname", lastname);
+    applyTextFilter("Company", company);
+    applyTextFilter("State", state);
+    applyTextFilter("Country", country);
+    applyTextFilter("Email", email);
 
     // Apply sorting
     const validSortColumns = [
