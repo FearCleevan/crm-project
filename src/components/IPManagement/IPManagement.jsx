@@ -10,19 +10,35 @@ const IPManagement = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [newIp, setNewIp] = useState({ ip_address: '', description: '' });
+
+  // Separate state for white and black list inputs
+  const [newWhitelistIp, setNewWhitelistIp] = useState({ ip_address: '', description: '' });
+  const [newBlacklistIp, setNewBlacklistIp] = useState({ ip_address: '', description: '' });
+
   const [editingId, setEditingId] = useState(null);
   const [editData, setEditData] = useState({});
+  const [currentIP, setCurrentIP] = useState('');
 
   useEffect(() => {
     fetchData();
+    getCurrentIP();
   }, []);
+
+  const getCurrentIP = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/health');
+      const data = await response.json();
+      setCurrentIP(data.yourIP);
+    } catch (err) {
+      console.error('Could not get current IP:', err);
+    }
+  };
 
   const fetchData = async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      
+
       const [settingsRes, whitelistRes, blacklistRes] = await Promise.all([
         fetch('http://localhost:5000/api/ip-management/settings', {
           headers: { 'Authorization': `Bearer ${token}` }
@@ -35,9 +51,9 @@ const IPManagement = () => {
         })
       ]);
 
-      if (!settingsRes.ok || !whitelistRes.ok || !blacklistRes.ok) {
-        throw new Error('Failed to fetch data');
-      }
+      if (!settingsRes.ok) throw new Error('Failed to fetch settings');
+      if (!whitelistRes.ok) throw new Error('Failed to fetch whitelist');
+      if (!blacklistRes.ok) throw new Error('Failed to fetch blacklist');
 
       const settingsData = await settingsRes.json();
       const whitelistData = await whitelistRes.json();
@@ -48,6 +64,7 @@ const IPManagement = () => {
       setBlacklist(blacklistData.blacklist);
     } catch (err) {
       setError(err.message);
+      setTimeout(() => setError(''), 5000);
     } finally {
       setLoading(false);
     }
@@ -88,14 +105,14 @@ const IPManagement = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(newIp)
+        body: JSON.stringify(newWhitelistIp)
       });
 
       if (!response.ok) {
         throw new Error('Failed to add IP to whitelist');
       }
 
-      setNewIp({ ip_address: '', description: '' });
+      setNewWhitelistIp({ ip_address: '', description: '' });
       setSuccess('IP added to whitelist');
       setTimeout(() => setSuccess(''), 3000);
       fetchData(); // Refresh data
@@ -115,14 +132,14 @@ const IPManagement = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(newIp)
+        body: JSON.stringify(newBlacklistIp)
       });
 
       if (!response.ok) {
         throw new Error('Failed to add IP to blacklist');
       }
 
-      setNewIp({ ip_address: '', description: '' });
+      setNewBlacklistIp({ ip_address: '', description: '' });
       setSuccess('IP added to blacklist');
       setTimeout(() => setSuccess(''), 3000);
       fetchData(); // Refresh data
@@ -159,26 +176,51 @@ const IPManagement = () => {
     }
   };
 
+  const toggleActiveStatus = async (listType, id, currentStatus) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/ip-management/${listType}/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ is_active: !currentStatus })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to update ${listType} status`);
+      }
+
+      setSuccess(`${listType} entry ${!currentStatus ? 'activated' : 'deactivated'}`);
+      setTimeout(() => setSuccess(''), 3000);
+      fetchData(); // Refresh data
+    } catch (err) {
+      setError(err.message);
+      setTimeout(() => setError(''), 3000);
+    }
+  };
+
   if (loading) return <div className={styles.loading}>Loading IP settings...</div>;
   if (user.role !== 'IT Admin') return <div className={styles.error}>Admin privileges required to access IP management</div>;
 
   return (
     <div className={styles.container}>
       <h2>IP Access Control</h2>
-      
+
       {error && <div className={styles.errorMessage}>{error}</div>}
       {success && <div className={styles.successMessage}>{success}</div>}
-      
+
       <div className={styles.section}>
         <h3>Access Mode</h3>
         <div className={styles.modeSelector}>
-          <button 
+          <button
             className={settings.ip_control_mode === 'open' ? styles.activeMode : styles.modeButton}
             onClick={() => updateMode('open')}
           >
             Open Access
           </button>
-          <button 
+          <button
             className={settings.ip_control_mode === 'whitelist' ? styles.activeMode : styles.modeButton}
             onClick={() => updateMode('whitelist')}
           >
@@ -186,84 +228,43 @@ const IPManagement = () => {
           </button>
         </div>
         <p className={styles.modeDescription}>
-          {settings.ip_control_mode === 'open' 
-            ? 'All IP addresses can access the system, except those explicitly blacklisted.' 
+          {settings.ip_control_mode === 'open'
+            ? 'All IP addresses can access the system, except those explicitly blacklisted.'
             : 'Only whitelisted IP addresses can access the system.'}
         </p>
+
+        {/* Display current IP */}
+        <div className={styles.currentIp}>
+          <p><strong>Your Current IP:</strong> {currentIP || 'Detecting...'}</p>
+          <button
+            onClick={getCurrentIP}
+            className={styles.ipButton}
+          >
+            Refresh My IP
+          </button>
+        </div>
       </div>
-      
+
+      {/* Whitelist Section */}
       <div className={styles.section}>
         <h3>Whitelisted IPs</h3>
         <form onSubmit={addToWhitelist} className={styles.addForm}>
           <input
             type="text"
             placeholder="IP Address (e.g., 192.168.1.100)"
-            value={newIp.ip_address}
-            onChange={(e) => setNewIp({ ...newIp, ip_address: e.target.value })}
+            value={newWhitelistIp.ip_address}
+            onChange={(e) => setNewWhitelistIp({ ...newWhitelistIp, ip_address: e.target.value })}
             required
           />
           <input
             type="text"
             placeholder="Description"
-            value={newIp.description}
-            onChange={(e) => setNewIp({ ...newIp, description: e.target.value })}
+            value={newWhitelistIp.description}
+            onChange={(e) => setNewWhitelistIp({ ...newWhitelistIp, description: e.target.value })}
           />
           <button type="submit">Add to Whitelist</button>
         </form>
-        
-        <div className={styles.list}>
-          {whitelist.map(item => (
-            <div key={item.id} className={styles.listItem}>
-              {editingId === item.id ? (
-                <>
-                  <input
-                    type="text"
-                    value={editData.ip_address || item.ip_address}
-                    onChange={(e) => setEditData({ ...editData, ip_address: e.target.value })}
-                  />
-                  <input
-                    type="text"
-                    value={editData.description || item.description}
-                    onChange={(e) => setEditData({ ...editData, description: e.target.value })}
-                  />
-                  <button onClick={() => updateListEntry('whitelist', item.id, editData)}>Save</button>
-                  <button onClick={() => setEditingId(null)}>Cancel</button>
-                </>
-              ) : (
-                <>
-                  <span className={styles.ipAddress}>{item.ip_address}</span>
-                  <span className={styles.description}>{item.description}</span>
-                  <span className={styles.status}>{item.is_active ? 'Active' : 'Inactive'}</span>
-                  <button onClick={() => {
-                    setEditingId(item.id);
-                    setEditData({ ip_address: item.ip_address, description: item.description });
-                  }}>Edit</button>
-                </>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-      
-      <div className={styles.section}>
-        <h3>Blacklisted IPs</h3>
-        <form onSubmit={addToBlacklist} className={styles.addForm}>
-          <input
-            type="text"
-            placeholder="IP Address (e.g., 192.168.1.200)"
-            value={newIp.ip_address}
-            onChange={(e) => setNewIp({ ...newIp, ip_address: e.target.value })}
-            required
-          />
-          <input
-            type="text"
-            placeholder="Description"
-            value={newIp.description}
-            onChange={(e) => setNewIp({ ...newIp, description: e.target.value })}
-          />
-          <button type="submit">Add to Blacklist</button>
-        </form>
-        
+
         <div className={styles.list}>
           {blacklist.map(item => (
             <div key={item.id} className={styles.listItem}>
@@ -286,11 +287,85 @@ const IPManagement = () => {
                 <>
                   <span className={styles.ipAddress}>{item.ip_address}</span>
                   <span className={styles.description}>{item.description}</span>
-                  <span className={styles.status}>{item.is_active ? 'Active' : 'Inactive'}</span>
-                  <button onClick={() => {
-                    setEditingId(item.id);
-                    setEditData({ ip_address: item.ip_address, description: item.description });
-                  }}>Edit</button>
+                  <span className={`${styles.status} ${item.is_active ? styles.active : styles.inactive}`}>
+                    {item.is_active ? 'Active' : 'Inactive'}
+                  </span>
+                  <div className={styles.actions}>
+                    <button
+                      onClick={() => toggleActiveStatus('blacklist', item.id, item.is_active)}
+                      className={item.is_active ? styles.deactivateBtn : styles.activateBtn}
+                    >
+                      {item.is_active ? 'Deactivate' : 'Activate'}
+                    </button>
+                    <button onClick={() => {
+                      setEditingId(item.id);
+                      setEditData({ ip_address: item.ip_address, description: item.description });
+                    }}>Edit</button>
+                  </div>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Blacklist Section */}
+      <div className={styles.section}>
+        <h3>Blacklisted IPs</h3>
+        <form onSubmit={addToBlacklist} className={styles.addForm}>
+          <input
+            type="text"
+            placeholder="IP Address (e.g., 192.168.1.200)"
+            value={newBlacklistIp.ip_address}
+            onChange={(e) => setNewBlacklistIp({ ...newBlacklistIp, ip_address: e.target.value })}
+            required
+          />
+          <input
+            type="text"
+            placeholder="Description"
+            value={newBlacklistIp.description}
+            onChange={(e) => setNewBlacklistIp({ ...newBlacklistIp, description: e.target.value })}
+          />
+          <button type="submit">Add to Blacklist</button>
+        </form>
+
+        <div className={styles.list}>
+          {blacklist.map(item => (
+            <div key={item.id} className={styles.listItem}>
+              {editingId === item.id ? (
+                <>
+                  <input
+                    type="text"
+                    value={editData.ip_address || item.ip_address}
+                    onChange={(e) => setEditData({ ...editData, ip_address: e.target.value })}
+                  />
+                  <input
+                    type="text"
+                    value={editData.description || item.description}
+                    onChange={(e) => setEditData({ ...editData, description: e.target.value })}
+                  />
+                  <button onClick={() => updateListEntry('blacklist', item.id, editData)}>Save</button>
+                  <button onClick={() => setEditingId(null)}>Cancel</button>
+                </>
+              ) : (
+                <>
+                  <span className={styles.ipAddress}>{item.ip_address}</span>
+                  <span className={styles.description}>{item.description}</span>
+                  <span className={`${styles.status} ${item.is_active ? styles.active : styles.inactive}`}>
+                    {item.is_active ? 'Active' : 'Inactive'}
+                  </span>
+                  <div className={styles.actions}>
+                    <button
+                      onClick={() => toggleActiveStatus('blacklist', item.id, item.is_active)}
+                      className={item.is_active ? styles.deactivateBtn : styles.activateBtn}
+                    >
+                      {item.is_active ? 'Deactivate' : 'Activate'}
+                    </button>
+                    <button onClick={() => {
+                      setEditingId(item.id);
+                      setEditData({ ip_address: item.ip_address, description: item.description });
+                    }}>Edit</button>
+                  </div>
                 </>
               )}
             </div>

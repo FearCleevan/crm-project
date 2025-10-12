@@ -1,70 +1,89 @@
-import pool from "../config/db.js";
+import pool from '../config/db.js';
+
+// Helper function to get real client IP
+const getClientIP = (req) => {
+  // Check forwarded headers first (behind proxy)
+  const forwarded = req.headers['x-forwarded-for'];
+  if (forwarded) {
+    const ips = forwarded.split(',');
+    return ips[0].trim();
+  }
+  
+  // Check other common headers
+  const realIP = req.headers['x-real-ip'];
+  if (realIP) return realIP;
+  
+  // Fall back to connection remote address
+  return req.connection.remoteAddress || req.socket.remoteAddress || req.ip || '127.0.0.1';
+};
 
 export const ipControlMiddleware = async (req, res, next) => {
   try {
-    // Get client IP address
-    const clientIp = req.ip || req.connection.remoteAddress || 
-                    req.socket.remoteAddress || 
-                    (req.connection.socket ? req.connection.socket.remoteAddress : null);
-    
-    // Clean up IP address (remove IPv6 prefix if present)
-    const cleanIp = clientIp.replace(/^::ffff:/, '');
-    
-    // Get IP control mode from settings
+    const clientIP = getClientIP(req);
+    console.log('🔍 IP Check - Client IP:', clientIP, 'Path:', req.path);
+
+    // Always allow login and health endpoints
+    if (req.path === '/api/auth/login' || req.path === '/api/health' || req.path === '/api/requests/submit') {
+      console.log('✅ Allowing access to public endpoint:', req.path);
+      return next();
+    }
+
+    // Get IP control settings
     const [settingsRows] = await pool.query(
-      "SELECT setting_value FROM system_settings WHERE setting_name = 'ip_control_mode'"
+      "SELECT setting_name, setting_value FROM system_settings WHERE setting_name LIKE 'ip_%'"
     );
     
-    const ipControlMode = settingsRows.length > 0 ? settingsRows[0].setting_value : 'open';
-    
-    // If mode is open, allow all except blacklisted IPs
-    if (ipControlMode === 'open') {
-      // Check if IP is blacklisted
-      const [blacklistRows] = await pool.query(
-        "SELECT id FROM ip_blacklist WHERE ip_address = ? AND is_active = 1",
-        [cleanIp]
-      );
+    const settings = {};
+    settingsRows.forEach(row => {
+      settings[row.setting_name] = row.setting_value;
+    });
+
+    const ipControlMode = settings.ip_control_mode || 'open';
+    console.log('🔧 IP Control Mode:', ipControlMode);
+
+    // Check if IP is blacklisted (regardless of mode)
+    const [blacklistRows] = await pool.query(
+      "SELECT * FROM ip_blacklist WHERE ip_address = ? AND is_active = 1",
+      [clientIP]
+    );
+
+    if (blacklistRows.length > 0) {
+      console.log('🚫 IP blocked - blacklisted:', clientIP);
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied from this IP address'
+      });
+    }
+
+    console.log('✅ IP not blacklisted');
+
+    // If whitelist mode is active, check if IP is whitelisted
+    if (ipControlMode === 'whitelist') {
+      console.log('🔒 Whitelist mode active, checking IP...');
       
-      if (blacklistRows.length > 0) {
+      const [whitelistRows] = await pool.query(
+        "SELECT * FROM ip_whitelist WHERE ip_address = ? AND is_active = 1",
+        [clientIP]
+      );
+
+      if (whitelistRows.length === 0) {
+        console.log('🚫 IP blocked - not in whitelist:', clientIP);
         return res.status(403).json({
           success: false,
-          error: "Access denied. Your IP has been blacklisted."
+          error: 'IP address not authorized. Please contact administrator.'
         });
       }
       
-      return next();
+      console.log('✅ IP whitelisted:', clientIP);
+    } else {
+      console.log('🔓 Open mode - allowing access');
     }
-    
-    // If mode is whitelist, check if IP is whitelisted
-    if (ipControlMode === 'whitelist') {
-      // Check if IP is whitelisted
-      const [whitelistRows] = await pool.query(
-        "SELECT id FROM ip_whitelist WHERE ip_address = ? AND is_active = 1",
-        [cleanIp]
-      );
-      
-      if (whitelistRows.length > 0) {
-        return next();
-      }
-      
-      return res.status(403).json({
-        success: false,
-        error: "Access denied. Your IP is not whitelisted."
-      });
-    }
-    
-    // Default deny if mode is unknown
-    return res.status(403).json({
-      success: false,
-      error: "Access denied. Invalid IP control configuration."
-    });
-    
+
+    next();
   } catch (error) {
-    console.error("IP control middleware error:", error);
-    // In case of error, deny access for security
-    return res.status(403).json({
-      success: false,
-      error: "Access denied. Security system error."
-    });
+    console.error('❌ IP control middleware error:', error);
+    // In case of error, allow access to prevent locking everyone out
+    console.log('⚠️ Allowing access due to error');
+    next();
   }
 };

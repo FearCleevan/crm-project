@@ -1,4 +1,3 @@
-//server/routes/ipManagementRoutes.js
 import express from 'express';
 import { authMiddleware } from '../middlewares/authMiddleware.js';
 import pool from '../config/db.js';
@@ -19,8 +18,8 @@ const requireAdmin = (req, res, next) => {
   next();
 };
 
-// Get current IP control settings
-router.get('/settings', requireAdmin, async (req, res) => {
+// Get current IP control settings (allow access for checking)
+router.get('/settings', async (req, res) => {
   try {
     const [settingsRows] = await pool.query(
       "SELECT setting_name, setting_value FROM system_settings WHERE setting_name LIKE 'ip_%'"
@@ -44,7 +43,7 @@ router.get('/settings', requireAdmin, async (req, res) => {
   }
 });
 
-// Update IP control mode
+// Update IP control mode (admin only)
 router.put('/settings/mode', requireAdmin, async (req, res) => {
   try {
     const { mode } = req.body;
@@ -74,7 +73,7 @@ router.put('/settings/mode', requireAdmin, async (req, res) => {
   }
 });
 
-// Get all whitelisted IPs
+// Get all whitelisted IPs (admin only)
 router.get('/whitelist', requireAdmin, async (req, res) => {
   try {
     const [rows] = await pool.query(
@@ -94,7 +93,7 @@ router.get('/whitelist', requireAdmin, async (req, res) => {
   }
 });
 
-// Add IP to whitelist
+// Add IP to whitelist (admin only)
 router.post('/whitelist', requireAdmin, async (req, res) => {
   try {
     const { ip_address, description } = req.body;
@@ -106,8 +105,8 @@ router.post('/whitelist', requireAdmin, async (req, res) => {
       });
     }
     
-    // Validate IP address format
-    const ipRegex = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/;
+    // Enhanced IP validation
+    const ipRegex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
     if (!ipRegex.test(ip_address)) {
       return res.status(400).json({
         success: false,
@@ -115,9 +114,30 @@ router.post('/whitelist', requireAdmin, async (req, res) => {
       });
     }
     
+    // Check if IP already exists
+    const [existing] = await pool.query(
+      "SELECT id FROM ip_whitelist WHERE ip_address = ?",
+      [ip_address]
+    );
+    
+    if (existing.length > 0) {
+      // Update existing entry
+      await pool.query(
+        "UPDATE ip_whitelist SET description = ?, is_active = 1, updated_at = NOW() WHERE ip_address = ?",
+        [description, ip_address]
+      );
+      
+      return res.json({
+        success: true,
+        message: 'IP updated in whitelist',
+        id: existing[0].id
+      });
+    }
+    
+    // Insert new entry
     const [result] = await pool.query(
-      "INSERT INTO ip_whitelist (ip_address, description) VALUES (?, ?) ON DUPLICATE KEY UPDATE description = ?, is_active = 1",
-      [ip_address, description, description]
+      "INSERT INTO ip_whitelist (ip_address, description) VALUES (?, ?)",
+      [ip_address, description]
     );
     
     res.status(201).json({
@@ -134,7 +154,7 @@ router.post('/whitelist', requireAdmin, async (req, res) => {
   }
 });
 
-// Update whitelist entry
+// Update whitelist entry (admin only)
 router.put('/whitelist/:id', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
@@ -144,6 +164,14 @@ router.put('/whitelist/:id', requireAdmin, async (req, res) => {
     let updateValues = [];
     
     if (ip_address !== undefined) {
+      // Validate IP if provided
+      const ipRegex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+      if (!ipRegex.test(ip_address)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid IP address format'
+        });
+      }
       updateFields.push('ip_address = ?');
       updateValues.push(ip_address);
     }
@@ -165,6 +193,7 @@ router.put('/whitelist/:id', requireAdmin, async (req, res) => {
       });
     }
     
+    updateFields.push('updated_at = NOW()');
     updateValues.push(id);
     
     const [result] = await pool.query(
@@ -192,7 +221,7 @@ router.put('/whitelist/:id', requireAdmin, async (req, res) => {
   }
 });
 
-// Get all blacklisted IPs
+// Get all blacklisted IPs (admin only)
 router.get('/blacklist', requireAdmin, async (req, res) => {
   try {
     const [rows] = await pool.query(
@@ -212,7 +241,7 @@ router.get('/blacklist', requireAdmin, async (req, res) => {
   }
 });
 
-// Add IP to blacklist
+// Add IP to blacklist (admin only)
 router.post('/blacklist', requireAdmin, async (req, res) => {
   try {
     const { ip_address, description } = req.body;
@@ -224,8 +253,8 @@ router.post('/blacklist', requireAdmin, async (req, res) => {
       });
     }
     
-    // Validate IP address format
-    const ipRegex = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/;
+    // Enhanced IP validation
+    const ipRegex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
     if (!ipRegex.test(ip_address)) {
       return res.status(400).json({
         success: false,
@@ -233,9 +262,30 @@ router.post('/blacklist', requireAdmin, async (req, res) => {
       });
     }
     
+    // Check if IP already exists
+    const [existing] = await pool.query(
+      "SELECT id FROM ip_blacklist WHERE ip_address = ?",
+      [ip_address]
+    );
+    
+    if (existing.length > 0) {
+      // Update existing entry
+      await pool.query(
+        "UPDATE ip_blacklist SET description = ?, is_active = 1, updated_at = NOW() WHERE ip_address = ?",
+        [description, ip_address]
+      );
+      
+      return res.json({
+        success: true,
+        message: 'IP updated in blacklist',
+        id: existing[0].id
+      });
+    }
+    
+    // Insert new entry
     const [result] = await pool.query(
-      "INSERT INTO ip_blacklist (ip_address, description) VALUES (?, ?) ON DUPLICATE KEY UPDATE description = ?, is_active = 1",
-      [ip_address, description, description]
+      "INSERT INTO ip_blacklist (ip_address, description) VALUES (?, ?)",
+      [ip_address, description]
     );
     
     res.status(201).json({
@@ -252,7 +302,7 @@ router.post('/blacklist', requireAdmin, async (req, res) => {
   }
 });
 
-// Update blacklist entry
+// Update blacklist entry (admin only)
 router.put('/blacklist/:id', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
@@ -262,6 +312,14 @@ router.put('/blacklist/:id', requireAdmin, async (req, res) => {
     let updateValues = [];
     
     if (ip_address !== undefined) {
+      // Validate IP if provided
+      const ipRegex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+      if (!ipRegex.test(ip_address)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid IP address format'
+        });
+      }
       updateFields.push('ip_address = ?');
       updateValues.push(ip_address);
     }
@@ -283,6 +341,7 @@ router.put('/blacklist/:id', requireAdmin, async (req, res) => {
       });
     }
     
+    updateFields.push('updated_at = NOW()');
     updateValues.push(id);
     
     const [result] = await pool.query(

@@ -12,14 +12,14 @@ import permissionsRoutes from './routes/permissionsRoutes.js';
 import prospectsRoutes from './routes/prospectsRoutes.js';
 import { ipControlMiddleware } from './middlewares/ipControlMiddleware.js';
 import ipManagementRoutes from './routes/ipManagementRoutes.js';
-
-// IMPORTANT: Fix the dashboard routes import
 import dashboardRoutes from './routes/dashboard.js';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+app.set('trust proxy', true);
 
 app.use(cors({
     origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
@@ -31,6 +31,27 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+app.use((req, res, next) => {
+  const clientIP = req.headers['x-forwarded-for'] || req.connection.remoteAddress || req.socket.remoteAddress || req.ip;
+  console.log('🌐 Request from IP:', clientIP, 'to:', req.method, req.path);
+  next();
+});
+
+// Apply IP control middleware to all routes except specific ones
+app.use((req, res, next) => {
+  const publicPaths = [
+    '/api/auth/login', 
+    '/api/health', 
+    '/api/requests/submit',
+    '/api/ip-management/settings' // Allow access to check settings
+  ];
+  
+  if (publicPaths.includes(req.path)) {
+    return next();
+  }
+  ipControlMiddleware(req, res, next);
+});
 
 app.use((req, res, next) => {
   if (req.path === '/api/auth/login' || req.path === '/api/health' || req.path === '/api/requests/submit') {
@@ -56,9 +77,15 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', authMiddleware, userRoutes);
 
 app.get('/api/health', (req, res) => {
+    const clientIP = req.headers['x-forwarded-for'] || req.connection.remoteAddress || req.socket.remoteAddress || req.ip;
     res.json({ 
         status: 'OK',
-        timestamp: new Date().toISOString() 
+        timestamp: new Date().toISOString(),
+        yourIP: clientIP,
+        headers: {
+            'x-forwarded-for': req.headers['x-forwarded-for'],
+            'x-real-ip': req.headers['x-real-ip']
+        }
     });
 });
 
@@ -152,7 +179,8 @@ app.use((req, res, next) => {
 });
 
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`🔧 Trust proxy: ${app.get('trust proxy')}`);
 });
 
 // Test all routes

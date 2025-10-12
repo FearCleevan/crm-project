@@ -1,43 +1,15 @@
 .container {
   padding: 20px;
-  max-width: 1000px;
+  max-width: 1200px;
   margin: 0 auto;
 }
 
-.loading {
-  text-align: center;
-  padding: 40px;
-  font-size: 18px;
-}
-
-.error {
-  color: #d32f2f;
-  text-align: center;
-  padding: 40px;
-  font-size: 18px;
-}
-
-.errorMessage {
-  background-color: #ffebee;
-  color: #d32f2f;
-  padding: 10px;
-  border-radius: 4px;
-  margin-bottom: 20px;
-}
-
-.successMessage {
-  background-color: #e8f5e9;
-  color: #2e7d32;
-  padding: 10px;
-  border-radius: 4px;
-  margin-bottom: 20px;
-}
-
 .section {
-  margin-bottom: 30px;
+  background: white;
   padding: 20px;
-  border: 1px solid #e0e0e0;
+  margin-bottom: 20px;
   border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .modeSelector {
@@ -46,26 +18,36 @@
   margin-bottom: 10px;
 }
 
-.modeButton {
+.modeButton, .activeMode {
   padding: 10px 20px;
-  border: 1px solid #ccc;
-  background-color: #f5f5f5;
+  border: 1px solid #ddd;
   border-radius: 4px;
   cursor: pointer;
+  background: white;
 }
 
 .activeMode {
-  padding: 10px 20px;
-  border: 1px solid #2196f3;
-  background-color: #2196f3;
+  background: #007bff;
   color: white;
-  border-radius: 4px;
-  cursor: pointer;
+  border-color: #007bff;
 }
 
 .modeDescription {
   color: #666;
-  font-style: italic;
+  margin-bottom: 15px;
+}
+
+.currentIp {
+  margin-top: 15px;
+}
+
+.ipButton {
+  padding: 8px 16px;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
 }
 
 .addForm {
@@ -79,12 +61,13 @@
   padding: 8px;
   border: 1px solid #ddd;
   border-radius: 4px;
+  flex: 1;
   min-width: 200px;
 }
 
 .addForm button {
   padding: 8px 16px;
-  background-color: #4caf50;
+  background: #007bff;
   color: white;
   border: none;
   border-radius: 4px;
@@ -92,14 +75,14 @@
 }
 
 .list {
-  border: 1px solid #eee;
+  border: 1px solid #ddd;
   border-radius: 4px;
 }
 
 .listItem {
   display: flex;
   align-items: center;
-  padding: 10px;
+  padding: 12px;
   border-bottom: 1px solid #eee;
   gap: 10px;
 }
@@ -109,9 +92,8 @@
 }
 
 .ipAddress {
-  font-family: monospace;
-  min-width: 150px;
   font-weight: bold;
+  min-width: 150px;
 }
 
 .description {
@@ -120,20 +102,71 @@
 }
 
 .status {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
   min-width: 80px;
   text-align: center;
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 12px;
-  background-color: #e8f5e9;
-  color: #2e7d32;
 }
 
-.listItem button {
-  padding: 6px 12px;
-  background-color: #2196f3;
+.status.active {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status.inactive {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.actions {
+  display: flex;
+  gap: 5px;
+}
+
+.activateBtn {
+  background: #28a745;
   color: white;
   border: none;
+  padding: 6px 12px;
   border-radius: 4px;
   cursor: pointer;
+}
+
+.deactivateBtn {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.errorMessage {
+  background: #f8d7da;
+  color: #721c24;
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 15px;
+}
+
+.successMessage {
+  background: #d4edda;
+  color: #155724;
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 15px;
+}
+
+.loading {
+  text-align: center;
+  padding: 40px;
+  font-size: 18px;
+}
+
+.error {
+  text-align: center;
+  padding: 40px;
+  color: #dc3545;
+  font-size: 18px;
 }
