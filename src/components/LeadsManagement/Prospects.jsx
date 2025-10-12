@@ -1929,7 +1929,6 @@ const Prospects = () => {
                                             disabled={currentPage === 1}
                                             className={styles.paginationButton}
                                         >
-                                            <FiChevronLeft size={16} />
                                             Previous
                                         </button>
                                         
@@ -1976,7 +1975,6 @@ const Prospects = () => {
                                             className={styles.paginationButton}
                                         >
                                             Next
-                                            <FiChevronRight size={16} />
                                         </button>
                                     </div>
                                 </div>
