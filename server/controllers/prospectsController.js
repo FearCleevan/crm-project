@@ -7,34 +7,48 @@ import { importQueue } from "../services/importQueue.js";
 export const getFilterOptions = async (req, res) => {
   let connection;
   try {
-    const { field, search } = req.query;
+    const { field, search, showAll } = req.query;
 
-    console.log('🔍 Filter options request received:', { field, search });
+    console.log("🔍 Filter options request received:", {
+      field,
+      search,
+      showAll,
+    });
 
     const validFields = [
-      'Jobtitle', 'Industry', 'Department', 'Seniority', 
-      'Fullname', 'Firstname', 'Lastname', 'Company', 
-      'State', 'Country', 'Email'
+      "Jobtitle",
+      "Industry",
+      "Department",
+      "Seniority",
+      "Fullname",
+      "Firstname",
+      "Lastname",
+      "Company",
+      "State",
+      "Country",
+      "Email",
     ];
 
     if (!validFields.includes(field)) {
-      console.log('❌ Invalid field requested:', field);
+      console.log("❌ Invalid field requested:", field);
       return res.status(400).json({
         success: false,
-        error: `Invalid field specified. Valid fields: ${validFields.join(', ')}`
+        error: `Invalid field specified. Valid fields: ${validFields.join(
+          ", "
+        )}`,
       });
     }
 
     // Get database connection
     connection = await pool.getConnection();
-    
+
     let query;
     let params = [];
 
-    console.log('📊 Building query for field:', field);
+    console.log("📊 Building query for field:", field);
 
     // Special handling for Industry field
-    if (field === 'Industry') {
+    if (field === "Industry") {
       query = `
         SELECT DISTINCT 
           COALESCE(pi.IndustryName, p.Industry) as value 
@@ -44,16 +58,23 @@ export const getFilterOptions = async (req, res) => {
         AND (pi.IndustryName IS NOT NULL OR p.Industry IS NOT NULL)
         AND (pi.IndustryName != '' OR p.Industry != '')
       `;
-      
-      if (search && search.trim() !== '') {
+
+      if (search && search.trim() !== "" && !showAll) {
         query += ` AND (pi.IndustryName LIKE ? OR p.Industry LIKE ?)`;
         params.push(`%${search}%`, `%${search}%`);
       }
-      
-      query += ` ORDER BY value LIMIT 50`;
-    } 
+
+      query += ` ORDER BY value`;
+
+      // Increase limit for showAll
+      if (showAll) {
+        query += ` LIMIT 1000`;
+      } else {
+        query += ` LIMIT 50`;
+      }
+    }
     // Special handling for other fields that might be codes
-    else if (field === 'Department' || field === 'Seniority') {
+    else if (field === "Department" || field === "Seniority") {
       query = `
         SELECT DISTINCT ${field} as value 
         FROM prospects 
@@ -61,13 +82,19 @@ export const getFilterOptions = async (req, res) => {
         AND ${field} IS NOT NULL 
         AND ${field} != ''
       `;
-      
-      if (search && search.trim() !== '') {
+
+      if (search && search.trim() !== "" && !showAll) {
         query += ` AND ${field} LIKE ?`;
         params.push(`%${search}%`);
       }
-      
-      query += ` ORDER BY ${field} LIMIT 50`;
+
+      query += ` ORDER BY ${field}`;
+
+      if (showAll) {
+        query += ` LIMIT 1000`;
+      } else {
+        query += ` LIMIT 50`;
+      }
     }
     // For all other text fields
     else {
@@ -78,64 +105,59 @@ export const getFilterOptions = async (req, res) => {
         AND ${field} IS NOT NULL 
         AND ${field} != ''
       `;
-      
-      if (search && search.trim() !== '') {
+
+      if (search && search.trim() !== "" && !showAll) {
         query += ` AND ${field} LIKE ?`;
         params.push(`%${search}%`);
       }
-      
-      query += ` ORDER BY ${field} LIMIT 50`;
+
+      query += ` ORDER BY ${field}`;
+
+      if (showAll) {
+        query += ` LIMIT 1000`;
+      } else {
+        query += ` LIMIT 50`;
+      }
     }
 
-    console.log('🚀 Executing query:', query);
-    console.log('📋 Query parameters:', params);
+    console.log("🚀 Executing query:", query);
+    console.log("📋 Query parameters:", params);
 
     const [results] = await connection.query(query, params);
-    
-    console.log('✅ Query successful, results count:', results.length);
+
+    console.log("✅ Query successful, results count:", results.length);
 
     // Process results
     const options = results
-      .map(row => {
+      .map((row) => {
         const value = row.value;
-        return value && typeof value === 'string' ? value.trim() : value;
+        return value && typeof value === "string" ? value.trim() : value;
       })
-      .filter(value => value && value !== '')
-      .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+      .filter((value) => value && value !== "")
+      .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
 
-    console.log('🎯 Final options count:', options.length);
-    console.log('📝 Options preview:', options.slice(0, 5));
+    console.log("🎯 Final options count:", options.length);
 
     res.json({
       success: true,
       options,
       count: options.length,
       field,
-      searchTerm: search
+      searchTerm: search,
+      showAll: !!showAll,
     });
-
   } catch (error) {
-    console.error('💥 Get filter options error:', error);
-    
-    // More detailed error information
-    const errorInfo = {
-      message: error.message,
-      code: error.code,
-      sqlMessage: error.sqlMessage,
-      sqlState: error.sqlState
-    };
-    
-    console.error('🔧 Error details:', errorInfo);
+    console.error("💥 Get filter options error:", error);
 
     res.status(500).json({
       success: false,
-      error: 'Internal server error while fetching filter options',
-      details: process.env.NODE_ENV === 'development' ? errorInfo : undefined
+      error: "Internal server error while fetching filter options",
+      details:
+        process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   } finally {
     if (connection) {
       connection.release();
-      console.log('🔗 Database connection released');
     }
   }
 };
@@ -143,23 +165,27 @@ export const getFilterOptions = async (req, res) => {
 // Test function to debug database connection and data
 export const debugFilterOptions = async (req, res) => {
   try {
-    const { field = 'Industry', search = '' } = req.query;
-    
-    console.log('🐛 DEBUG: Checking database state for field:', field);
-    
+    const { field = "Industry", search = "" } = req.query;
+
+    console.log("🐛 DEBUG: Checking database state for field:", field);
+
     const connection = await pool.getConnection();
-    
+
     // Check if prospects table has data
-    const [prospectCount] = await connection.query('SELECT COUNT(*) as count FROM prospects WHERE isactive = 1');
-    console.log('📊 Total active prospects:', prospectCount[0].count);
-    
+    const [prospectCount] = await connection.query(
+      "SELECT COUNT(*) as count FROM prospects WHERE isactive = 1"
+    );
+    console.log("📊 Total active prospects:", prospectCount[0].count);
+
     // Check if industry table has data
-    const [industryData] = await connection.query('SELECT * FROM prospects_industry LIMIT 5');
-    console.log('🏭 Industry table sample:', industryData);
-    
+    const [industryData] = await connection.query(
+      "SELECT * FROM prospects_industry LIMIT 5"
+    );
+    console.log("🏭 Industry table sample:", industryData);
+
     // Check distinct values for the requested field
     let distinctQuery;
-    if (field === 'Industry') {
+    if (field === "Industry") {
       distinctQuery = `
         SELECT DISTINCT p.Industry as industry_code, pi.IndustryName as industry_name
         FROM prospects p
@@ -175,12 +201,12 @@ export const debugFilterOptions = async (req, res) => {
         LIMIT 10
       `;
     }
-    
+
     const [distinctValues] = await connection.query(distinctQuery);
     console.log(`🔍 Distinct ${field} values:`, distinctValues);
-    
+
     connection.release();
-    
+
     res.json({
       success: true,
       debug: {
@@ -188,21 +214,21 @@ export const debugFilterOptions = async (req, res) => {
         industrySample: industryData,
         distinctValues: distinctValues,
         field: field,
-        search: search
-      }
+        search: search,
+      },
     });
-    
   } catch (error) {
-    console.error('💥 Debug error:', error);
+    console.error("💥 Debug error:", error);
     res.status(500).json({
       success: false,
-      error: 'Debug failed: ' + error.message
+      error: "Debug failed: " + error.message,
     });
   }
 };
 
 // Get all prospects with optional filtering
 export const getProspects = async (req, res) => {
+  let connection;
   try {
     const {
       page = 1,
@@ -227,6 +253,8 @@ export const getProspects = async (req, res) => {
       country,
       email,
     } = req.query;
+
+    connection = await pool.getConnection();
 
     let query = `
       SELECT p.*, 
@@ -261,18 +289,21 @@ export const getProspects = async (req, res) => {
     // Apply advanced filters
     const applyArrayFilter = (field, values, isIndustry = false) => {
       if (values && values.length > 0) {
-        const placeholders = values.map(() => "?").join(",");
-        if (isIndustry) {
-          query += ` AND pi.IndustryName IN (${placeholders})`;
-          countQuery += ` AND pi.IndustryName IN (${placeholders})`;
-        } else {
-          query += ` AND p.${field} IN (${placeholders})`;
-          countQuery += ` AND p.${field} IN (${placeholders})`;
+        const valueArray = Array.isArray(values) ? values : values.split(",");
+        if (valueArray.length > 0) {
+          const placeholders = valueArray.map(() => "?").join(",");
+          if (isIndustry) {
+            query += ` AND pi.IndustryName IN (${placeholders})`;
+            countQuery += ` AND pi.IndustryName IN (${placeholders})`;
+          } else {
+            query += ` AND p.${field} IN (${placeholders})`;
+            countQuery += ` AND p.${field} IN (${placeholders})`;
+          }
+          valueArray.forEach((val) => {
+            queryParams.push(val);
+            countParams.push(val);
+          });
         }
-        values.forEach((val) => {
-          queryParams.push(val);
-          countParams.push(val);
-        });
       }
     };
 
@@ -306,10 +337,10 @@ export const getProspects = async (req, res) => {
     };
 
     // Apply all filters
-    applyArrayFilter("Jobtitle", jobTitles?.split(","));
-    applyArrayFilter("Industry", industries?.split(","), true);
-    applyArrayFilter("Department", departments?.split(","));
-    applyArrayFilter("Seniority", seniorities?.split(","));
+    applyArrayFilter("Jobtitle", jobTitles);
+    applyArrayFilter("Industry", industries, true);
+    applyArrayFilter("Department", departments);
+    applyArrayFilter("Seniority", seniorities);
 
     applyRangeFilter("Employeesize", employeeSizeMin, employeeSizeMax);
     applyRangeFilter("Annualrevenue", annualRevenueMin, annualRevenueMax);
@@ -345,10 +376,18 @@ export const getProspects = async (req, res) => {
     query += ` LIMIT ? OFFSET ?`;
     queryParams.push(parseInt(limit), offset);
 
+    console.log("🔍 Prospects query:", query);
+    console.log("📋 Query params:", queryParams);
+    console.log("🔢 Count query:", countQuery);
+    console.log("📋 Count params:", countParams);
+
     // Execute queries
-    const [prospects] = await pool.query(query, queryParams);
-    const [countResult] = await pool.query(countQuery, countParams);
+    const [prospects] = await connection.query(query, queryParams);
+    const [countResult] = await connection.query(countQuery, countParams);
     const total = countResult[0]?.total || 0;
+
+    console.log("✅ Found prospects:", prospects.length);
+    console.log("✅ Total count:", total);
 
     res.json({
       success: true,
@@ -366,6 +405,10 @@ export const getProspects = async (req, res) => {
       success: false,
       error: "Internal server error: " + error.message,
     });
+  } finally {
+    if (connection) {
+      connection.release();
+    }
   }
 };
 

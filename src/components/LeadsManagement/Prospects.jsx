@@ -17,7 +17,8 @@ import {
     FiChevronLeft,
     FiChevronRight,
     FiCheck,
-    FiXCircle
+    FiXCircle,
+    FiList
 } from 'react-icons/fi';
 import { FiCheckSquare, FiSquare } from 'react-icons/fi';
 import AddNewProspects from './Modals/AddNewProspects';
@@ -53,7 +54,7 @@ const FilterAccordion = ({ title, children, isOpen, onToggle, id }) => {
     );
 };
 
-// Enhanced SearchableDropdown Component
+// Enhanced SearchableDropdown Component with Show All option
 const SearchableDropdown = ({ 
     field, 
     selectedValues, 
@@ -66,6 +67,7 @@ const SearchableDropdown = ({
     const [isOpen, setIsOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [showAllMode, setShowAllMode] = useState(false);
     const dropdownRef = useRef(null);
 
     // Close dropdown when clicking outside
@@ -74,6 +76,7 @@ const SearchableDropdown = ({
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
                 setIsOpen(false);
                 setError(null);
+                setShowAllMode(false);
             }
         };
 
@@ -83,40 +86,29 @@ const SearchableDropdown = ({
         };
     }, []);
 
-    const fetchSuggestions = useCallback(async (search) => {
-        if (!search.trim()) {
-            setSuggestions([]);
-            setError(null);
-            return;
-        }
-
+    const fetchSuggestions = useCallback(async (search, showAll = false) => {
         setLoading(true);
         setError(null);
         
         try {
-            console.log(`🔍 Fetching suggestions for ${field}:`, search);
-            
             const token = localStorage.getItem('token');
-            const response = await fetch(
-                `/api/prospects/filter/options?field=${encodeURIComponent(field)}&search=${encodeURIComponent(search)}`,
-                {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                }
-            );
+            const url = showAll 
+                ? `/api/prospects/filter/options?field=${encodeURIComponent(field)}&showAll=true`
+                : `/api/prospects/filter/options?field=${encodeURIComponent(field)}&search=${encodeURIComponent(search || '')}`;
 
-            console.log('📡 Response status:', response.status);
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
 
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error('❌ Server error response:', errorText);
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
 
             const data = await response.json();
-            console.log('✅ Response data:', data);
 
             if (data.success) {
                 // Filter out already selected values and empty/null values
@@ -127,13 +119,15 @@ const SearchableDropdown = ({
                         !selectedValues.includes(option)
                     );
                 
-                console.log(`🎯 Filtered suggestions for ${field}:`, filteredSuggestions);
                 setSuggestions(filteredSuggestions);
+                if (showAll) {
+                    setShowAllMode(true);
+                }
             } else {
                 throw new Error(data.error || 'Failed to fetch suggestions from server');
             }
         } catch (error) {
-            console.error(`💥 Error fetching ${field} suggestions:`, error);
+            console.error(`Error fetching ${field} suggestions:`, error);
             setError(error.message);
             setSuggestions([]);
         } finally {
@@ -141,22 +135,20 @@ const SearchableDropdown = ({
         }
     }, [field, selectedValues]);
 
-    // Debounced search
+    // Debounced search - FIXED: Only fetch when search term changes, not on every render
     useEffect(() => {
+        if (!isOpen) return;
+
         const delayDebounceFn = setTimeout(() => {
-            if (searchTerm.trim() && isOpen) {
+            if (searchTerm.trim() || searchTerm === '') {
                 fetchSuggestions(searchTerm);
-            } else {
-                setSuggestions([]);
-                setError(null);
             }
-        }, 300);
+        }, 500);
 
         return () => clearTimeout(delayDebounceFn);
-    }, [searchTerm, isOpen, fetchSuggestions]);
+    }, [searchTerm, isOpen]); // Removed fetchSuggestions from dependencies
 
     const handleSelect = (value) => {
-        console.log(`✅ Selected ${field}:`, value);
         if (!selectedValues.includes(value)) {
             onSelectionChange([...selectedValues, value]);
         }
@@ -164,30 +156,27 @@ const SearchableDropdown = ({
         setSuggestions([]);
         setError(null);
         setIsOpen(false);
+        setShowAllMode(false);
     };
 
     const handleRemove = (valueToRemove) => {
-        console.log(`❌ Removing ${field}:`, valueToRemove);
         onSelectionChange(selectedValues.filter(value => value !== valueToRemove));
     };
 
     const handleInputFocus = () => {
-        console.log(`👁️ Input focused for ${field}`);
         setIsOpen(true);
         setError(null);
-        if (searchTerm.trim()) {
-            fetchSuggestions(searchTerm);
+        // Load initial suggestions when focusing
+        if (!searchTerm.trim()) {
+            fetchSuggestions('');
         }
     };
 
     const handleInputChange = (e) => {
         const value = e.target.value;
-        console.log(`⌨️ Input changed for ${field}:`, value);
         setSearchTerm(value);
         setError(null);
-        if (value.trim()) {
-            setIsOpen(true);
-        }
+        setShowAllMode(false);
     };
 
     const handleInputKeyDown = (e) => {
@@ -197,6 +186,7 @@ const SearchableDropdown = ({
         } else if (e.key === 'Escape') {
             setIsOpen(false);
             setError(null);
+            setShowAllMode(false);
         }
     };
 
@@ -204,12 +194,20 @@ const SearchableDropdown = ({
         setSearchTerm('');
         setSuggestions([]);
         setError(null);
-        setIsOpen(false);
+        setShowAllMode(false);
+    };
+
+    const showAllOptions = () => {
+        fetchSuggestions('', true);
+    };
+
+    const clearAllSelections = () => {
+        onSelectionChange([]);
     };
 
     return (
         <div className={styles.searchableDropdown} ref={dropdownRef}>
-            {/* Selected Tags */}
+            {/* Selected Tags with Clear All */}
             <div className={styles.selectedTags}>
                 {selectedValues.map(value => (
                     <span key={value} className={styles.selectedTag}>
@@ -225,6 +223,16 @@ const SearchableDropdown = ({
                         </button>
                     </span>
                 ))}
+                {selectedValues.length > 0 && (
+                    <button
+                        type="button"
+                        onClick={clearAllSelections}
+                        className={styles.clearAllButton}
+                        title="Clear all selections"
+                    >
+                        Clear All
+                    </button>
+                )}
             </div>
 
             {/* Search Input */}
@@ -251,6 +259,15 @@ const SearchableDropdown = ({
                     </button>
                 )}
 
+                {/* Show All Button */}
+                <button
+                    type="button"
+                    onClick={showAllOptions}
+                    className={styles.showAllButton}
+                    title="Show all options"
+                >
+                </button>
+
                 {/* Suggestions Dropdown */}
                 {isOpen && (
                     <div className={styles.suggestionsDropdown}>
@@ -262,12 +279,15 @@ const SearchableDropdown = ({
                         ) : loading ? (
                             <div className={styles.suggestionLoading}>
                                 <div className={styles.loadingSpinner}></div>
-                                <span>Searching...</span>
+                                <span>{showAllMode ? 'Loading all options...' : 'Searching...'}</span>
                             </div>
                         ) : suggestions.length > 0 ? (
                             <>
                                 <div className={styles.suggestionHeader}>
-                                    Found {suggestions.length} results
+                                    {showAllMode 
+                                        ? `All ${suggestions.length} options` 
+                                        : `Found ${suggestions.length} results`
+                                    }
                                 </div>
                                 {suggestions.map(suggestion => (
                                     <div
@@ -279,7 +299,7 @@ const SearchableDropdown = ({
                                     </div>
                                 ))}
                             </>
-                        ) : searchTerm.trim() ? (
+                        ) : searchTerm.trim() && !showAllMode ? (
                             <div className={styles.suggestionEmpty}>
                                 No results found for "{searchTerm}"
                             </div>
@@ -392,6 +412,10 @@ const Prospects = () => {
         count: 0
     });
 
+    // FIXED: Use ref to track if we should fetch data
+    const shouldFetchRef = useRef(false);
+    const searchTimeoutRef = useRef(null);
+
     // Persist state to localStorage
     useEffect(() => {
         localStorage.setItem('prospects_currentPage', currentPage.toString());
@@ -442,6 +466,7 @@ const Prospects = () => {
             ...prev,
             [field]: value
         }));
+        shouldFetchRef.current = true;
     };
 
     const handleArrayFilterChange = (field, values) => {
@@ -449,12 +474,13 @@ const Prospects = () => {
             ...prev,
             [field]: values
         }));
+        shouldFetchRef.current = true;
     };
 
-    // Enhanced fetch prospects with comprehensive filtering
-    const fetchProspects = useCallback(async () => {
-        // Don't fetch if no filters are active
-        if (!isFilterActive) {
+    // FIXED: Enhanced fetch prospects with proper dependency management
+    const fetchProspects = useCallback(async (page = currentPage, limit = itemsPerPage, search = searchTerm) => {
+        // Don't fetch if no filters are active and we're not showing all
+        if (!isFilterActive && !shouldFetchRef.current) {
             setLeads([]);
             setLoading(false);
             return;
@@ -466,9 +492,9 @@ const Prospects = () => {
 
             // Build query parameters with all filters
             const params = new URLSearchParams({
-                page: currentPage,
-                limit: itemsPerPage,
-                ...(searchTerm && { search: searchTerm }),
+                page: page.toString(),
+                limit: limit.toString(),
+                ...(search && { search: search }),
                 ...(filterValues.jobTitles.length > 0 && { jobTitles: filterValues.jobTitles.join(',') }),
                 ...(filterValues.industries.length > 0 && { industries: filterValues.industries.join(',') }),
                 ...(filterValues.departments.length > 0 && { departments: filterValues.departments.join(',') }),
@@ -485,6 +511,8 @@ const Prospects = () => {
                 ...(filterValues.country && { country: filterValues.country }),
                 ...(filterValues.email && { email: filterValues.email })
             });
+
+            console.log('🔍 Fetching prospects with params:', params.toString());
 
             const response = await fetch(`/api/prospects?${params}`, {
                 headers: {
@@ -508,6 +536,10 @@ const Prospects = () => {
 
             if (data.success) {
                 setLeads(data.prospects || []);
+                // Update pagination info from backend
+                if (data.pagination) {
+                    // You might want to sync pagination state with backend response
+                }
             } else {
                 throw new Error(data.error || 'Failed to fetch prospects');
             }
@@ -516,8 +548,38 @@ const Prospects = () => {
             showNotification('Failed to load prospects: ' + error.message, 'error');
         } finally {
             setLoading(false);
+            shouldFetchRef.current = false;
         }
-    }, [isFilterActive, currentPage, itemsPerPage, searchTerm, filterValues]);
+    }, [isFilterActive, filterValues]); // FIXED: Removed dependencies that cause re-renders
+
+    // FIXED: Optimized useEffect for fetching prospects
+    useEffect(() => {
+        // Debounce the search to prevent excessive API calls
+        if (searchTimeoutRef.current) {
+            clearTimeout(searchTimeoutRef.current);
+        }
+
+        searchTimeoutRef.current = setTimeout(() => {
+            fetchProspects(1, itemsPerPage, searchTerm);
+        }, 800);
+
+        return () => {
+            if (searchTimeoutRef.current) {
+                clearTimeout(searchTimeoutRef.current);
+            }
+        };
+    }, [searchTerm, fetchProspects, itemsPerPage]);
+
+    // Fetch when filters change (with debounce)
+    useEffect(() => {
+        if (shouldFetchRef.current) {
+            const timeoutId = setTimeout(() => {
+                fetchProspects(1, itemsPerPage, searchTerm);
+            }, 500);
+
+            return () => clearTimeout(timeoutId);
+        }
+    }, [filterValues, fetchProspects, itemsPerPage, searchTerm]);
 
     // Fetch lookup data
     const fetchLookupData = async () => {
@@ -550,14 +612,11 @@ const Prospects = () => {
         fetchLookupData();
     }, []);
 
-    useEffect(() => {
-        fetchProspects();
-    }, [fetchProspects]);
-
     // Handle search with filters
     const handleFilterSearch = () => {
         setCurrentPage(1);
-        fetchProspects();
+        shouldFetchRef.current = true;
+        fetchProspects(1, itemsPerPage, searchTerm);
     };
 
     // Clear all filters
@@ -587,167 +646,12 @@ const Prospects = () => {
         });
         setOpenAccordions({});
         setCurrentPage(1);
+        setSearchTerm('');
+        setLeads([]);
+        shouldFetchRef.current = false;
     };
 
-    // Filter leads based on search and filters
-    const filteredLeads = useMemo(() => {
-        return leads.filter(lead => {
-            const matchesSearch = searchTerm === '' ||
-                (lead.Fullname && lead.Fullname.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                (lead.Jobtitle && lead.Jobtitle.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                (lead.Company && lead.Company.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                (lead.Email && lead.Email.toLowerCase().includes(searchTerm.toLowerCase()));
-
-            return matchesSearch;
-        });
-    }, [leads, searchTerm]);
-
-    const getIndustryName = (industryCode) => {
-        const industry = lookupData.industries?.find(ind => ind.IndustryCode === industryCode);
-        return industry ? industry.IndustryName : industryCode;
-    };
-
-    // Sort leads
-    const sortedLeads = useMemo(() => {
-        if (!sortConfig.key) return filteredLeads;
-
-        return [...filteredLeads].sort((a, b) => {
-            const aValue = a[sortConfig.key] || '';
-            const bValue = b[sortConfig.key] || '';
-
-            if (aValue < bValue) {
-                return sortConfig.direction === 'ascending' ? -1 : 1;
-            }
-            if (aValue > bValue) {
-                return sortConfig.direction === 'ascending' ? 1 : -1;
-            }
-            return 0;
-        });
-    }, [filteredLeads, sortConfig]);
-
-    // Pagination
-    const currentLeads = useMemo(() => {
-        const indexOfLastItem = currentPage * itemsPerPage;
-        const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-        return sortedLeads.slice(indexOfFirstItem, indexOfLastItem);
-    }, [currentPage, itemsPerPage, sortedLeads]);
-
-    const totalPages = Math.ceil(sortedLeads.length / itemsPerPage);
-
-    // Handlers
-    const handleSort = (key) => {
-        let direction = 'ascending';
-        if (sortConfig.key === key && sortConfig.direction === 'ascending') {
-            direction = 'descending';
-        }
-        setSortConfig({ key, direction });
-    };
-
-    const handleSelectAll = (e) => {
-        if (e.target.checked) {
-            setSelectedLeads(currentLeads.map(lead => lead.id));
-        } else {
-            setSelectedLeads([]);
-        }
-    };
-
-    const handleSelectLead = (leadId) => {
-        setSelectedLeads(prev =>
-            prev.includes(leadId)
-                ? prev.filter(id => id !== leadId)
-                : [...prev, leadId]
-        );
-    };
-
-    const handleBulkAction = async (action) => {
-        switch (action) {
-            case 'export':
-                exportToCSV(selectedLeads);
-                break;
-            case 'delete':
-                setConfirmationModal({
-                    show: true,
-                    action: 'delete',
-                    message: `Are you sure you want to delete ${selectedLeads.length} leads?`,
-                    count: selectedLeads.length
-                });
-                break;
-            case 'archive':
-                showNotification('Archive functionality not implemented yet', 'info');
-                break;
-            default:
-                break;
-        }
-        setShowBulkActionPopup(false);
-    };
-
-    // Add this function to handle the confirmed action
-    const handleConfirmedAction = async () => {
-        if (confirmationModal.action === 'delete') {
-            try {
-                const response = await fetch('/api/prospects/bulk-delete', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    },
-                    body: JSON.stringify({ ids: selectedLeads })
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    showNotification(`${data.message}`, 'success');
-                    fetchProspects(); // Refresh the list
-                    setSelectedLeads([]);
-                } else {
-                    throw new Error(data.error);
-                }
-            } catch (error) {
-                console.error('Bulk delete error:', error);
-                showNotification('Failed to delete prospects', 'error');
-            }
-        }
-
-        setConfirmationModal({ show: false, action: null, message: '', count: 0 });
-    };
-
-    // Update the exportToCSV function to use the backend
-    const exportToCSV = async (leadIds = []) => {
-        try {
-            const token = localStorage.getItem('token');
-            const url = leadIds.length > 0
-                ? `/api/prospects/export/csv?ids=${leadIds.join(',')}`
-                : '/api/prospects/export/csv';
-
-            const response = await fetch(url, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (response.ok) {
-                const blob = await response.blob();
-                const downloadUrl = window.URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = downloadUrl;
-                link.setAttribute('download', `prospects_export_${new Date().toISOString().split('T')[0]}.csv`);
-                document.body.appendChild(link);
-                link.click();
-                link.remove();
-                showNotification(`Exported ${leadIds.length || filteredLeads.length} prospects successfully`, 'success');
-            } else {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Export failed');
-            }
-        } catch (error) {
-            console.error('Export error:', error);
-            showNotification(error.message || 'Failed to export prospects', 'error');
-        }
-    };
-
-    // Update the handleImport function in Prospects.jsx
-    const handleImport = async (e) => {
+     const handleImport = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
@@ -906,143 +810,150 @@ const Prospects = () => {
         e.target.value = '';
     };
 
-    // Add polling function
-    const pollImportProgress = async (sessionId, attempt = 0) => {
-        const maxAttempts = 15; // Increased maximum polling attempts
-        const baseDelay = 2000; // Base delay in ms
-        const maxDelay = 30000; // Maximum delay in ms
+    // Filter leads based on search and filters - FIXED: Use backend filtering instead
+    const filteredLeads = useMemo(() => {
+        return leads;
+    }, [leads]);
 
+    const getIndustryName = (industryCode) => {
+        const industry = lookupData.industries?.find(ind => ind.IndustryCode === industryCode);
+        return industry ? industry.IndustryName : industryCode;
+    };
+
+    // Sort leads - FIXED: Client-side sorting as fallback
+    const sortedLeads = useMemo(() => {
+        if (!sortConfig.key) return filteredLeads;
+
+        return [...filteredLeads].sort((a, b) => {
+            const aValue = a[sortConfig.key] || '';
+            const bValue = b[sortConfig.key] || '';
+
+            if (aValue < bValue) {
+                return sortConfig.direction === 'ascending' ? -1 : 1;
+            }
+            if (aValue > bValue) {
+                return sortConfig.direction === 'ascending' ? 1 : -1;
+            }
+            return 0;
+        });
+    }, [filteredLeads, sortConfig]);
+
+    // Pagination - FIXED: Use actual data from backend
+    const currentLeads = useMemo(() => {
+        return sortedLeads;
+    }, [sortedLeads]);
+
+    const totalPages = Math.ceil(sortedLeads.length / itemsPerPage);
+
+    // Handlers
+    const handleSort = (key) => {
+        let direction = 'ascending';
+        if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+            direction = 'descending';
+        }
+        setSortConfig({ key, direction });
+    };
+
+    const handleSelectAll = (e) => {
+        if (e.target.checked) {
+            setSelectedLeads(currentLeads.map(lead => lead.id));
+        } else {
+            setSelectedLeads([]);
+        }
+    };
+
+    const handleSelectLead = (leadId) => {
+        setSelectedLeads(prev =>
+            prev.includes(leadId)
+                ? prev.filter(id => id !== leadId)
+                : [...prev, leadId]
+        );
+    };
+
+    const handleBulkAction = async (action) => {
+        switch (action) {
+            case 'export':
+                exportToCSV(selectedLeads);
+                break;
+            case 'delete':
+                setConfirmationModal({
+                    show: true,
+                    action: 'delete',
+                    message: `Are you sure you want to delete ${selectedLeads.length} leads?`,
+                    count: selectedLeads.length
+                });
+                break;
+            case 'archive':
+                showNotification('Archive functionality not implemented yet', 'info');
+                break;
+            default:
+                break;
+        }
+        setShowBulkActionPopup(false);
+    };
+
+    // Add this function to handle the confirmed action
+    const handleConfirmedAction = async () => {
+        if (confirmationModal.action === 'delete') {
+            try {
+                const response = await fetch('/api/prospects/bulk-delete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify({ ids: selectedLeads })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showNotification(`${data.message}`, 'success');
+                    fetchProspects(); // Refresh the list
+                    setSelectedLeads([]);
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                console.error('Bulk delete error:', error);
+                showNotification('Failed to delete prospects', 'error');
+            }
+        }
+
+        setConfirmationModal({ show: false, action: null, message: '', count: 0 });
+    };
+
+    // Update the exportToCSV function to use the backend
+    const exportToCSV = async (leadIds = []) => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`/api/prospects/import/progress/${sessionId}`, {
+            const url = leadIds.length > 0
+                ? `/api/prospects/export/csv?ids=${leadIds.join(',')}`
+                : '/api/prospects/export/csv';
+
+            const response = await fetch(url, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
             });
 
-            if (!response.ok) {
-                // Handle 500 errors specifically
-                if (response.status === 500) {
-                    console.warn('Progress endpoint returned 500, will retry...');
-                    // Don't throw error, just retry
-                } else {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
+            if (response.ok) {
+                const blob = await response.blob();
+                const downloadUrl = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = downloadUrl;
+                link.setAttribute('download', `prospects_export_${new Date().toISOString().split('T')[0]}.csv`);
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                showNotification(`Exported ${leadIds.length || filteredLeads.length} prospects successfully`, 'success');
             } else {
-                const data = await response.json();
-
-                if (data.success) {
-                    const progress = data.progress;
-
-                    setImportProcessing(prev => ({
-                        ...prev,
-                        stats: {
-                            ...prev.stats,
-                            stage: progress.status === 'completed' ? 'completed' : 'processing',
-                            insertedRows: progress.successfulImports,
-                            errorCount: progress.failedImports,
-                            logs: [
-                                ...prev.stats.logs.filter(log =>
-                                    !log.message.includes('Processing chunk') &&
-                                    !log.message.includes('Progress update') &&
-                                    !log.message.includes('Retrying')
-                                ),
-                                ...(progress.status === 'processing' ? [{
-                                    type: 'info',
-                                    message: `Processing chunk ${progress.processedChunks}/${progress.totalChunks} (${progress.progressPercentage}%)`,
-                                    timestamp: new Date()
-                                }] : [])
-                            ].slice(-100),
-                            errors: progress.chunkErrors || []
-                        }
-                    }));
-
-                    if (progress.status === 'completed') {
-                        // Add completion log
-                        setImportProcessing(prev => ({
-                            ...prev,
-                            stats: {
-                                ...prev.stats,
-                                logs: [
-                                    ...prev.stats.logs,
-                                    {
-                                        type: 'success',
-                                        message: `Import completed! ${progress.successfulImports} prospects imported successfully, ${progress.failedImports} failed.`,
-                                        timestamp: new Date()
-                                    }
-                                ]
-                            }
-                        }));
-
-                        // Auto-close after 5 seconds if successful
-                        setTimeout(() => {
-                            setImportProcessing({ isOpen: false, stats: null });
-                            fetchProspects(); // Refresh the list
-                            showNotification(`Imported ${progress.successfulImports} prospects successfully`, 'success');
-                        }, 5000);
-
-                        return; // Stop polling
-                    }
-                } else {
-                    throw new Error(data.error || 'Failed to check progress');
-                }
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Export failed');
             }
-
-            // Continue polling if not completed and within attempt limits
-            if (attempt < maxAttempts) {
-                const delay = Math.min(baseDelay * Math.pow(1.5, attempt) + Math.random() * 1000, maxDelay);
-
-                // Add retry log
-                setImportProcessing(prev => ({
-                    ...prev,
-                    stats: {
-                        ...prev.stats,
-                        logs: [
-                            ...prev.stats.logs,
-                            {
-                                type: 'info',
-                                message: `Retrying progress check... (attempt ${attempt + 1}/${maxAttempts})`,
-                                timestamp: new Date()
-                            }
-                        ].slice(-100)
-                    }
-                }));
-
-                setTimeout(() => pollImportProgress(sessionId, attempt + 1), delay);
-            } else {
-                throw new Error('Progress polling timeout - import may still be processing in background');
-            }
-
         } catch (error) {
-            console.error('Progress polling error:', error);
-
-            if (attempt < maxAttempts) {
-                const delay = Math.min(baseDelay * Math.pow(2, attempt) + Math.random() * 1000, maxDelay);
-                setTimeout(() => pollImportProgress(sessionId, attempt + 1), delay);
-            } else {
-                setImportProcessing(prev => ({
-                    ...prev,
-                    stats: {
-                        ...prev.stats,
-                        stage: 'completed',
-                        logs: [
-                            ...prev.stats.logs,
-                            {
-                                type: 'warning',
-                                message: 'Unable to track progress, but import may still be processing in background.',
-                                timestamp: new Date()
-                            }
-                        ]
-                    }
-                }));
-
-                // Auto-close after 10 seconds
-                setTimeout(() => {
-                    setImportProcessing({ isOpen: false, stats: null });
-                    fetchProspects(); // Refresh the list anyway
-                    showNotification('Import processing completed (progress tracking failed)', 'warning');
-                }, 10000);
-            }
+            console.error('Export error:', error);
+            showNotification(error.message || 'Failed to export prospects', 'error');
         }
     };
 
@@ -1120,16 +1031,37 @@ const Prospects = () => {
         }
     };
 
-    // Calculate pagination values
+    // Calculate pagination values - FIXED: Use actual data length
     const startItem = (currentPage - 1) * itemsPerPage + 1;
     const endItem = Math.min(currentPage * itemsPerPage, sortedLeads.length);
     const totalItems = sortedLeads.length;
 
-    // Generate page numbers array
+    // Generate page numbers array - FIXED: Proper pagination calculation
     const pageNumbers = [];
-    for (let i = 1; i <= totalPages; i++) {
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    
+    if (endPage - startPage + 1 < maxVisiblePages) {
+        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
         pageNumbers.push(i);
     }
+
+    // Handle page change
+    const handlePageChange = (newPage) => {
+        setCurrentPage(newPage);
+        fetchProspects(newPage, itemsPerPage, searchTerm);
+    };
+
+    // Handle items per page change
+    const handleItemsPerPageChange = (newItemsPerPage) => {
+        setItemsPerPage(newItemsPerPage);
+        setCurrentPage(1);
+        fetchProspects(1, newItemsPerPage, searchTerm);
+    };
 
     if (loading) {
         return (
@@ -1599,7 +1531,6 @@ const Prospects = () => {
                     {!isFilterActive && (
                         <div className={styles.noFilterMessage}>
                             <div className={styles.noFilterContent}>
-                                <FiFilter size={48} className={styles.noFilterIcon} />
                                 <h3>No Filters Applied</h3>
                                 <p>Please apply filters to see prospect data. Use the filter panel on the left to specify your search criteria.</p>
                                 <div className={styles.filterTips}>
@@ -1615,8 +1546,8 @@ const Prospects = () => {
                         </div>
                     )}
 
-                    {/* Table - Only show when filters are active */}
-                    {isFilterActive && (
+                    {/* Table - Only show when filters are active or when showing all */}
+                    {(isFilterActive || leads.length > 0) && (
                         <>
                             {/* Bulk Actions Popup */}
                             {selectedLeads.length > 0 && (
@@ -1974,7 +1905,7 @@ const Prospects = () => {
                                 </div>
                             </div>
 
-                            {/* Pagination - Only show when filters are active and data exists */}
+                            {/* Pagination - Show when there's data */}
                             {sortedLeads.length > 0 && (
                                 <div className={styles.pagination}>
                                     <div className={styles.paginationInfo}>
@@ -1983,10 +1914,7 @@ const Prospects = () => {
                                     <div className={styles.paginationControls}>
                                         <select
                                             value={itemsPerPage}
-                                            onChange={(e) => {
-                                                setItemsPerPage(Number(e.target.value));
-                                                setCurrentPage(1);
-                                            }}
+                                            onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
                                             className={styles.itemsPerPageSelect}
                                         >
                                             <option value={5}>5 per page</option>
@@ -1995,28 +1923,60 @@ const Prospects = () => {
                                             <option value={50}>50 per page</option>
                                             <option value={100}>100 per page</option>
                                         </select>
+                                        
                                         <button
-                                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                            onClick={() => handlePageChange(currentPage - 1)}
                                             disabled={currentPage === 1}
                                             className={styles.paginationButton}
                                         >
+                                            <FiChevronLeft size={16} />
                                             Previous
                                         </button>
+                                        
+                                        {/* First Page */}
+                                        {startPage > 1 && (
+                                            <>
+                                                <button
+                                                    onClick={() => handlePageChange(1)}
+                                                    className={styles.paginationButton}
+                                                >
+                                                    1
+                                                </button>
+                                                {startPage > 2 && <span className={styles.paginationEllipsis}>...</span>}
+                                            </>
+                                        )}
+                                        
+                                        {/* Page Numbers */}
                                         {pageNumbers.map(page => (
                                             <button
                                                 key={page}
-                                                onClick={() => setCurrentPage(page)}
+                                                onClick={() => handlePageChange(page)}
                                                 className={`${styles.paginationButton} ${currentPage === page ? styles.active : ''}`}
                                             >
                                                 {page}
                                             </button>
                                         ))}
+                                        
+                                        {/* Last Page */}
+                                        {endPage < totalPages && (
+                                            <>
+                                                {endPage < totalPages - 1 && <span className={styles.paginationEllipsis}>...</span>}
+                                                <button
+                                                    onClick={() => handlePageChange(totalPages)}
+                                                    className={styles.paginationButton}
+                                                >
+                                                    {totalPages}
+                                                </button>
+                                            </>
+                                        )}
+                                        
                                         <button
-                                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                            onClick={() => handlePageChange(currentPage + 1)}
                                             disabled={currentPage === totalPages}
                                             className={styles.paginationButton}
                                         >
                                             Next
+                                            <FiChevronRight size={16} />
                                         </button>
                                     </div>
                                 </div>
