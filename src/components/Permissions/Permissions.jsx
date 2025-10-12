@@ -28,7 +28,7 @@ const Permissions = () => {
         const token = localStorage.getItem('token');
         
         // Fetch users with permissions
-        const usersResponse = await fetch('http://localhost:5001/api/permissions/users', {
+        const usersResponse = await fetch('http://localhost:5000/api/permissions/users', {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -43,7 +43,7 @@ const Permissions = () => {
         const usersData = await usersResponse.json();
 
         // Fetch available roles
-        const rolesResponse = await fetch('http://localhost:5001/api/permissions/roles', {
+        const rolesResponse = await fetch('http://localhost:5000/api/permissions/roles', {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -179,7 +179,7 @@ const Permissions = () => {
         .filter(role => selectedRoles.includes(role.name))
         .map(role => role.id);
 
-      const response = await fetch(`http://localhost:5001/api/permissions/users/${selectedUser.id}/roles`, {
+      const response = await fetch(`http://localhost:5000/api/permissions/users/${selectedUser.id}/roles`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

@@ -229,6 +229,10 @@ export const getDashboardStatsWithTrends = async (req, res) => {
           CASE 
             WHEN Companyphonenumber IS NOT NULL AND Companyphonenumber != '' AND Companyphonenumber != '0' THEN 1 
             ELSE 0 
+          END +
+          CASE 
+            WHEN Altphonenumber IS NOT NULL AND Altphonenumber != '' AND Altphonenumber != '0' THEN 1 
+            ELSE 0 
           END
         ) as total_phones
        FROM prospects 

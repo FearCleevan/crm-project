@@ -147,7 +147,7 @@ const UserEditModal = ({ isOpen, onClose, user, onUserUpdated }) => {
         updateData.password = passwordData.password;
       }
 
-      const response = await fetch(`http://localhost:5001/api/users/${user.user_id}`, {
+      const response = await fetch(`http://localhost:5000/api/users/${user.user_id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

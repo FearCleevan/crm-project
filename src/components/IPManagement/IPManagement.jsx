@@ -24,13 +24,13 @@ const IPManagement = () => {
       const token = localStorage.getItem('token');
       
       const [settingsRes, whitelistRes, blacklistRes] = await Promise.all([
-        fetch('http://localhost:5001/api/ip-management/settings', {
+        fetch('http://localhost:5000/api/ip-management/settings', {
           headers: { 'Authorization': `Bearer ${token}` }
         }),
-        fetch('http://localhost:5001/api/ip-management/whitelist', {
+        fetch('http://localhost:5000/api/ip-management/whitelist', {
           headers: { 'Authorization': `Bearer ${token}` }
         }),
-        fetch('http://localhost:5001/api/ip-management/blacklist', {
+        fetch('http://localhost:5000/api/ip-management/blacklist', {
           headers: { 'Authorization': `Bearer ${token}` }
         })
       ]);
@@ -56,7 +56,7 @@ const IPManagement = () => {
   const updateMode = async (mode) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5001/api/ip-management/settings/mode', {
+      const response = await fetch('http://localhost:5000/api/ip-management/settings/mode', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -82,7 +82,7 @@ const IPManagement = () => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5001/api/ip-management/whitelist', {
+      const response = await fetch('http://localhost:5000/api/ip-management/whitelist', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -109,7 +109,7 @@ const IPManagement = () => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5001/api/ip-management/blacklist', {
+      const response = await fetch('http://localhost:5000/api/ip-management/blacklist', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -135,7 +135,7 @@ const IPManagement = () => {
   const updateListEntry = async (listType, id, data) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5001/api/ip-management/${listType}/${id}`, {
+      const response = await fetch(`http://localhost:5000/api/ip-management/${listType}/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

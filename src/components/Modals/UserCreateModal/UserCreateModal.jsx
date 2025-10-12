@@ -89,7 +89,7 @@ const UserCreateModal = ({ isOpen, onClose, onUserCreated }) => {
                 return;
             }
 
-            const response = await fetch('http://localhost:5001/api/users', {
+            const response = await fetch('http://localhost:5000/api/users', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,

@@ -22,7 +22,7 @@ const ViewUserModal = ({ isOpen, onClose, user, onEdit }) => {
       const token = localStorage.getItem('token');
       
       // Fetch user roles and permissions
-      const response = await fetch(`http://localhost:5001/api/permissions/users/${user.user_id}`, {
+      const response = await fetch(`http://localhost:5000/api/permissions/users/${user.user_id}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
