@@ -5,7 +5,6 @@ import {
     FiSettings,
     FiDownload,
     FiUpload,
-    FiMoreVertical,
     FiChevronUp,
     FiChevronDown,
     FiEye,
@@ -15,12 +14,8 @@ import {
     FiUser,
     FiX,
     FiChevronLeft,
-    FiChevronRight,
-    FiCheck,
-    FiXCircle,
-    FiList
+    FiXCircle
 } from 'react-icons/fi';
-import { FiCheckSquare, FiSquare } from 'react-icons/fi';
 import AddNewProspects from './Modals/AddNewProspects';
 import styles from './Prospects.module.css';
 import ImportProcessingModal from './ImportProcessingModal';
@@ -54,11 +49,10 @@ const FilterAccordion = ({ title, children, isOpen, onToggle, id }) => {
     );
 };
 
-// Enhanced SearchableDropdown Component with Show All option
-const SearchableDropdown = ({ 
-    field, 
-    selectedValues, 
-    onSelectionChange, 
+const SearchableDropdown = ({
+    field,
+    selectedValues,
+    onSelectionChange,
     placeholder = "Type to search...",
     disabled = false
 }) => {
@@ -67,16 +61,13 @@ const SearchableDropdown = ({
     const [isOpen, setIsOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [showAllMode, setShowAllMode] = useState(false);
     const dropdownRef = useRef(null);
 
-    // Close dropdown when clicking outside
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
                 setIsOpen(false);
                 setError(null);
-                setShowAllMode(false);
             }
         };
 
@@ -86,45 +77,38 @@ const SearchableDropdown = ({
         };
     }, []);
 
-    const fetchSuggestions = useCallback(async (search, showAll = false) => {
+    const fetchSuggestions = useCallback(async (search) => {
         setLoading(true);
         setError(null);
-        
+
         try {
             const token = localStorage.getItem('token');
-            const url = showAll 
-                ? `/api/prospects/filter/options?field=${encodeURIComponent(field)}&showAll=true`
-                : `/api/prospects/filter/options?field=${encodeURIComponent(field)}&search=${encodeURIComponent(search || '')}`;
-
-            const response = await fetch(url, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
+            const response = await fetch(
+                `/api/prospects/filter/options?field=${encodeURIComponent(field)}&search=${encodeURIComponent(search || '')}`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
                 }
-            });
+            );
 
             if (!response.ok) {
-                const errorText = await response.text();
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
 
             const data = await response.json();
 
             if (data.success) {
-                // Filter out already selected values and empty/null values
                 const filteredSuggestions = (data.options || [])
-                    .filter(option => 
-                        option && 
-                        option.trim() !== '' && 
+                    .filter(option =>
+                        option &&
+                        option.trim() !== '' &&
                         !selectedValues.includes(option)
                     );
-                
                 setSuggestions(filteredSuggestions);
-                if (showAll) {
-                    setShowAllMode(true);
-                }
             } else {
-                throw new Error(data.error || 'Failed to fetch suggestions from server');
+                throw new Error(data.error || 'Failed to fetch suggestions');
             }
         } catch (error) {
             console.error(`Error fetching ${field} suggestions:`, error);
@@ -135,18 +119,15 @@ const SearchableDropdown = ({
         }
     }, [field, selectedValues]);
 
-    // Debounced search - FIXED: Only fetch when search term changes, not on every render
     useEffect(() => {
         if (!isOpen) return;
 
         const delayDebounceFn = setTimeout(() => {
-            if (searchTerm.trim() || searchTerm === '') {
-                fetchSuggestions(searchTerm);
-            }
+            fetchSuggestions(searchTerm);
         }, 500);
 
         return () => clearTimeout(delayDebounceFn);
-    }, [searchTerm, isOpen]); // Removed fetchSuggestions from dependencies
+    }, [searchTerm, isOpen]);
 
     const handleSelect = (value) => {
         if (!selectedValues.includes(value)) {
@@ -154,9 +135,7 @@ const SearchableDropdown = ({
         }
         setSearchTerm('');
         setSuggestions([]);
-        setError(null);
         setIsOpen(false);
-        setShowAllMode(false);
     };
 
     const handleRemove = (valueToRemove) => {
@@ -165,40 +144,14 @@ const SearchableDropdown = ({
 
     const handleInputFocus = () => {
         setIsOpen(true);
-        setError(null);
-        // Load initial suggestions when focusing
         if (!searchTerm.trim()) {
             fetchSuggestions('');
-        }
-    };
-
-    const handleInputChange = (e) => {
-        const value = e.target.value;
-        setSearchTerm(value);
-        setError(null);
-        setShowAllMode(false);
-    };
-
-    const handleInputKeyDown = (e) => {
-        if (e.key === 'Enter' && searchTerm.trim() && suggestions.length > 0) {
-            e.preventDefault();
-            handleSelect(suggestions[0]);
-        } else if (e.key === 'Escape') {
-            setIsOpen(false);
-            setError(null);
-            setShowAllMode(false);
         }
     };
 
     const clearSearch = () => {
         setSearchTerm('');
         setSuggestions([]);
-        setError(null);
-        setShowAllMode(false);
-    };
-
-    const showAllOptions = () => {
-        fetchSuggestions('', true);
     };
 
     const clearAllSelections = () => {
@@ -207,7 +160,6 @@ const SearchableDropdown = ({
 
     return (
         <div className={styles.searchableDropdown} ref={dropdownRef}>
-            {/* Selected Tags with Clear All */}
             <div className={styles.selectedTags}>
                 {selectedValues.map(value => (
                     <span key={value} className={styles.selectedTag}>
@@ -217,7 +169,6 @@ const SearchableDropdown = ({
                             onClick={() => handleRemove(value)}
                             className={styles.removeTag}
                             disabled={disabled}
-                            title={`Remove ${value}`}
                         >
                             <FiX size={12} />
                         </button>
@@ -228,47 +179,33 @@ const SearchableDropdown = ({
                         type="button"
                         onClick={clearAllSelections}
                         className={styles.clearAllButton}
-                        title="Clear all selections"
                     >
                         Clear All
                     </button>
                 )}
             </div>
 
-            {/* Search Input */}
             <div className={styles.searchInputContainer}>
                 <input
                     type="text"
                     placeholder={placeholder}
                     value={searchTerm}
-                    onChange={handleInputChange}
+                    onChange={(e) => setSearchTerm(e.target.value)}
                     onFocus={handleInputFocus}
-                    onKeyDown={handleInputKeyDown}
                     className={styles.searchInput}
                     disabled={disabled}
                 />
-                
+
                 {searchTerm && (
                     <button
                         type="button"
                         onClick={clearSearch}
                         className={styles.clearSearchButton}
-                        title="Clear search"
                     >
                         <FiX size={14} />
                     </button>
                 )}
 
-                {/* Show All Button */}
-                <button
-                    type="button"
-                    onClick={showAllOptions}
-                    className={styles.showAllButton}
-                    title="Show all options"
-                >
-                </button>
-
-                {/* Suggestions Dropdown */}
                 {isOpen && (
                     <div className={styles.suggestionsDropdown}>
                         {error ? (
@@ -279,15 +216,12 @@ const SearchableDropdown = ({
                         ) : loading ? (
                             <div className={styles.suggestionLoading}>
                                 <div className={styles.loadingSpinner}></div>
-                                <span>{showAllMode ? 'Loading all options...' : 'Searching...'}</span>
+                                <span>Searching...</span>
                             </div>
                         ) : suggestions.length > 0 ? (
                             <>
                                 <div className={styles.suggestionHeader}>
-                                    {showAllMode 
-                                        ? `All ${suggestions.length} options` 
-                                        : `Found ${suggestions.length} results`
-                                    }
+                                    Found {suggestions.length} results
                                 </div>
                                 {suggestions.map(suggestion => (
                                     <div
@@ -299,7 +233,7 @@ const SearchableDropdown = ({
                                     </div>
                                 ))}
                             </>
-                        ) : searchTerm.trim() && !showAllMode ? (
+                        ) : searchTerm.trim() ? (
                             <div className={styles.suggestionEmpty}>
                                 No results found for "{searchTerm}"
                             </div>
@@ -316,9 +250,8 @@ const SearchableDropdown = ({
 };
 
 const Prospects = () => {
-    // State management with localStorage persistence
     const [leads, setLeads] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(() => {
         const saved = localStorage.getItem('prospects_currentPage');
@@ -336,28 +269,15 @@ const Prospects = () => {
     const [columnVisibility, setColumnVisibility] = useState(() => {
         const saved = localStorage.getItem('prospects_columnVisibility');
         return saved ? JSON.parse(saved) : {
-            fullname: true,
-            jobtitle: true,
-            company: true,
-            email: true,
-            companyphonenumber: true,
-            city: true,
-            state: true,
-            country: true,
-            industry: true,
-            employeesize: true,
-            department: true,
-            seniority: true,
-            status: true,
-            createdon: true,
-            actions: true
+            fullname: true, jobtitle: true, company: true, email: true,
+            companyphonenumber: true, city: true, state: true, country: true,
+            industry: true, employeesize: true, department: true, seniority: true,
+            status: true, createdon: true, actions: true
         };
     });
 
     const [showColumnMenu, setShowColumnMenu] = useState(false);
     const [showBulkActionPopup, setShowBulkActionPopup] = useState(false);
-
-    // Enhanced filter state with localStorage
     const [openAccordions, setOpenAccordions] = useState(() => {
         const saved = localStorage.getItem('prospects_openAccordions');
         return saved ? JSON.parse(saved) : {};
@@ -367,54 +287,27 @@ const Prospects = () => {
         const saved = localStorage.getItem('prospects_filterValues');
         return saved ? JSON.parse(saved) : {
             exportHeaders: '1',
-            jobTitles: [],
-            industries: [],
-            departments: [],
-            seniorities: [],
-            employeeSizeMin: '',
-            employeeSizeMax: '',
-            annualRevenueMin: '',
-            annualRevenueMax: '',
-            fullname: '',
-            firstname: '',
-            lastname: '',
-            company: '',
-            state: '',
-            country: '',
-            altPhoneNumber: '',
-            companyNumber: '',
-            email: '',
-            website: '',
-            sicCode: '',
-            naicsCode: ''
+            jobTitles: [], industries: [], departments: [], seniorities: [],
+            employeeSizeMin: '', employeeSizeMax: '',
+            annualRevenueMin: '', annualRevenueMax: '',
+            fullname: '', firstname: '', lastname: '', company: '',
+            state: '', country: '', email: ''
         };
     });
 
-    const [importProcessing, setImportProcessing] = useState({
-        isOpen: false,
-        stats: null
-    });
-
+    const [importProcessing, setImportProcessing] = useState({ isOpen: false, stats: null });
     const [showAddModal, setShowAddModal] = useState(false);
     const [lookupData, setLookupData] = useState({
-        dispositions: [],
-        emailStatuses: [],
-        providers: [],
-        industries: [],
-        countries: [],
-        statuses: []
+        dispositions: [], emailStatuses: [], providers: [],
+        industries: [], countries: [], statuses: []
     });
     const [notification, setNotification] = useState({ show: false, message: '', type: '' });
     const [confirmationModal, setConfirmationModal] = useState({
-        show: false,
-        action: null,
-        message: '',
-        count: 0
+        show: false, action: null, message: '', count: 0
     });
 
-    // FIXED: Use ref to track if we should fetch data
-    const shouldFetchRef = useRef(false);
     const searchTimeoutRef = useRef(null);
+    const hasSearchedRef = useRef(false);
 
     // Persist state to localStorage
     useEffect(() => {
@@ -444,7 +337,7 @@ const Prospects = () => {
     // Check if any filter is active
     const isFilterActive = useMemo(() => {
         return Object.entries(filterValues).some(([key, value]) => {
-            if (key === 'exportHeaders') return false; // Skip export headers
+            if (key === 'exportHeaders') return false;
             if (Array.isArray(value)) return value.length > 0;
             if (typeof value === 'string') return value.trim() !== '';
             if (typeof value === 'number') return value !== 0;
@@ -452,7 +345,6 @@ const Prospects = () => {
         });
     }, [filterValues]);
 
-    // Toggle accordion
     const toggleAccordion = (id) => {
         setOpenAccordions(prev => ({
             ...prev,
@@ -460,13 +352,11 @@ const Prospects = () => {
         }));
     };
 
-    // Enhanced filter change handlers
     const handleFilterChange = (field, value) => {
         setFilterValues(prev => ({
             ...prev,
             [field]: value
         }));
-        shouldFetchRef.current = true;
     };
 
     const handleArrayFilterChange = (field, values) => {
@@ -474,13 +364,11 @@ const Prospects = () => {
             ...prev,
             [field]: values
         }));
-        shouldFetchRef.current = true;
     };
 
-    // FIXED: Enhanced fetch prospects with proper dependency management
     const fetchProspects = useCallback(async (page = currentPage, limit = itemsPerPage, search = searchTerm) => {
-        // Don't fetch if no filters are active and we're not showing all
-        if (!isFilterActive && !shouldFetchRef.current) {
+        // Don't fetch if no filters are active and user hasn't explicitly searched
+        if (!isFilterActive && !hasSearchedRef.current) {
             setLeads([]);
             setLoading(false);
             return;
@@ -489,8 +377,6 @@ const Prospects = () => {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
-
-            // Build query parameters with all filters
             const params = new URLSearchParams({
                 page: page.toString(),
                 limit: limit.toString(),
@@ -512,8 +398,6 @@ const Prospects = () => {
                 ...(filterValues.email && { email: filterValues.email })
             });
 
-            console.log('🔍 Fetching prospects with params:', params.toString());
-
             const response = await fetch(`/api/prospects?${params}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -522,24 +406,13 @@ const Prospects = () => {
             });
 
             if (!response.ok) {
-                let errorMessage = `HTTP error! status: ${response.status}`;
-                try {
-                    const errorData = await response.json();
-                    errorMessage = errorData.error || errorMessage;
-                } catch (e) {
-                    errorMessage = response.statusText || errorMessage;
-                }
-                throw new Error(errorMessage);
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
 
             const data = await response.json();
 
             if (data.success) {
                 setLeads(data.prospects || []);
-                // Update pagination info from backend
-                if (data.pagination) {
-                    // You might want to sync pagination state with backend response
-                }
             } else {
                 throw new Error(data.error || 'Failed to fetch prospects');
             }
@@ -548,40 +421,10 @@ const Prospects = () => {
             showNotification('Failed to load prospects: ' + error.message, 'error');
         } finally {
             setLoading(false);
-            shouldFetchRef.current = false;
         }
-    }, [isFilterActive, filterValues]); // FIXED: Removed dependencies that cause re-renders
+    }, [isFilterActive, filterValues, currentPage, itemsPerPage, searchTerm]);
 
-    // FIXED: Optimized useEffect for fetching prospects
-    useEffect(() => {
-        // Debounce the search to prevent excessive API calls
-        if (searchTimeoutRef.current) {
-            clearTimeout(searchTimeoutRef.current);
-        }
-
-        searchTimeoutRef.current = setTimeout(() => {
-            fetchProspects(1, itemsPerPage, searchTerm);
-        }, 800);
-
-        return () => {
-            if (searchTimeoutRef.current) {
-                clearTimeout(searchTimeoutRef.current);
-            }
-        };
-    }, [searchTerm, fetchProspects, itemsPerPage]);
-
-    // Fetch when filters change (with debounce)
-    useEffect(() => {
-        if (shouldFetchRef.current) {
-            const timeoutId = setTimeout(() => {
-                fetchProspects(1, itemsPerPage, searchTerm);
-            }, 500);
-
-            return () => clearTimeout(timeoutId);
-        }
-    }, [filterValues, fetchProspects, itemsPerPage, searchTerm]);
-
-    // Fetch lookup data
+    // Fetch lookup data only
     const fetchLookupData = async () => {
         try {
             const token = localStorage.getItem('token');
@@ -604,7 +447,6 @@ const Prospects = () => {
             }
         } catch (error) {
             console.error('Error fetching lookup data:', error);
-            showNotification('Failed to load dropdown data: ' + error.message, 'error');
         }
     };
 
@@ -612,46 +454,279 @@ const Prospects = () => {
         fetchLookupData();
     }, []);
 
-    // Handle search with filters
+    // Handle search with filters - only fetch when user explicitly searches
     const handleFilterSearch = () => {
+        hasSearchedRef.current = true;
         setCurrentPage(1);
-        shouldFetchRef.current = true;
         fetchProspects(1, itemsPerPage, searchTerm);
     };
 
-    // Clear all filters
+    // Clear all filters and reset state
     const clearAllFilters = () => {
         setFilterValues({
             exportHeaders: '1',
-            jobTitles: [],
-            industries: [],
-            departments: [],
-            seniorities: [],
-            employeeSizeMin: '',
-            employeeSizeMax: '',
-            annualRevenueMin: '',
-            annualRevenueMax: '',
-            fullname: '',
-            firstname: '',
-            lastname: '',
-            company: '',
-            state: '',
-            country: '',
-            altPhoneNumber: '',
-            companyNumber: '',
-            email: '',
-            website: '',
-            sicCode: '',
-            naicsCode: ''
+            jobTitles: [], industries: [], departments: [], seniorities: [],
+            employeeSizeMin: '', employeeSizeMax: '',
+            annualRevenueMin: '', annualRevenueMax: '',
+            fullname: '', firstname: '', lastname: '', company: '',
+            state: '', country: '', email: ''
         });
         setOpenAccordions({});
         setCurrentPage(1);
         setSearchTerm('');
         setLeads([]);
-        shouldFetchRef.current = false;
+        hasSearchedRef.current = false;
     };
 
-     const handleImport = async (e) => {
+    // Handle search input with debounce - only search when user has explicitly started searching
+    const handleSearchChange = (e) => {
+        const value = e.target.value;
+        setSearchTerm(value);
+
+        if (searchTimeoutRef.current) {
+            clearTimeout(searchTimeoutRef.current);
+        }
+
+        // Only search if user has typed something or we've already searched before
+        if (value.trim() || hasSearchedRef.current) {
+            searchTimeoutRef.current = setTimeout(() => {
+                hasSearchedRef.current = true;
+                setCurrentPage(1);
+                fetchProspects(1, itemsPerPage, value);
+            }, 800);
+        }
+    };
+
+    const getIndustryName = (industryCode) => {
+        const industry = lookupData.industries?.find(ind => ind.IndustryCode === industryCode);
+        return industry ? industry.IndustryName : industryCode;
+    };
+
+    const sortedLeads = useMemo(() => {
+        if (!sortConfig.key) return leads;
+        return [...leads].sort((a, b) => {
+            const aValue = a[sortConfig.key] || '';
+            const bValue = b[sortConfig.key] || '';
+            if (aValue < bValue) return sortConfig.direction === 'ascending' ? -1 : 1;
+            if (aValue > bValue) return sortConfig.direction === 'ascending' ? 1 : -1;
+            return 0;
+        });
+    }, [leads, sortConfig]);
+
+    const currentLeads = useMemo(() => {
+        const indexOfLastItem = currentPage * itemsPerPage;
+        const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+        return sortedLeads.slice(indexOfFirstItem, indexOfLastItem);
+    }, [currentPage, itemsPerPage, sortedLeads]);
+
+    const totalPages = Math.ceil(sortedLeads.length / itemsPerPage);
+
+    const handleSort = (key) => {
+        let direction = 'ascending';
+        if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+            direction = 'descending';
+        }
+        setSortConfig({ key, direction });
+    };
+
+    const handleSelectAll = (e) => {
+        if (e.target.checked) {
+            setSelectedLeads(currentLeads.map(lead => lead.id));
+        } else {
+            setSelectedLeads([]);
+        }
+    };
+
+    const handleSelectLead = (leadId) => {
+        setSelectedLeads(prev =>
+            prev.includes(leadId)
+                ? prev.filter(id => id !== leadId)
+                : [...prev, leadId]
+        );
+    };
+
+    const handleBulkAction = async (action) => {
+        switch (action) {
+            case 'export':
+                exportToCSV(selectedLeads);
+                break;
+            case 'delete':
+                setConfirmationModal({
+                    show: true,
+                    action: 'delete',
+                    message: `Are you sure you want to delete ${selectedLeads.length} leads?`,
+                    count: selectedLeads.length
+                });
+                break;
+            case 'archive':
+                showNotification('Archive functionality not implemented yet', 'info');
+                break;
+            default:
+                break;
+        }
+        setShowBulkActionPopup(false);
+    };
+
+    const handleConfirmedAction = async () => {
+        if (confirmationModal.action === 'delete') {
+            try {
+                const response = await fetch('/api/prospects/bulk-delete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify({ ids: selectedLeads })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showNotification(`${data.message}`, 'success');
+                    fetchProspects();
+                    setSelectedLeads([]);
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                console.error('Bulk delete error:', error);
+                showNotification('Failed to delete prospects', 'error');
+            }
+        }
+        setConfirmationModal({ show: false, action: null, message: '', count: 0 });
+    };
+
+    const exportToCSV = async (leadIds = []) => {
+        try {
+            const token = localStorage.getItem('token');
+            const url = leadIds.length > 0
+                ? `/api/prospects/export/csv?ids=${leadIds.join(',')}`
+                : '/api/prospects/export/csv';
+
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.ok) {
+                const blob = await response.blob();
+                const downloadUrl = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = downloadUrl;
+                link.setAttribute('download', `prospects_export_${new Date().toISOString().split('T')[0]}.csv`);
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                showNotification(`Exported ${leadIds.length || sortedLeads.length} prospects successfully`, 'success');
+            } else {
+                throw new Error('Export failed');
+            }
+        } catch (error) {
+            console.error('Export error:', error);
+            showNotification('Failed to export prospects', 'error');
+        }
+    };
+
+    const handleCreateProspect = async (prospectData) => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch('/api/prospects', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(prospectData)
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                showNotification('Prospect created successfully', 'success');
+                fetchProspects();
+                return true;
+            } else {
+                throw new Error(data.error);
+            }
+        } catch (error) {
+            console.error('Create prospect error:', error);
+            showNotification(error.message || 'Failed to create prospect', 'error');
+            throw error;
+        }
+    };
+
+    const showNotification = (message, type) => {
+        setNotification({ show: true, message, type });
+        setTimeout(() => {
+            setNotification({ show: false, message: '', type: '' });
+        }, 3000);
+    };
+
+    const formatDate = (dateString) => {
+        if (!dateString) return '';
+        return new Date(dateString).toLocaleDateString('en-US', {
+            year: 'numeric', month: 'short', day: 'numeric'
+        });
+    };
+
+    const downloadTemplate = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch('/api/prospects/import/template', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.ok) {
+                const blob = await response.blob();
+                const downloadUrl = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = downloadUrl;
+                link.setAttribute('download', 'prospects_import_template.csv');
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                showNotification('Template downloaded successfully', 'success');
+            } else {
+                throw new Error('Failed to download template');
+            }
+        } catch (error) {
+            console.error('Download template error:', error);
+            showNotification('Failed to download template', 'error');
+        }
+    };
+
+    // Calculate pagination values
+    const startItem = (currentPage - 1) * itemsPerPage + 1;
+    const endItem = Math.min(currentPage * itemsPerPage, sortedLeads.length);
+    const totalItems = sortedLeads.length;
+
+    // Generate page numbers
+    const pageNumbers = [];
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+    if (endPage - startPage + 1 < maxVisiblePages) {
+        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+        pageNumbers.push(i);
+    }
+
+    const handlePageChange = (newPage) => {
+        setCurrentPage(newPage);
+    };
+
+    const handleItemsPerPageChange = (newItemsPerPage) => {
+        setItemsPerPage(newItemsPerPage);
+        setCurrentPage(1);
+    };
+
+    const handleImport = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
@@ -810,259 +885,6 @@ const Prospects = () => {
         e.target.value = '';
     };
 
-    // Filter leads based on search and filters - FIXED: Use backend filtering instead
-    const filteredLeads = useMemo(() => {
-        return leads;
-    }, [leads]);
-
-    const getIndustryName = (industryCode) => {
-        const industry = lookupData.industries?.find(ind => ind.IndustryCode === industryCode);
-        return industry ? industry.IndustryName : industryCode;
-    };
-
-    // Sort leads - FIXED: Client-side sorting as fallback
-    const sortedLeads = useMemo(() => {
-        if (!sortConfig.key) return filteredLeads;
-
-        return [...filteredLeads].sort((a, b) => {
-            const aValue = a[sortConfig.key] || '';
-            const bValue = b[sortConfig.key] || '';
-
-            if (aValue < bValue) {
-                return sortConfig.direction === 'ascending' ? -1 : 1;
-            }
-            if (aValue > bValue) {
-                return sortConfig.direction === 'ascending' ? 1 : -1;
-            }
-            return 0;
-        });
-    }, [filteredLeads, sortConfig]);
-
-    // Pagination - FIXED: Use actual data from backend
-    const currentLeads = useMemo(() => {
-        return sortedLeads;
-    }, [sortedLeads]);
-
-    const totalPages = Math.ceil(sortedLeads.length / itemsPerPage);
-
-    // Handlers
-    const handleSort = (key) => {
-        let direction = 'ascending';
-        if (sortConfig.key === key && sortConfig.direction === 'ascending') {
-            direction = 'descending';
-        }
-        setSortConfig({ key, direction });
-    };
-
-    const handleSelectAll = (e) => {
-        if (e.target.checked) {
-            setSelectedLeads(currentLeads.map(lead => lead.id));
-        } else {
-            setSelectedLeads([]);
-        }
-    };
-
-    const handleSelectLead = (leadId) => {
-        setSelectedLeads(prev =>
-            prev.includes(leadId)
-                ? prev.filter(id => id !== leadId)
-                : [...prev, leadId]
-        );
-    };
-
-    const handleBulkAction = async (action) => {
-        switch (action) {
-            case 'export':
-                exportToCSV(selectedLeads);
-                break;
-            case 'delete':
-                setConfirmationModal({
-                    show: true,
-                    action: 'delete',
-                    message: `Are you sure you want to delete ${selectedLeads.length} leads?`,
-                    count: selectedLeads.length
-                });
-                break;
-            case 'archive':
-                showNotification('Archive functionality not implemented yet', 'info');
-                break;
-            default:
-                break;
-        }
-        setShowBulkActionPopup(false);
-    };
-
-    // Add this function to handle the confirmed action
-    const handleConfirmedAction = async () => {
-        if (confirmationModal.action === 'delete') {
-            try {
-                const response = await fetch('/api/prospects/bulk-delete', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    },
-                    body: JSON.stringify({ ids: selectedLeads })
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    showNotification(`${data.message}`, 'success');
-                    fetchProspects(); // Refresh the list
-                    setSelectedLeads([]);
-                } else {
-                    throw new Error(data.error);
-                }
-            } catch (error) {
-                console.error('Bulk delete error:', error);
-                showNotification('Failed to delete prospects', 'error');
-            }
-        }
-
-        setConfirmationModal({ show: false, action: null, message: '', count: 0 });
-    };
-
-    // Update the exportToCSV function to use the backend
-    const exportToCSV = async (leadIds = []) => {
-        try {
-            const token = localStorage.getItem('token');
-            const url = leadIds.length > 0
-                ? `/api/prospects/export/csv?ids=${leadIds.join(',')}`
-                : '/api/prospects/export/csv';
-
-            const response = await fetch(url, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (response.ok) {
-                const blob = await response.blob();
-                const downloadUrl = window.URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = downloadUrl;
-                link.setAttribute('download', `prospects_export_${new Date().toISOString().split('T')[0]}.csv`);
-                document.body.appendChild(link);
-                link.click();
-                link.remove();
-                showNotification(`Exported ${leadIds.length || filteredLeads.length} prospects successfully`, 'success');
-            } else {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Export failed');
-            }
-        } catch (error) {
-            console.error('Export error:', error);
-            showNotification(error.message || 'Failed to export prospects', 'error');
-        }
-    };
-
-    // Handle creating new prospect
-    const handleCreateProspect = async (prospectData) => {
-        try {
-            const token = localStorage.getItem('token');
-            const response = await fetch('/api/prospects', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(prospectData)
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                showNotification('Prospect created successfully', 'success');
-                fetchProspects();
-                return true;
-            } else {
-                throw new Error(data.error);
-            }
-        } catch (error) {
-            console.error('Create prospect error:', error);
-            showNotification(error.message || 'Failed to create prospect', 'error');
-            throw error;
-        }
-    };
-
-    // Notification function
-    const showNotification = (message, type) => {
-        setNotification({ show: true, message, type });
-        setTimeout(() => {
-            setNotification({ show: false, message: '', type: '' });
-        }, 3000);
-    };
-
-    const formatDate = (dateString) => {
-        if (!dateString) return '';
-        return new Date(dateString).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
-        });
-    };
-
-    const downloadTemplate = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            const response = await fetch('/api/prospects/import/template', {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (response.ok) {
-                const blob = await response.blob();
-                const downloadUrl = window.URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = downloadUrl;
-                link.setAttribute('download', 'prospects_import_template.csv');
-                document.body.appendChild(link);
-                link.click();
-                link.remove();
-                showNotification('Template downloaded successfully', 'success');
-            } else {
-                throw new Error('Failed to download template');
-            }
-        } catch (error) {
-            console.error('Download template error:', error);
-            showNotification('Failed to download template', 'error');
-        }
-    };
-
-    // Calculate pagination values - FIXED: Use actual data length
-    const startItem = (currentPage - 1) * itemsPerPage + 1;
-    const endItem = Math.min(currentPage * itemsPerPage, sortedLeads.length);
-    const totalItems = sortedLeads.length;
-
-    // Generate page numbers array - FIXED: Proper pagination calculation
-    const pageNumbers = [];
-    const maxVisiblePages = 5;
-    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-    
-    if (endPage - startPage + 1 < maxVisiblePages) {
-        startPage = Math.max(1, endPage - maxVisiblePages + 1);
-    }
-    
-    for (let i = startPage; i <= endPage; i++) {
-        pageNumbers.push(i);
-    }
-
-    // Handle page change
-    const handlePageChange = (newPage) => {
-        setCurrentPage(newPage);
-        fetchProspects(newPage, itemsPerPage, searchTerm);
-    };
-
-    // Handle items per page change
-    const handleItemsPerPageChange = (newItemsPerPage) => {
-        setItemsPerPage(newItemsPerPage);
-        setCurrentPage(1);
-        fetchProspects(1, newItemsPerPage, searchTerm);
-    };
-
     if (loading) {
         return (
             <div className={styles.loading}>
@@ -1082,9 +904,7 @@ const Prospects = () => {
                             <FiFilter className={styles.filterIcon} />
                             Filter
                             {isFilterActive && (
-                                <span className={styles.activeFilterBadge}>
-                                    Active
-                                </span>
+                                <span className={styles.activeFilterBadge}>Active</span>
                             )}
                         </div>
                         <div className={styles.prospectsCardBody}>
@@ -1202,10 +1022,9 @@ const Prospects = () => {
                                 id="employeeSize"
                             >
                                 <div className={styles.formGroup}>
-                                    <label htmlFor="EmployeeSizeMin" className={styles.empsizelabelmin}>Min</label>
+                                    <label htmlFor="EmployeeSizeMin">Min</label>
                                     <input
                                         type="number"
-                                        name="employeesize_min"
                                         className={styles.formControl}
                                         placeholder="(e.g 1)"
                                         id="EmployeeSizeMin"
@@ -1214,10 +1033,9 @@ const Prospects = () => {
                                     />
                                 </div>
                                 <div className={styles.formGroup}>
-                                    <label htmlFor="EmployeeSizeMax" className={styles.empsizelabelmax}>Max</label>
+                                    <label htmlFor="EmployeeSizeMax">Max</label>
                                     <input
                                         type="number"
-                                        name="employeesize_max"
                                         className={styles.formControl}
                                         placeholder="(e.g 10)"
                                         id="EmployeeSizeMax"
@@ -1235,10 +1053,9 @@ const Prospects = () => {
                                 id="annualRevenue"
                             >
                                 <div className={styles.formGroup}>
-                                    <label htmlFor="AnnualRevenueMin" className={styles.annsizelabelmin}>Min</label>
+                                    <label htmlFor="AnnualRevenueMin">Min</label>
                                     <input
                                         type="number"
-                                        name="annualrevenue_min"
                                         className={styles.formControl}
                                         placeholder="(e.g 1)"
                                         id="AnnualRevenueMin"
@@ -1247,10 +1064,9 @@ const Prospects = () => {
                                     />
                                 </div>
                                 <div className={styles.formGroup}>
-                                    <label htmlFor="AnnualRevenueMax" className={styles.annsizelabelmax}>Max</label>
+                                    <label htmlFor="AnnualRevenueMax">Max</label>
                                     <input
                                         type="number"
-                                        name="annualrevenue_max"
                                         className={styles.formControl}
                                         placeholder="(e.g 10)"
                                         id="AnnualRevenueMax"
@@ -1268,10 +1084,9 @@ const Prospects = () => {
                                 id="fullname"
                             >
                                 <div className={styles.formGroup}>
-                                    <label htmlFor="SFullname" className={styles.fullnamelabel}>Input</label>
+                                    <label htmlFor="SFullname">Input</label>
                                     <input
                                         type="text"
-                                        name="full_name"
                                         className={styles.formControl}
                                         placeholder="(e.g John Doe)"
                                         id="SFullname"
@@ -1289,10 +1104,9 @@ const Prospects = () => {
                                 id="firstname"
                             >
                                 <div className={styles.formGroup}>
-                                    <label htmlFor="SFirstname" className={styles.firstnamelabel}>Input</label>
+                                    <label htmlFor="SFirstname">Input</label>
                                     <input
                                         type="text"
-                                        name="first_name"
                                         className={styles.formControl}
                                         placeholder="(e.g John)"
                                         id="SFirstname"
@@ -1310,10 +1124,9 @@ const Prospects = () => {
                                 id="lastname"
                             >
                                 <div className={styles.formGroup}>
-                                    <label htmlFor="SLastname" className={styles.lastnamelabel}>Input</label>
+                                    <label htmlFor="SLastname">Input</label>
                                     <input
                                         type="text"
-                                        name="last_name"
                                         className={styles.formControl}
                                         placeholder="(e.g Doe)"
                                         id="SLastname"
@@ -1331,10 +1144,9 @@ const Prospects = () => {
                                 id="company"
                             >
                                 <div className={styles.formGroup}>
-                                    <label htmlFor="SCompany" className={styles.companylabel}>Input</label>
+                                    <label htmlFor="SCompany">Input</label>
                                     <input
                                         type="text"
-                                        name="s_company"
                                         className={styles.formControl}
                                         placeholder="(e.g ABC Corporation)"
                                         id="SCompany"
@@ -1352,10 +1164,9 @@ const Prospects = () => {
                                 id="state"
                             >
                                 <div className={styles.formGroup}>
-                                    <label htmlFor="SState" className={styles.statelabel}>Input</label>
+                                    <label htmlFor="SState">Input</label>
                                     <input
                                         type="text"
-                                        name="s_state"
                                         className={styles.formControl}
                                         placeholder="(e.g ABC State)"
                                         id="SState"
@@ -1373,10 +1184,9 @@ const Prospects = () => {
                                 id="country"
                             >
                                 <div className={styles.formGroup}>
-                                    <label htmlFor="SCountry" className={styles.countrylabel}>Input</label>
+                                    <label htmlFor="SCountry">Input</label>
                                     <input
                                         type="text"
-                                        name="s_country"
                                         className={styles.formControl}
                                         placeholder="(e.g ABC Country)"
                                         id="SCountry"
@@ -1394,10 +1204,9 @@ const Prospects = () => {
                                 id="email"
                             >
                                 <div className={styles.formGroup}>
-                                    <label htmlFor="SEmail" className={styles.emaillabel}>Input</label>
+                                    <label htmlFor="SEmail">Input</label>
                                     <input
                                         type="text"
-                                        name="s_emailaddress"
                                         className={styles.formControl}
                                         placeholder="(e.g abc@example.com)"
                                         id="SEmail"
@@ -1406,7 +1215,6 @@ const Prospects = () => {
                                     />
                                 </div>
                             </FilterAccordion>
-
                         </div>
                         <div className={styles.cardFooter}>
                             <div className={styles.row}>
@@ -1443,7 +1251,7 @@ const Prospects = () => {
                                 type="text"
                                 placeholder="Search by name, job title, company, or email..."
                                 value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
+                                onChange={handleSearchChange}
                                 className={styles.searchInput}
                             />
                         </div>
@@ -1527,10 +1335,11 @@ const Prospects = () => {
                         </div>
                     </div>
 
-                    {/* No Data Message */}
-                    {!isFilterActive && (
+                    {/* No Data Message - Show when no filters are applied and no search has been done */}
+                    {!isFilterActive && !hasSearchedRef.current && (
                         <div className={styles.noFilterMessage}>
                             <div className={styles.noFilterContent}>
+                                <FiFilter size={48} className={styles.noFilterIcon} />
                                 <h3>No Filters Applied</h3>
                                 <p>Please apply filters to see prospect data. Use the filter panel on the left to specify your search criteria.</p>
                                 <div className={styles.filterTips}>
@@ -1546,8 +1355,8 @@ const Prospects = () => {
                         </div>
                     )}
 
-                    {/* Table - Only show when filters are active or when showing all */}
-                    {(isFilterActive || leads.length > 0) && (
+                    {/* Table - Only show when filters are active or user has searched */}
+                    {(isFilterActive || hasSearchedRef.current) && (
                         <>
                             {/* Bulk Actions Popup */}
                             {selectedLeads.length > 0 && (
@@ -1896,7 +1705,7 @@ const Prospects = () => {
                                                         colSpan={Object.values(columnVisibility).filter(v => v).length + 1}
                                                         className={styles.noData}
                                                     >
-                                                        No leads found matching your filters
+                                                        No leads found matching your criteria
                                                     </td>
                                                 </tr>
                                             )}
@@ -1905,7 +1714,7 @@ const Prospects = () => {
                                 </div>
                             </div>
 
-                            {/* Pagination - Show when there's data */}
+                            {/* Pagination */}
                             {sortedLeads.length > 0 && (
                                 <div className={styles.pagination}>
                                     <div className={styles.paginationInfo}>
@@ -1923,16 +1732,15 @@ const Prospects = () => {
                                             <option value={50}>50 per page</option>
                                             <option value={100}>100 per page</option>
                                         </select>
-                                        
+
                                         <button
-                                            onClick={() => handlePageChange(currentPage - 1)}
+                                            onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
                                             disabled={currentPage === 1}
                                             className={styles.paginationButton}
                                         >
                                             Previous
                                         </button>
-                                        
-                                        {/* First Page */}
+
                                         {startPage > 1 && (
                                             <>
                                                 <button
@@ -1944,8 +1752,7 @@ const Prospects = () => {
                                                 {startPage > 2 && <span className={styles.paginationEllipsis}>...</span>}
                                             </>
                                         )}
-                                        
-                                        {/* Page Numbers */}
+
                                         {pageNumbers.map(page => (
                                             <button
                                                 key={page}
@@ -1955,8 +1762,7 @@ const Prospects = () => {
                                                 {page}
                                             </button>
                                         ))}
-                                        
-                                        {/* Last Page */}
+
                                         {endPage < totalPages && (
                                             <>
                                                 {endPage < totalPages - 1 && <span className={styles.paginationEllipsis}>...</span>}
@@ -1968,9 +1774,9 @@ const Prospects = () => {
                                                 </button>
                                             </>
                                         )}
-                                        
+
                                         <button
-                                            onClick={() => handlePageChange(currentPage + 1)}
+                                            onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
                                             disabled={currentPage === totalPages}
                                             className={styles.paginationButton}
                                         >

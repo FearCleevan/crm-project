@@ -7,13 +7,7 @@ import { importQueue } from "../services/importQueue.js";
 export const getFilterOptions = async (req, res) => {
   let connection;
   try {
-    const { field, search, showAll } = req.query;
-
-    console.log("🔍 Filter options request received:", {
-      field,
-      search,
-      showAll,
-    });
+    const { field, search } = req.query;
 
     const validFields = [
       "Jobtitle",
@@ -30,7 +24,6 @@ export const getFilterOptions = async (req, res) => {
     ];
 
     if (!validFields.includes(field)) {
-      console.log("❌ Invalid field requested:", field);
       return res.status(400).json({
         success: false,
         error: `Invalid field specified. Valid fields: ${validFields.join(
@@ -39,15 +32,11 @@ export const getFilterOptions = async (req, res) => {
       });
     }
 
-    // Get database connection
     connection = await pool.getConnection();
 
     let query;
     let params = [];
 
-    console.log("📊 Building query for field:", field);
-
-    // Special handling for Industry field
     if (field === "Industry") {
       query = `
         SELECT DISTINCT 
@@ -59,22 +48,13 @@ export const getFilterOptions = async (req, res) => {
         AND (pi.IndustryName != '' OR p.Industry != '')
       `;
 
-      if (search && search.trim() !== "" && !showAll) {
+      if (search && search.trim() !== "") {
         query += ` AND (pi.IndustryName LIKE ? OR p.Industry LIKE ?)`;
         params.push(`%${search}%`, `%${search}%`);
       }
 
-      query += ` ORDER BY value`;
-
-      // Increase limit for showAll
-      if (showAll) {
-        query += ` LIMIT 1000`;
-      } else {
-        query += ` LIMIT 50`;
-      }
-    }
-    // Special handling for other fields that might be codes
-    else if (field === "Department" || field === "Seniority") {
+      query += ` ORDER BY value LIMIT 50`;
+    } else {
       query = `
         SELECT DISTINCT ${field} as value 
         FROM prospects 
@@ -83,51 +63,16 @@ export const getFilterOptions = async (req, res) => {
         AND ${field} != ''
       `;
 
-      if (search && search.trim() !== "" && !showAll) {
+      if (search && search.trim() !== "") {
         query += ` AND ${field} LIKE ?`;
         params.push(`%${search}%`);
       }
 
-      query += ` ORDER BY ${field}`;
-
-      if (showAll) {
-        query += ` LIMIT 1000`;
-      } else {
-        query += ` LIMIT 50`;
-      }
+      query += ` ORDER BY ${field} LIMIT 50`;
     }
-    // For all other text fields
-    else {
-      query = `
-        SELECT DISTINCT ${field} as value 
-        FROM prospects 
-        WHERE isactive = 1 
-        AND ${field} IS NOT NULL 
-        AND ${field} != ''
-      `;
-
-      if (search && search.trim() !== "" && !showAll) {
-        query += ` AND ${field} LIKE ?`;
-        params.push(`%${search}%`);
-      }
-
-      query += ` ORDER BY ${field}`;
-
-      if (showAll) {
-        query += ` LIMIT 1000`;
-      } else {
-        query += ` LIMIT 50`;
-      }
-    }
-
-    console.log("🚀 Executing query:", query);
-    console.log("📋 Query parameters:", params);
 
     const [results] = await connection.query(query, params);
 
-    console.log("✅ Query successful, results count:", results.length);
-
-    // Process results
     const options = results
       .map((row) => {
         const value = row.value;
@@ -136,24 +81,18 @@ export const getFilterOptions = async (req, res) => {
       .filter((value) => value && value !== "")
       .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
 
-    console.log("🎯 Final options count:", options.length);
-
     res.json({
       success: true,
       options,
       count: options.length,
       field,
       searchTerm: search,
-      showAll: !!showAll,
     });
   } catch (error) {
-    console.error("💥 Get filter options error:", error);
-
+    console.error("Get filter options error:", error);
     res.status(500).json({
       success: false,
       error: "Internal server error while fetching filter options",
-      details:
-        process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   } finally {
     if (connection) {
@@ -236,7 +175,6 @@ export const getProspects = async (req, res) => {
       search,
       sortBy = "CreatedOn",
       sortOrder = "DESC",
-      // New filter parameters
       jobTitles,
       industries,
       departments,
@@ -274,11 +212,8 @@ export const getProspects = async (req, res) => {
     let queryParams = [];
     let countParams = [];
 
-    // Apply search filter
     if (search) {
-      const searchCondition = `
-        (p.Fullname LIKE ? OR p.Company LIKE ? OR p.Email LIKE ? OR p.Jobtitle LIKE ?)
-      `;
+      const searchCondition = `(p.Fullname LIKE ? OR p.Company LIKE ? OR p.Email LIKE ? OR p.Jobtitle LIKE ?)`;
       query += ` AND ${searchCondition}`;
       countQuery += ` AND ${searchCondition}`;
       const searchParam = `%${search}%`;
@@ -286,7 +221,6 @@ export const getProspects = async (req, res) => {
       countParams.push(searchParam, searchParam, searchParam, searchParam);
     }
 
-    // Apply advanced filters
     const applyArrayFilter = (field, values, isIndustry = false) => {
       if (values && values.length > 0) {
         const valueArray = Array.isArray(values) ? values : values.split(",");
@@ -336,7 +270,6 @@ export const getProspects = async (req, res) => {
       }
     };
 
-    // Apply all filters
     applyArrayFilter("Jobtitle", jobTitles);
     applyArrayFilter("Industry", industries, true);
     applyArrayFilter("Department", departments);
@@ -353,7 +286,6 @@ export const getProspects = async (req, res) => {
     applyTextFilter("Country", country);
     applyTextFilter("Email", email);
 
-    // Apply sorting
     const validSortColumns = [
       "Fullname",
       "Jobtitle",
@@ -371,23 +303,13 @@ export const getProspects = async (req, res) => {
     const order = sortOrder.toUpperCase() === "ASC" ? "ASC" : "DESC";
     query += ` ORDER BY p.${sortColumn} ${order}`;
 
-    // Apply pagination
     const offset = (page - 1) * limit;
     query += ` LIMIT ? OFFSET ?`;
     queryParams.push(parseInt(limit), offset);
 
-    console.log("🔍 Prospects query:", query);
-    console.log("📋 Query params:", queryParams);
-    console.log("🔢 Count query:", countQuery);
-    console.log("📋 Count params:", countParams);
-
-    // Execute queries
     const [prospects] = await connection.query(query, queryParams);
     const [countResult] = await connection.query(countQuery, countParams);
     const total = countResult[0]?.total || 0;
-
-    console.log("✅ Found prospects:", prospects.length);
-    console.log("✅ Total count:", total);
 
     res.json({
       success: true,
