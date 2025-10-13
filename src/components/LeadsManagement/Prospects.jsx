@@ -1339,7 +1339,6 @@ const Prospects = () => {
                     {!isFilterActive && !hasSearchedRef.current && (
                         <div className={styles.noFilterMessage}>
                             <div className={styles.noFilterContent}>
-                                <FiFilter size={48} className={styles.noFilterIcon} />
                                 <h3>No Filters Applied</h3>
                                 <p>Please apply filters to see prospect data. Use the filter panel on the left to specify your search criteria.</p>
                                 <div className={styles.filterTips}>
