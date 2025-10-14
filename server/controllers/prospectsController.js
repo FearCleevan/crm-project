@@ -1315,81 +1315,112 @@ async function processChunk(chunk) {
   return { successful: successfulImports, errors: chunkErrors };
 }
 
+
+// In your backend controller, update the checkImportProgress function
 export const checkImportProgress = async (req, res) => {
   try {
     const { sessionId } = req.params;
+
+    console.log(`🔍 Checking import progress for session: ${sessionId}`);
 
     let tableExists = false;
     const connection = await pool.getConnection();
 
     try {
+      // Check if import_sessions table exists
       const [tables] = await connection.query(
         "SHOW TABLES LIKE 'import_sessions'"
       );
       tableExists = tables.length > 0;
 
+      let progress;
+
       if (!tableExists) {
+        console.log('📊 import_sessions table does not exist, using memory storage');
         if (!global.importSessions || !global.importSessions[sessionId]) {
           return res.status(404).json({
             success: false,
             error: "Import session not found",
           });
         }
-        const progress = global.importSessions[sessionId];
-        return res.json({
-          success: true,
-          progress: formatProgressResponse(progress),
-        });
-      }
+        progress = global.importSessions[sessionId];
+      } else {
+        // Check database for session
+        const [sessions] = await connection.query(
+          "SELECT * FROM import_sessions WHERE session_id = ?",
+          [sessionId]
+        );
 
-      const [sessions] = await connection.query(
-        "SELECT * FROM import_sessions WHERE session_id = ?",
-        [sessionId]
-      );
-
-      if (sessions.length === 0) {
-        if (!global.importSessions || !global.importSessions[sessionId]) {
-          return res.status(404).json({
-            success: false,
-            error: "Import session not found",
+        if (sessions.length === 0) {
+          console.log('📊 Session not found in database, checking memory');
+          if (!global.importSessions || !global.importSessions[sessionId]) {
+            return res.status(404).json({
+              success: false,
+              error: "Import session not found",
+            });
+          }
+          progress = global.importSessions[sessionId];
+        } else {
+          const session = sessions[0];
+          console.log(`📊 Found session in database:`, {
+            status: session.status,
+            processed: session.processed_chunks,
+            total: session.total_chunks,
+            successful: session.successful_imports,
+            failed: session.failed_imports
           });
+
+          progress = {
+            sessionId: session.session_id,
+            stage: session.status === 'completed' ? 'completed' : 'inserting',
+            totalRows: session.total_prospects,
+            validRows: session.total_prospects - session.failed_imports,
+            insertedRows: session.successful_imports,
+            errorCount: session.failed_imports,
+            totalChunks: session.total_chunks,
+            processedChunks: session.processed_chunks,
+            logs: [
+              {
+                type: 'info',
+                message: `Processing chunk ${session.processed_chunks} of ${session.total_chunks}`,
+                timestamp: session.updated_at || session.created_at
+              },
+              {
+                type: 'info', 
+                message: `Successfully imported ${session.successful_imports} of ${session.total_prospects} prospects`,
+                timestamp: session.updated_at || session.created_at
+              }
+            ],
+            errors: session.chunk_errors ? JSON.parse(session.chunk_errors) : [],
+            progressPercentage: session.total_chunks > 0 
+              ? Math.round((session.processed_chunks / session.total_chunks) * 100)
+              : 0
+          };
         }
-        const progress = global.importSessions[sessionId];
-        return res.json({
-          success: true,
-          progress: formatProgressResponse(progress),
-        });
       }
 
-      const session = sessions[0];
-      const progress = {
-        sessionId: session.session_id,
-        status: session.status,
-        totalChunks: session.total_chunks,
-        processedChunks: session.processed_chunks,
-        successfulImports: session.successful_imports,
-        failedImports: session.failed_imports,
-        chunkErrors: session.chunk_errors
-          ? JSON.parse(session.chunk_errors)
-          : [],
-        startTime: session.created_at,
-        endTime: session.completed_at,
-        totalTime: session.completed_at
-          ? new Date(session.completed_at) - new Date(session.created_at)
-          : null,
-      };
+      // Add real-time logs based on current progress
+      if (!progress.logs) progress.logs = [];
+      
+      // Add current status log
+      progress.logs.push({
+        type: 'info',
+        message: `Progress: ${progress.processedChunks || 0}/${progress.totalChunks || 0} chunks processed`,
+        timestamp: new Date()
+      });
 
-      res.json({ success: true, progress: formatProgressResponse(progress) });
+      res.json({ 
+        success: true, 
+        progress: progress
+      });
     } finally {
       connection.release();
     }
   } catch (error) {
-    console.error("Check import progress error:", error);
+    console.error("💥 Check import progress error:", error);
 
-    if (
-      !global.importSessions ||
-      !global.importSessions[req.params.sessionId]
-    ) {
+    // Final fallback to memory storage
+    if (!global.importSessions || !global.importSessions[req.params.sessionId]) {
       return res.status(404).json({
         success: false,
         error: "Import session not found: " + error.message,
@@ -1397,7 +1428,10 @@ export const checkImportProgress = async (req, res) => {
     }
 
     const progress = global.importSessions[req.params.sessionId];
-    res.json({ success: true, progress: formatProgressResponse(progress) });
+    res.json({ 
+      success: true, 
+      progress: progress
+    });
   }
 };
 

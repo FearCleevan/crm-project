@@ -508,10 +508,12 @@ const Prospects = () => {
     };
 
     // ADDED: pollImportProgress function
+    // FIXED: pollImportProgress function
     const pollImportProgress = async (sessionId) => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`/api/prospects/import/progress?sessionId=${sessionId}`, {
+            // FIX: Use the correct endpoint format with path parameter
+            const response = await fetch(`/api/prospects/import/progress/${sessionId}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
