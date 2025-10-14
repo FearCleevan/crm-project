@@ -6,6 +6,7 @@ const ImportProcessingModal = ({ isOpen, onClose, processingStats }) => {
   const [currentStage, setCurrentStage] = useState('preparing');
   const [progress, setProgress] = useState(0);
   const [stageProgress, setStageProgress] = useState(0);
+  const [displayStats, setDisplayStats] = useState(null);
 
   const stages = {
     preparing: { name: 'Preparing Import', icon: FiFileText },
@@ -17,46 +18,62 @@ const ImportProcessingModal = ({ isOpen, onClose, processingStats }) => {
 
   useEffect(() => {
     if (isOpen && processingStats) {
+      console.log('📊 Processing Stats Received:', processingStats); // Debug log
       updateProgress(processingStats);
     }
   }, [isOpen, processingStats]);
 
   const updateProgress = (stats) => {
+    if (!stats) return;
+
+    // Set display stats
+    setDisplayStats(stats);
+
+    // Determine current stage
     if (stats.stage) {
       setCurrentStage(stats.stage);
+    } else if (stats.status === 'completed') {
+      setCurrentStage('completed');
+    } else {
+      setCurrentStage('inserting');
     }
-    
-    // Calculate overall progress
+
+    // Calculate progress based on actual data
     let overallProgress = 0;
     let stageProgressValue = 0;
 
-    switch (stats.stage) {
-      case 'parsing':
-        overallProgress = 10;
-        stageProgressValue = stats.parsedRows && stats.totalRows ? 
-          (stats.parsedRows / stats.totalRows) * 30 : 0;
-        break;
-      case 'validating':
-        overallProgress = 40;
-        stageProgressValue = stats.validatedRows && stats.totalRows ? 
-          (stats.validatedRows / stats.totalRows) * 30 : 0;
-        break;
-      case 'inserting':
-        overallProgress = 70;
-        stageProgressValue = stats.insertedRows && stats.totalValidRows ? 
-          (stats.insertedRows / stats.totalValidRows) * 30 : 0;
-        break;
-      case 'completed':
-        overallProgress = 100;
-        stageProgressValue = 100;
-        break;
-      default:
-        overallProgress = 0;
-        stageProgressValue = 0;
+    // Use the progress percentage from backend if available
+    if (stats.progressPercentage !== undefined) {
+      overallProgress = stats.progressPercentage;
+      stageProgressValue = stats.progressPercentage;
+    } 
+    // Otherwise calculate based on chunks processed
+    else if (stats.totalChunks && stats.processedChunks !== undefined) {
+      overallProgress = Math.round((stats.processedChunks / stats.totalChunks) * 100);
+      stageProgressValue = overallProgress;
     }
+    // Fallback calculation
+    else if (stats.totalRows && stats.insertedRows !== undefined) {
+      overallProgress = Math.round((stats.insertedRows / stats.totalRows) * 100);
+      stageProgressValue = overallProgress;
+    }
+
+    // Cap progress at 100%
+    overallProgress = Math.min(100, overallProgress);
+    stageProgressValue = Math.min(100, stageProgressValue);
 
     setProgress(overallProgress);
     setStageProgress(stageProgressValue);
+
+    console.log('🔄 Progress Updated:', {
+      overallProgress,
+      stageProgressValue,
+      stage: stats.stage || stats.status,
+      processedChunks: stats.processedChunks,
+      totalChunks: stats.totalChunks,
+      insertedRows: stats.insertedRows,
+      totalRows: stats.totalRows
+    });
   };
 
   if (!isOpen) return null;
@@ -109,27 +126,44 @@ const ImportProcessingModal = ({ isOpen, onClose, processingStats }) => {
             </div>
           </div>
 
-          {/* Statistics */}
-          {processingStats && (
+          {/* Statistics - Updated to handle actual data structure */}
+          {displayStats && (
             <div className={styles.statsGrid}>
               <div className={styles.statItem}>
                 <span className={styles.statLabel}>Total Rows:</span>
-                <span className={styles.statValue}>{processingStats.totalRows || 0}</span>
+                <span className={styles.statValue}>
+                  {displayStats.totalRows || displayStats.totalProspects || 0}
+                </span>
               </div>
               <div className={styles.statItem}>
                 <span className={styles.statLabel}>Valid Rows:</span>
-                <span className={styles.statValue}>{processingStats.validRows || 0}</span>
+                <span className={styles.statValue}>
+                  {displayStats.validRows || (displayStats.totalProspects - (displayStats.failedImports || 0)) || 0}
+                </span>
               </div>
               <div className={styles.statItem}>
                 <span className={styles.statLabel}>Inserted:</span>
-                <span className={styles.statValue}>{processingStats.insertedRows || 0}</span>
+                <span className={styles.statValue}>
+                  {displayStats.insertedRows || displayStats.successfulImports || 0}
+                </span>
               </div>
               <div className={styles.statItem}>
                 <span className={styles.statLabel}>Errors:</span>
                 <span className={`${styles.statValue} ${styles.error}`}>
-                  {processingStats.errorCount || 0}
+                  {displayStats.errorCount || displayStats.failedImports || 0}
                 </span>
               </div>
+              {/* Additional debug info */}
+              {(displayStats.processedChunks !== undefined && displayStats.totalChunks !== undefined) && (
+                <>
+                  <div className={styles.statItem}>
+                    <span className={styles.statLabel}>Chunks Processed:</span>
+                    <span className={styles.statValue}>
+                      {displayStats.processedChunks} / {displayStats.totalChunks}
+                    </span>
+                  </div>
+                </>
+              )}
             </div>
           )}
 
@@ -137,46 +171,64 @@ const ImportProcessingModal = ({ isOpen, onClose, processingStats }) => {
           <div className={styles.logsSection}>
             <h4>Processing Logs</h4>
             <div className={styles.logsContainer}>
-              {processingStats?.logs?.map((log, index) => (
+              {displayStats?.logs?.map((log, index) => (
                 <div key={index} className={`${styles.logEntry} ${styles[log.type]}`}>
                   <span className={styles.logTime}>
-                    {new Date(log.timestamp).toLocaleTimeString()}
+                    {log.timestamp ? new Date(log.timestamp).toLocaleTimeString() : '--:--:--'}
                   </span>
                   <span className={styles.logMessage}>{log.message}</span>
                 </div>
               )) || (
-                <div className={styles.noLogs}>No logs available</div>
+                <div className={styles.noLogs}>
+                  {displayStats ? 'Waiting for logs...' : 'No logs available'}
+                </div>
               )}
             </div>
           </div>
 
           {/* Error Display */}
-          {processingStats?.errors && processingStats.errors.length > 0 && (
+          {displayStats?.errors && displayStats.errors.length > 0 && (
             <div className={styles.errorsSection}>
               <h4>
                 <FiAlertCircle className={styles.errorIcon} />
-                Errors ({processingStats.errors.length})
+                Errors ({displayStats.errors.length})
               </h4>
               <div className={styles.errorsContainer}>
-                {processingStats.errors.slice(0, 10).map((error, index) => (
+                {displayStats.errors.slice(0, 10).map((error, index) => (
                   <div key={index} className={styles.errorEntry}>
-                    {error}
+                    {typeof error === 'object' ? JSON.stringify(error) : error}
                   </div>
                 ))}
-                {processingStats.errors.length > 10 && (
+                {displayStats.errors.length > 10 && (
                   <div className={styles.moreErrors}>
-                    ... and {processingStats.errors.length - 10} more errors
+                    ... and {displayStats.errors.length - 10} more errors
                   </div>
                 )}
               </div>
             </div>
           )}
 
-          {/* Processing Animation */}
-          <div className={styles.processingAnimation}>
-            <div className={styles.spinner}></div>
-            <span>Processing your data, please wait...</span>
-          </div>
+          {/* Processing Animation - Only show when not completed */}
+          {currentStage !== 'completed' && (
+            <div className={styles.processingAnimation}>
+              <div className={styles.spinner}></div>
+              <span>Processing your data, please wait...</span>
+            </div>
+          )}
+
+          {/* Success Message */}
+          {currentStage === 'completed' && (
+            <div className={styles.successSection}>
+              <FiCheckCircle className={styles.successIcon} size={32} />
+              <h3>Import Completed Successfully!</h3>
+              <p>
+                Successfully imported {displayStats?.insertedRows || 0} prospects.
+                {displayStats?.errorCount > 0 && 
+                  ` ${displayStats.errorCount} rows had errors and were skipped.`
+                }
+              </p>
+            </div>
+          )}
         </div>
 
         <div className={styles.modalFooter}>

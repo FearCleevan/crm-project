@@ -4,7 +4,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(15, 15, 26, 0.9);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -13,15 +13,17 @@
 }
 
 .modal {
-  background: white;
-  border-radius: 12px;
+  background: #0f0f1a;
+  border-radius: 8px;
   width: 90%;
   max-width: 600px;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
   animation: modalSlideIn 0.3s ease-out;
+  border: 1px solid #2a2a3a;
+  color: #e0e0e0;
 }
 
 @keyframes modalSlideIn {
@@ -40,12 +42,12 @@
   justify-content: space-between;
   align-items: center;
   padding: 20px 24px;
-  border-bottom: 1px solid #e1e5e9;
+  border-bottom: 1px solid #2a2a3a;
 }
 
 .modalHeader h2 {
   margin: 0;
-  color: #1a1a1a;
+  color: #e0e0e0;
   font-size: 1.5rem;
   font-weight: 600;
 }
@@ -54,15 +56,15 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: #6b7280;
+  color: #b0b0b0;
   padding: 4px;
   border-radius: 4px;
   transition: all 0.2s;
 }
 
 .closeButton:hover {
-  background: #f3f4f6;
-  color: #374151;
+  background: #1a1a2a;
+  color: #e0e0e0;
 }
 
 .modalContent {
@@ -76,10 +78,10 @@
 }
 
 .overallProgress {
-  background: #f8fafc;
+  background: #1a1a2a;
   padding: 16px;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  border: 1px solid #2a2a3a;
 }
 
 .progressHeader {
@@ -88,18 +90,19 @@
   align-items: center;
   margin-bottom: 8px;
   font-weight: 500;
+  color: #e0e0e0;
 }
 
 .progressBar {
   height: 8px;
-  background: #e2e8f0;
+  background: #2a2a3a;
   border-radius: 4px;
   overflow: hidden;
 }
 
 .progressFill {
   height: 100%;
-  background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+  background: linear-gradient(135deg, #4a6fa5 0%, #3a4a6d 100%);
   border-radius: 4px;
   transition: width 0.3s ease;
   position: relative;
@@ -112,7 +115,7 @@
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
   animation: shimmer 2s infinite;
 }
 
@@ -126,19 +129,19 @@
   align-items: center;
   gap: 16px;
   padding: 20px;
-  background: #f0f9ff;
-  border: 1px solid #bae6fd;
-  border-radius: 8px;
+  background: #1a1a2a;
+  border: 1px solid #2a2a3a;
+  border-radius: 6px;
   margin-bottom: 24px;
 }
 
 .stageIcon {
-  color: #0369a1;
+  color: #6b9aff;
 }
 
 .stageInfo h3 {
   margin: 0 0 8px 0;
-  color: #0c4a6e;
+  color: #e0e0e0;
   font-size: 1.1rem;
 }
 
@@ -152,14 +155,14 @@
 .stageProgressBar {
   flex: 1;
   height: 6px;
-  background: #bae6fd;
+  background: #2a2a3a;
   border-radius: 3px;
   overflow: hidden;
 }
 
 .stageProgressFill {
   height: 100%;
-  background: #0284c7;
+  background: linear-gradient(135deg, #4a6fa5 0%, #3a4a6d 100%);
   border-radius: 3px;
   transition: width 0.3s ease;
 }
@@ -176,23 +179,23 @@
   justify-content: space-between;
   align-items: center;
   padding: 12px;
-  background: #f8fafc;
+  background: #1a1a2a;
   border-radius: 6px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #2a2a3a;
 }
 
 .statLabel {
-  color: #64748b;
+  color: #b0b0b0;
   font-weight: 500;
 }
 
 .statValue {
-  color: #1e293b;
+  color: #e0e0e0;
   font-weight: 600;
 }
 
 .statValue.error {
-  color: #dc2626;
+  color: #ff6b6b;
 }
 
 .logsSection {
@@ -201,7 +204,7 @@
 
 .logsSection h4 {
   margin: 0 0 12px 0;
-  color: #374151;
+  color: #6b9aff;
   font-size: 0.9rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -209,8 +212,8 @@
 }
 
 .logsContainer {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: #1a1a2a;
+  border: 1px solid #2a2a3a;
   border-radius: 6px;
   max-height: 120px;
   overflow-y: auto;
@@ -222,7 +225,7 @@
   gap: 12px;
   padding: 6px 8px;
   font-size: 0.8rem;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid #2a2a3a;
 }
 
 .logEntry:last-child {
@@ -230,19 +233,19 @@
 }
 
 .logEntry.info {
-  color: #059669;
+  color: #6b9aff;
 }
 
 .logEntry.warning {
-  color: #d97706;
+  color: #ffd93d;
 }
 
 .logEntry.error {
-  color: #dc2626;
+  color: #ff6b6b;
 }
 
 .logTime {
-  color: #6b7280;
+  color: #b0b0b0;
   min-width: 60px;
   font-family: monospace;
 }
@@ -253,7 +256,7 @@
 
 .noLogs {
   text-align: center;
-  color: #9ca3af;
+  color: #b0b0b0;
   font-style: italic;
   padding: 20px;
 }
@@ -267,18 +270,18 @@
   align-items: center;
   gap: 8px;
   margin: 0 0 12px 0;
-  color: #dc2626;
+  color: #ff6b6b;
   font-size: 0.9rem;
   font-weight: 600;
 }
 
 .errorIcon {
-  color: #dc2626;
+  color: #ff6b6b;
 }
 
 .errorsContainer {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  background: #2a1a1a;
+  border: 1px solid #ff6b6b;
   border-radius: 6px;
   max-height: 100px;
   overflow-y: auto;
@@ -288,8 +291,8 @@
 .errorEntry {
   padding: 6px 8px;
   font-size: 0.8rem;
-  color: #b91c1c;
-  border-bottom: 1px solid #fecaca;
+  color: #ff8e8e;
+  border-bottom: 1px solid #3a2a2a;
   font-family: monospace;
 }
 
@@ -299,10 +302,10 @@
 
 .moreErrors {
   text-align: center;
-  color: #ef4444;
+  color: #ff6b6b;
   font-style: italic;
   padding: 8px;
-  background: #fef2f2;
+  background: #2a1a1a;
 }
 
 .processingAnimation {
@@ -311,16 +314,16 @@
   align-items: center;
   gap: 12px;
   padding: 20px;
-  background: #f8fafc;
-  border-radius: 8px;
-  border: 1px dashed #cbd5e1;
+  background: #1a1a2a;
+  border-radius: 6px;
+  border: 1px dashed #2a2a3a;
 }
 
 .spinner {
   width: 32px;
   height: 32px;
-  border: 3px solid #e2e8f0;
-  border-top: 3px solid #3b82f6;
+  border: 3px solid #2a2a3a;
+  border-top: 3px solid #6b9aff;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -331,48 +334,101 @@
 }
 
 .processingAnimation span {
-  color: #64748b;
+  color: #b0b0b0;
+  font-size: 0.9rem;
+}
+
+.successSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 20px;
+  background: #1a2a1a;
+  border: 1px solid #2a3a2a;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.successIcon {
+  color: #6bff8e;
+}
+
+.successSection h3 {
+  margin: 0;
+  color: #e0e0e0;
+  font-size: 1.2rem;
+}
+
+.successSection p {
+  margin: 0;
+  color: #b0b0b0;
   font-size: 0.9rem;
 }
 
 .modalFooter {
   padding: 20px 24px;
-  border-top: 1px solid #e1e5e9;
+  border-top: 1px solid #2a2a3a;
   display: flex;
   justify-content: flex-end;
 }
 
 .completeButton {
-  background: #059669;
-  color: white;
+  background: linear-gradient(135deg, #4a6fa5 0%, #3a4a6d 100%);
+  color: #ffffff;
   border: none;
   padding: 10px 20px;
-  border-radius: 6px;
+  border-radius: 4px;
   cursor: pointer;
   font-weight: 500;
   display: flex;
   align-items: center;
   gap: 8px;
-  transition: background 0.2s;
+  transition: all 0.2s;
 }
 
 .completeButton:hover {
-  background: #047857;
+  background: linear-gradient(135deg, #3a5f95 0%, #2a3a5d 100%);
+  transform: translateY(-1px);
 }
 
 .cancelButton {
-  background: #ef4444;
-  color: white;
-  border: none;
+  background: #2a1a1a;
+  color: #ff6b6b;
+  border: 1px solid #ff6b6b;
   padding: 10px 20px;
-  border-radius: 6px;
+  border-radius: 4px;
   cursor: pointer;
   font-weight: 500;
-  transition: background 0.2s;
+  transition: all 0.2s;
 }
 
 .cancelButton:hover {
-  background: #dc2626;
+  background: #3a2a2a;
+  transform: translateY(-1px);
+}
+
+/* Scrollbar Styling */
+.logsContainer::-webkit-scrollbar,
+.errorsContainer::-webkit-scrollbar {
+  width: 6px;
+}
+
+.logsContainer::-webkit-scrollbar-track,
+.errorsContainer::-webkit-scrollbar-track {
+  background: #1a1a2a;
+  border-radius: 3px;
+}
+
+.logsContainer::-webkit-scrollbar-thumb,
+.errorsContainer::-webkit-scrollbar-thumb {
+  background: #2a2a3a;
+  border-radius: 3px;
+}
+
+.logsContainer::-webkit-scrollbar-thumb:hover,
+.errorsContainer::-webkit-scrollbar-thumb:hover {
+  background: #3a3a4a;
 }
 
 /* Responsive Design */
@@ -395,5 +451,17 @@
   .stageProgress {
     flex-direction: column;
     gap: 8px;
+  }
+  
+  .modalHeader {
+    padding: 16px 20px;
+  }
+  
+  .modalContent {
+    padding: 20px;
+  }
+  
+  .modalFooter {
+    padding: 16px 20px;
   }
 }

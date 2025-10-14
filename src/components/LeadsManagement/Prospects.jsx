@@ -507,12 +507,10 @@ const Prospects = () => {
         }
     };
 
-    // ADDED: pollImportProgress function
-    // FIXED: pollImportProgress function
+    // pollImportProgress function
     const pollImportProgress = async (sessionId) => {
         try {
             const token = localStorage.getItem('token');
-            // FIX: Use the correct endpoint format with path parameter
             const response = await fetch(`/api/prospects/import/progress/${sessionId}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -526,43 +524,42 @@ const Prospects = () => {
 
             const data = await response.json();
 
-            if (data.success) {
-                // Update the import processing stats
+            if (data.success && data.progress) {
+                console.log('📊 Progress Update:', data.progress); // Debug log
+
+                // Update the import processing stats with the progress data
                 setImportProcessing(prev => ({
                     ...prev,
                     stats: {
                         ...prev.stats,
                         ...data.progress,
+                        // Ensure logs array exists and is updated
                         logs: [
-                            ...prev.stats.logs,
+                            ...(prev.stats?.logs || []),
                             ...(data.progress.logs || [])
-                        ],
+                        ].slice(-20), // Keep only last 20 logs
+                        // Ensure errors array exists
                         errors: [
-                            ...prev.stats.errors,
+                            ...(prev.stats?.errors || []),
                             ...(data.progress.errors || [])
                         ]
                     }
                 }));
 
                 // Continue polling if not completed
-                if (data.progress.stage !== 'completed' && data.progress.stage !== 'error') {
+                if (data.progress.stage !== 'completed' && data.progress.status !== 'completed') {
                     importPollingRef.current = setTimeout(() => {
                         pollImportProgress(sessionId);
-                    }, 2000); // Poll every 2 seconds
+                    }, 2000);
                 } else {
-                    // Import completed or errored
-                    if (data.progress.stage === 'completed') {
-                        // Refresh prospects list after successful import
-                        fetchProspects();
+                    // Import completed
+                    console.log('✅ Import completed successfully');
+                    fetchProspects(); // Refresh the prospects list
 
-                        // Auto-close success modal after 5 seconds
-                        setTimeout(() => {
-                            setImportProcessing({ isOpen: false, stats: null });
-                        }, 5000);
-                    } else {
-                        // Keep error modal open for user to see errors
-                        console.error('Import failed:', data.progress.errors);
-                    }
+                    // Auto-close after 5 seconds
+                    setTimeout(() => {
+                        setImportProcessing({ isOpen: false, stats: null });
+                    }, 5000);
                 }
             } else {
                 throw new Error(data.error || 'Failed to fetch import progress');
@@ -570,30 +567,27 @@ const Prospects = () => {
         } catch (error) {
             console.error('Error polling import progress:', error);
 
+            // Update with error state but don't stop polling immediately
             setImportProcessing(prev => ({
                 ...prev,
                 stats: {
                     ...prev.stats,
                     stage: 'error',
                     logs: [
-                        ...prev.stats.logs,
+                        ...(prev.stats?.logs || []),
                         {
                             type: 'error',
-                            message: `Failed to check import progress: ${error.message}`,
+                            message: `Failed to check progress: ${error.message}`,
                             timestamp: new Date()
                         }
-                    ],
-                    errors: [
-                        ...prev.stats.errors,
-                        error.message
                     ]
                 }
             }));
 
-            // Auto-close error modal after 8 seconds
-            setTimeout(() => {
-                setImportProcessing({ isOpen: false, stats: null });
-            }, 8000);
+            // Continue polling despite error (might be temporary network issue)
+            importPollingRef.current = setTimeout(() => {
+                pollImportProgress(sessionId);
+            }, 5000);
         }
     };
 
