@@ -308,6 +308,7 @@ const Prospects = () => {
 
     const searchTimeoutRef = useRef(null);
     const hasSearchedRef = useRef(false);
+    const importPollingRef = useRef(null);
 
     // Persist state to localStorage
     useEffect(() => {
@@ -333,6 +334,15 @@ const Prospects = () => {
     useEffect(() => {
         localStorage.setItem('prospects_filterValues', JSON.stringify(filterValues));
     }, [filterValues]);
+
+    // Cleanup polling on unmount
+    useEffect(() => {
+        return () => {
+            if (importPollingRef.current) {
+                clearTimeout(importPollingRef.current);
+            }
+        };
+    }, []);
 
     // Check if any filter is active
     const isFilterActive = useMemo(() => {
@@ -494,6 +504,94 @@ const Prospects = () => {
                 setCurrentPage(1);
                 fetchProspects(1, itemsPerPage, value);
             }, 800);
+        }
+    };
+
+    // ADDED: pollImportProgress function
+    const pollImportProgress = async (sessionId) => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`/api/prospects/import/progress?sessionId=${sessionId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Update the import processing stats
+                setImportProcessing(prev => ({
+                    ...prev,
+                    stats: {
+                        ...prev.stats,
+                        ...data.progress,
+                        logs: [
+                            ...prev.stats.logs,
+                            ...(data.progress.logs || [])
+                        ],
+                        errors: [
+                            ...prev.stats.errors,
+                            ...(data.progress.errors || [])
+                        ]
+                    }
+                }));
+
+                // Continue polling if not completed
+                if (data.progress.stage !== 'completed' && data.progress.stage !== 'error') {
+                    importPollingRef.current = setTimeout(() => {
+                        pollImportProgress(sessionId);
+                    }, 2000); // Poll every 2 seconds
+                } else {
+                    // Import completed or errored
+                    if (data.progress.stage === 'completed') {
+                        // Refresh prospects list after successful import
+                        fetchProspects();
+
+                        // Auto-close success modal after 5 seconds
+                        setTimeout(() => {
+                            setImportProcessing({ isOpen: false, stats: null });
+                        }, 5000);
+                    } else {
+                        // Keep error modal open for user to see errors
+                        console.error('Import failed:', data.progress.errors);
+                    }
+                }
+            } else {
+                throw new Error(data.error || 'Failed to fetch import progress');
+            }
+        } catch (error) {
+            console.error('Error polling import progress:', error);
+
+            setImportProcessing(prev => ({
+                ...prev,
+                stats: {
+                    ...prev.stats,
+                    stage: 'error',
+                    logs: [
+                        ...prev.stats.logs,
+                        {
+                            type: 'error',
+                            message: `Failed to check import progress: ${error.message}`,
+                            timestamp: new Date()
+                        }
+                    ],
+                    errors: [
+                        ...prev.stats.errors,
+                        error.message
+                    ]
+                }
+            }));
+
+            // Auto-close error modal after 8 seconds
+            setTimeout(() => {
+                setImportProcessing({ isOpen: false, stats: null });
+            }, 8000);
         }
     };
 
@@ -698,34 +796,6 @@ const Prospects = () => {
         }
     };
 
-    // Calculate pagination values
-    const startItem = (currentPage - 1) * itemsPerPage + 1;
-    const endItem = Math.min(currentPage * itemsPerPage, sortedLeads.length);
-    const totalItems = sortedLeads.length;
-
-    // Generate page numbers
-    const pageNumbers = [];
-    const maxVisiblePages = 5;
-    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-
-    if (endPage - startPage + 1 < maxVisiblePages) {
-        startPage = Math.max(1, endPage - maxVisiblePages + 1);
-    }
-
-    for (let i = startPage; i <= endPage; i++) {
-        pageNumbers.push(i);
-    }
-
-    const handlePageChange = (newPage) => {
-        setCurrentPage(newPage);
-    };
-
-    const handleItemsPerPageChange = (newItemsPerPage) => {
-        setItemsPerPage(newItemsPerPage);
-        setCurrentPage(1);
-    };
-
     const handleImport = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -883,6 +953,34 @@ const Prospects = () => {
 
         // Reset file input
         e.target.value = '';
+    };
+
+    // Calculate pagination values
+    const startItem = (currentPage - 1) * itemsPerPage + 1;
+    const endItem = Math.min(currentPage * itemsPerPage, sortedLeads.length);
+    const totalItems = sortedLeads.length;
+
+    // Generate page numbers
+    const pageNumbers = [];
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+    if (endPage - startPage + 1 < maxVisiblePages) {
+        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+        pageNumbers.push(i);
+    }
+
+    const handlePageChange = (newPage) => {
+        setCurrentPage(newPage);
+    };
+
+    const handleItemsPerPageChange = (newItemsPerPage) => {
+        setItemsPerPage(newItemsPerPage);
+        setCurrentPage(1);
     };
 
     if (loading) {
