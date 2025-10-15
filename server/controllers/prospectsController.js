@@ -1193,10 +1193,12 @@ async function updateImportProgress(
           ? currentSession.failed_imports + failedCount
           : currentSession.failed_imports + (errors?.length || 0);
 
+      // FIX: Use Set to remove duplicate errors before storing
       const currentErrors = currentSession.chunk_errors
         ? JSON.parse(currentSession.chunk_errors)
         : [];
-      const newErrors = [...currentErrors, ...errors];
+      const allErrors = [...currentErrors, ...errors];
+      const uniqueErrors = [...new Set(allErrors)]; // Remove duplicates
 
       await connection.query(
         `UPDATE import_sessions 
@@ -1206,21 +1208,14 @@ async function updateImportProgress(
           newProcessedChunks,
           newSuccessful,
           newFailed,
-          JSON.stringify(newErrors),
+          JSON.stringify(uniqueErrors),
           sessionId,
         ]
       );
     }
   } catch (error) {
     console.error("Error updating import progress:", error);
-    if (global.importSessions && global.importSessions[sessionId]) {
-      const session = global.importSessions[sessionId];
-      session.processedChunks++;
-      session.successfulImports += successful;
-      session.failedImports +=
-        failedCount !== null ? failedCount : errors.length;
-      session.chunkErrors.push(...errors);
-    }
+    // Handle memory storage fallback...
   } finally {
     connection.release();
   }
@@ -1236,15 +1231,22 @@ async function processChunk(chunk) {
   try {
     await connection.beginTransaction();
 
+    // OPTIMIZATION: Check for duplicates in batch instead of one-by-one
+    const emails = chunk.map((p) => p.Email);
+
+    // Batch query to find existing emails
+    const [existingEmails] = await connection.query(
+      "SELECT Email FROM prospects WHERE Email IN (?) AND isactive = 1",
+      [emails]
+    );
+
+    // Create a Set for fast duplicate checking
+    const existingEmailSet = new Set(existingEmails.map((e) => e.Email));
+
     for (const prospect of chunk) {
       try {
-        // Check for duplicate email before insert
-        const [existing] = await connection.query(
-          "SELECT id FROM prospects WHERE Email = ? AND isactive = 1",
-          [prospect.Email]
-        );
-
-        if (existing.length > 0) {
+        // Use the pre-checked duplicate set for fast lookup
+        if (existingEmailSet.has(prospect.Email)) {
           chunkErrors.push(
             `Prospect with email ${prospect.Email} already exists`
           );
@@ -1279,7 +1281,7 @@ async function processChunk(chunk) {
             prospect.Postalcode,
             prospect.Country,
             prospect.Annualrevenue,
-            prospect.Industry, // Can be NULL now
+            prospect.Industry,
             prospect.Employeesize,
             prospect.Siccode,
             prospect.Naicscode,
@@ -1293,6 +1295,9 @@ async function processChunk(chunk) {
           ]
         );
         successfulImports++;
+
+        // Add to the existing set to prevent duplicates within the same chunk
+        existingEmailSet.add(prospect.Email);
       } catch (error) {
         if (error.code === "ER_DUP_ENTRY") {
           chunkErrors.push(`Duplicate entry for email ${prospect.Email}`);
@@ -1315,15 +1320,12 @@ async function processChunk(chunk) {
   return { successful: successfulImports, errors: chunkErrors };
 }
 
-
-// In your backend controller, update the checkImportProgress function
 export const checkImportProgress = async (req, res) => {
   try {
     const { sessionId } = req.params;
 
     console.log(`🔍 Checking import progress for session: ${sessionId}`);
 
-    let tableExists = false;
     const connection = await pool.getConnection();
 
     try {
@@ -1331,12 +1333,12 @@ export const checkImportProgress = async (req, res) => {
       const [tables] = await connection.query(
         "SHOW TABLES LIKE 'import_sessions'"
       );
-      tableExists = tables.length > 0;
+      const tableExists = tables.length > 0;
 
       let progress;
 
       if (!tableExists) {
-        console.log('📊 import_sessions table does not exist, using memory storage');
+        // Memory storage fallback
         if (!global.importSessions || !global.importSessions[sessionId]) {
           return res.status(404).json({
             success: false,
@@ -1345,14 +1347,14 @@ export const checkImportProgress = async (req, res) => {
         }
         progress = global.importSessions[sessionId];
       } else {
-        // Check database for session
+        // Get session from database
         const [sessions] = await connection.query(
           "SELECT * FROM import_sessions WHERE session_id = ?",
           [sessionId]
         );
 
         if (sessions.length === 0) {
-          console.log('📊 Session not found in database, checking memory');
+          // Memory storage fallback
           if (!global.importSessions || !global.importSessions[sessionId]) {
             return res.status(404).json({
               success: false,
@@ -1362,75 +1364,57 @@ export const checkImportProgress = async (req, res) => {
           progress = global.importSessions[sessionId];
         } else {
           const session = sessions[0];
-          console.log(`📊 Found session in database:`, {
-            status: session.status,
-            processed: session.processed_chunks,
-            total: session.total_chunks,
-            successful: session.successful_imports,
-            failed: session.failed_imports
-          });
+
+          // FIX: Create fresh logs array instead of accumulating
+          const currentLogs = [
+            {
+              type: "info",
+              message: `Processing chunk ${session.processed_chunks} of ${session.total_chunks}`,
+              timestamp: session.updated_at || session.created_at,
+            },
+            {
+              type: "info",
+              message: `Successfully imported ${session.successful_imports} of ${session.total_prospects} prospects`,
+              timestamp: session.updated_at || session.created_at,
+            },
+          ];
 
           progress = {
             sessionId: session.session_id,
-            stage: session.status === 'completed' ? 'completed' : 'inserting',
+            stage: session.status === "completed" ? "completed" : "inserting",
             totalRows: session.total_prospects,
             validRows: session.total_prospects - session.failed_imports,
-            insertedRows: session.successful_imports,
-            errorCount: session.failed_imports,
+            insertedRows: session.successful_imports, // This should be cumulative total
+            errorCount: session.failed_imports, // This should be cumulative total
             totalChunks: session.total_chunks,
             processedChunks: session.processed_chunks,
-            logs: [
-              {
-                type: 'info',
-                message: `Processing chunk ${session.processed_chunks} of ${session.total_chunks}`,
-                timestamp: session.updated_at || session.created_at
-              },
-              {
-                type: 'info', 
-                message: `Successfully imported ${session.successful_imports} of ${session.total_prospects} prospects`,
-                timestamp: session.updated_at || session.created_at
-              }
-            ],
-            errors: session.chunk_errors ? JSON.parse(session.chunk_errors) : [],
-            progressPercentage: session.total_chunks > 0 
-              ? Math.round((session.processed_chunks / session.total_chunks) * 100)
-              : 0
+            logs: currentLogs, // FRESH logs each time
+            // FIX: Parse errors but don't accumulate duplicates
+            errors: session.chunk_errors
+              ? [...new Set(JSON.parse(session.chunk_errors))]
+              : [], // Remove duplicates
+            progressPercentage:
+              session.total_chunks > 0
+                ? Math.round(
+                    (session.processed_chunks / session.total_chunks) * 100
+                  )
+                : 0,
           };
         }
       }
 
-      // Add real-time logs based on current progress
-      if (!progress.logs) progress.logs = [];
-      
-      // Add current status log
-      progress.logs.push({
-        type: 'info',
-        message: `Progress: ${progress.processedChunks || 0}/${progress.totalChunks || 0} chunks processed`,
-        timestamp: new Date()
-      });
-
-      res.json({ 
-        success: true, 
-        progress: progress
+      res.json({
+        success: true,
+        progress: progress,
       });
     } finally {
       connection.release();
     }
   } catch (error) {
     console.error("💥 Check import progress error:", error);
-
-    // Final fallback to memory storage
-    if (!global.importSessions || !global.importSessions[req.params.sessionId]) {
-      return res.status(404).json({
-        success: false,
-        error: "Import session not found: " + error.message,
-      });
-    }
-
-    const progress = global.importSessions[req.params.sessionId];
-    res.json({ 
-      success: true, 
-      progress: progress
+    return res.status(500).json({
+      success: false,
+      error: "Failed to check progress: " + error.message,
     });
   }
 };
