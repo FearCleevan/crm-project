@@ -237,7 +237,7 @@
   width: 2.5rem;
   height: 2.5rem;
   background: linear-gradient(135deg, #4a6fa5 0%, #3a4a6d 100%);
-  border-radius: 50%;
+  border-radius: 50px;
   display: flex;
   align-items: center;
   justify-content: center;
