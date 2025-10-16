@@ -1,6 +1,6 @@
 import pool from "../config/db.js";
 
-// Get dashboard statistics - FIXED VERSION
+// Get dashboard statistics - UPDATED VERSION (Companyphonenumber only)
 export const getDashboardStats = async (req, res) => {
   let connection;
   try {
@@ -8,14 +8,14 @@ export const getDashboardStats = async (req, res) => {
 
     console.log('📊 Fetching dashboard statistics...');
 
-    // Get total leads (active prospects) - CORRECT
+    // Get total leads (active prospects)
     const [totalLeadsResult] = await pool.query(
       "SELECT COUNT(*) as total FROM prospects WHERE isactive = 1"
     );
     const totalLeads = totalLeadsResult[0]?.total || 0;
     console.log('👥 Total leads:', totalLeads);
 
-    // FIXED: Get total unique emails (count distinct valid emails)
+    // Get total unique emails (count distinct valid emails)
     const [totalEmailsResult] = await pool.query(
       `SELECT COUNT(DISTINCT Email) as total FROM prospects 
        WHERE isactive = 1 
@@ -26,31 +26,28 @@ export const getDashboardStats = async (req, res) => {
     const totalEmails = totalEmailsResult[0]?.total || 0;
     console.log('📧 Total unique emails:', totalEmails);
 
-    // FIXED: Get total phone numbers - count rows that have at least one valid phone number
+    // UPDATED: Get total phone numbers - count only Companyphonenumber (exclude Altphonenumber)
     const [totalPhonesResult] = await pool.query(
       `SELECT COUNT(*) as total FROM prospects 
        WHERE isactive = 1 
-       AND (
-         (Companyphonenumber IS NOT NULL AND Companyphonenumber != '' AND Companyphonenumber != '0')
-         OR 
-         (Altphonenumber IS NOT NULL AND Altphonenumber != '' AND Altphonenumber != '0')
-       )`
+       AND Companyphonenumber IS NOT NULL 
+       AND Companyphonenumber != '' 
+       AND Companyphonenumber != '0'`
     );
     const totalPhones = totalPhonesResult[0]?.total || 0;
-    console.log('📞 Total prospects with phone numbers:', totalPhones);
+    console.log('📞 Total prospects with company phone numbers:', totalPhones);
 
-    // FIXED: Get count of actual phone number entries (both fields)
+    // UPDATED: Get count of actual company phone number entries only
     const [phoneNumbersCountResult] = await pool.query(
       `SELECT 
-        COUNT(CASE WHEN Companyphonenumber IS NOT NULL AND Companyphonenumber != '' AND Companyphonenumber != '0' THEN 1 END) as company_phones,
-        COUNT(CASE WHEN Altphonenumber IS NOT NULL AND Altphonenumber != '' AND Altphonenumber != '0' THEN 1 END) as alt_phones
+        COUNT(CASE WHEN Companyphonenumber IS NOT NULL AND Companyphonenumber != '' AND Companyphonenumber != '0' THEN 1 END) as company_phones
        FROM prospects 
        WHERE isactive = 1`
     );
-    const totalPhoneEntries = (phoneNumbersCountResult[0]?.company_phones || 0) + (phoneNumbersCountResult[0]?.alt_phones || 0);
-    console.log('🔢 Total phone number entries:', totalPhoneEntries);
+    const totalPhoneEntries = phoneNumbersCountResult[0]?.company_phones || 0;
+    console.log('🔢 Total company phone number entries:', totalPhoneEntries);
 
-    // FIXED: Get total unique companies
+    // Get total unique companies
     const [totalCompaniesResult] = await pool.query(
       `SELECT COUNT(DISTINCT Company) as total FROM prospects 
        WHERE isactive = 1 
@@ -60,7 +57,7 @@ export const getDashboardStats = async (req, res) => {
     const totalCompanies = totalCompaniesResult[0]?.total || 0;
     console.log('🏢 Total unique companies:', totalCompanies);
 
-    // FIXED: Get duplicate leads - count emails that appear more than once
+    // Get duplicate leads - count emails that appear more than once
     const [duplicateLeadsResult] = await pool.query(
       `SELECT COUNT(*) as total_duplicates FROM (
         SELECT Email, COUNT(*) as email_count
@@ -76,7 +73,7 @@ export const getDashboardStats = async (req, res) => {
     const duplicateLeads = duplicateLeadsResult[0]?.total_duplicates || 0;
     console.log('🔄 Total duplicate email groups:', duplicateLeads);
 
-    // FIXED: Get count of individual duplicate records
+    // Get count of individual duplicate records
     const [duplicateRecordsResult] = await pool.query(
       `SELECT COUNT(*) as total_duplicate_records FROM (
         SELECT id, Email, COUNT(*) OVER (PARTITION BY Email) as duplicate_count
@@ -91,18 +88,17 @@ export const getDashboardStats = async (req, res) => {
     const duplicateRecords = duplicateRecordsResult[0]?.total_duplicate_records || 0;
     console.log('📝 Total duplicate records:', duplicateRecords);
 
-    // FIXED: Get junk leads (prospects missing critical data)
+    // UPDATED: Get junk leads (prospects missing critical data - only checking Companyphonenumber now)
     const [junkLeadsResult] = await pool.query(
       `SELECT COUNT(*) as total FROM prospects 
        WHERE isactive = 1 
        AND (
          (Email IS NULL OR Email = '' OR Email NOT LIKE '%@%.%')
          AND (Companyphonenumber IS NULL OR Companyphonenumber = '' OR Companyphonenumber = '0')
-         AND (Altphonenumber IS NULL OR Altphonenumber = '' OR Altphonenumber = '0')
        )`
     );
     const junkLeads = junkLeadsResult[0]?.total || 0;
-    console.log('🗑️ Junk leads (no email or phone):', junkLeads);
+    console.log('🗑️ Junk leads (no email and no company phone):', junkLeads);
 
     // Additional: Get leads with no email
     const [noEmailResult] = await pool.query(
@@ -113,25 +109,21 @@ export const getDashboardStats = async (req, res) => {
     const noEmailLeads = noEmailResult[0]?.total || 0;
     console.log('📭 Leads with no email:', noEmailLeads);
 
-    // Additional: Get leads with no phone
+    // UPDATED: Get leads with no company phone (only Companyphonenumber)
     const [noPhoneResult] = await pool.query(
       `SELECT COUNT(*) as total FROM prospects 
        WHERE isactive = 1 
-       AND (
-         (Companyphonenumber IS NULL OR Companyphonenumber = '' OR Companyphonenumber = '0')
-         AND 
-         (Altphonenumber IS NULL OR Altphonenumber = '' OR Altphonenumber = '0')
-       )`
+       AND (Companyphonenumber IS NULL OR Companyphonenumber = '' OR Companyphonenumber = '0')`
     );
     const noPhoneLeads = noPhoneResult[0]?.total || 0;
-    console.log('📞 Leads with no phone:', noPhoneLeads);
+    console.log('📞 Leads with no company phone:', noPhoneLeads);
 
     const stats = {
       totalLeads,
       totalLeadsChange: 0,
       totalEmails, // Distinct valid emails
       totalEmailsChange: 0,
-      totalPhones, // Prospects with at least one phone number
+      totalPhones, // Prospects with valid Companyphonenumber only
       totalPhonesChange: 0,
       totalCompanies, // Distinct companies
       totalCompaniesChange: 0,
@@ -142,7 +134,7 @@ export const getDashboardStats = async (req, res) => {
       junkLeadsChange: 0,
       // Additional debug info
       _debug: {
-        totalPhoneEntries, // Total phone number fields filled
+        totalPhoneEntries, // Total company phone number fields filled
         noEmailLeads,
         noPhoneLeads,
         duplicateRecords,
@@ -197,21 +189,15 @@ export const debugDashboardData = async (req, res) => {
        WHERE isactive = 1`
     );
 
-    // Debug phone counts
+    // UPDATED: Debug phone counts - only Companyphonenumber
     const [phoneAnalysis] = await pool.query(
       `SELECT 
         COUNT(CASE WHEN Companyphonenumber IS NOT NULL AND Companyphonenumber != '' AND Companyphonenumber != '0' THEN 1 END) as with_company_phone,
         COUNT(CASE WHEN Altphonenumber IS NOT NULL AND Altphonenumber != '' AND Altphonenumber != '0' THEN 1 END) as with_alt_phone,
-        COUNT(CASE WHEN 
-          (Companyphonenumber IS NOT NULL AND Companyphonenumber != '' AND Companyphonenumber != '0')
-          OR 
-          (Altphonenumber IS NOT NULL AND Altphonenumber != '' AND Altphonenumber != '0')
-        THEN 1 END) as with_any_phone,
+        COUNT(CASE WHEN Companyphonenumber IS NOT NULL AND Companyphonenumber != '' AND Companyphonenumber != '0' THEN 1 END) as with_company_phone_only,
         COUNT(CASE WHEN 
           (Companyphonenumber IS NULL OR Companyphonenumber = '' OR Companyphonenumber = '0')
-          AND 
-          (Altphonenumber IS NULL OR Altphonenumber = '' OR Altphonenumber = '0')
-        THEN 1 END) as with_no_phone
+        THEN 1 END) as with_no_company_phone
        FROM prospects 
        WHERE isactive = 1`
     );
@@ -268,10 +254,10 @@ export const debugDashboardData = async (req, res) => {
         explanation: {
           totalLeads: "All active prospects",
           totalEmails: "Distinct valid email addresses",
-          totalPhones: "Prospects with at least one valid phone number",
+          totalPhones: "Prospects with valid Companyphonenumber only",
           totalCompanies: "Distinct company names",
           duplicateLeads: "Individual records that have duplicate emails",
-          junkLeads: "Prospects with no email AND no phone number"
+          junkLeads: "Prospects with no email AND no company phone number"
         }
       }
     });
@@ -285,7 +271,7 @@ export const debugDashboardData = async (req, res) => {
   }
 };
 
-// Quick stats for real-time updates (optimized)
+// Quick stats for real-time updates (optimized) - UPDATED
 export const getQuickStats = async (req, res) => {
   try {
     const [stats] = await pool.query(`
@@ -293,9 +279,7 @@ export const getQuickStats = async (req, res) => {
         COUNT(*) as totalLeads,
         COUNT(DISTINCT CASE WHEN Email IS NOT NULL AND Email != '' AND Email LIKE '%@%.%' THEN Email END) as totalEmails,
         COUNT(CASE WHEN 
-          (Companyphonenumber IS NOT NULL AND Companyphonenumber != '' AND Companyphonenumber != '0')
-          OR 
-          (Altphonenumber IS NOT NULL AND Altphonenumber != '' AND Altphonenumber != '0')
+          Companyphonenumber IS NOT NULL AND Companyphonenumber != '' AND Companyphonenumber != '0'
         THEN 1 END) as totalPhones,
         COUNT(DISTINCT CASE WHEN Company IS NOT NULL AND Company != '' THEN Company END) as totalCompanies,
         (SELECT COUNT(*) FROM (
@@ -316,7 +300,7 @@ export const getQuickStats = async (req, res) => {
           totalPhones: stats[0]?.totalPhones || 0,
           totalCompanies: stats[0]?.totalCompanies || 0,
           duplicateLeads: stats[0]?.duplicateGroups || 0,
-          junkLeads: 0 // You can calculate this separately if needed
+          junkLeads: 0
         }
       }
     });
@@ -326,5 +310,131 @@ export const getQuickStats = async (req, res) => {
       success: false,
       error: "Internal server error: " + error.message,
     });
+  }
+};
+
+// Get dashboard statistics with trends - UPDATED
+export const getDashboardStatsWithTrends = async (req, res) => {
+  let connection;
+  try {
+    const { timeRange = 'month' } = req.query;
+    connection = await pool.getConnection();
+
+    // Get current stats using the updated logic (Companyphonenumber only)
+    const [totalLeadsResult] = await pool.query(
+      "SELECT COUNT(*) as total FROM prospects WHERE isactive = 1"
+    );
+
+    const [totalEmailsResult] = await pool.query(
+      `SELECT COUNT(DISTINCT Email) as total FROM prospects 
+       WHERE isactive = 1 
+       AND Email IS NOT NULL 
+       AND Email != '' 
+       AND Email LIKE '%@%.%'`
+    );
+
+    // UPDATED: Only count Companyphonenumber
+    const [totalPhonesResult] = await pool.query(
+      `SELECT COUNT(*) as total FROM prospects 
+       WHERE isactive = 1 
+       AND Companyphonenumber IS NOT NULL 
+       AND Companyphonenumber != '' 
+       AND Companyphonenumber != '0'`
+    );
+
+    const [totalCompaniesResult] = await pool.query(
+      "SELECT COUNT(DISTINCT Company) as total FROM prospects WHERE isactive = 1 AND Company IS NOT NULL AND Company != ''"
+    );
+
+    const [duplicateLeadsResult] = await pool.query(
+      `SELECT COUNT(*) as total_duplicate_records FROM (
+        SELECT id, Email, COUNT(*) OVER (PARTITION BY Email) as duplicate_count
+        FROM prospects 
+        WHERE isactive = 1 
+        AND Email IS NOT NULL 
+        AND Email != ''
+        AND Email LIKE '%@%.%'
+      ) as email_counts 
+      WHERE duplicate_count > 1`
+    );
+
+    // UPDATED: Junk leads definition (only Companyphonenumber)
+    const [junkLeadsResult] = await pool.query(
+      `SELECT COUNT(*) as total FROM prospects 
+       WHERE isactive = 1 
+       AND (
+         (Email IS NULL OR Email = '' OR Email NOT LIKE '%@%.%')
+         AND (Companyphonenumber IS NULL OR Companyphonenumber = '' OR Companyphonenumber = '0')
+       )`
+    );
+
+    // Calculate date range based on timeRange
+    let dateRange = new Date();
+    switch (timeRange) {
+      case 'week':
+        dateRange.setDate(dateRange.getDate() - 7);
+        break;
+      case 'month':
+        dateRange.setMonth(dateRange.getMonth() - 1);
+        break;
+      case 'quarter':
+        dateRange.setMonth(dateRange.getMonth() - 3);
+        break;
+      default:
+        dateRange.setMonth(dateRange.getMonth() - 1);
+    }
+
+    // Get previous period stats for trend calculation
+    const [previousLeadsResult] = await pool.query(
+      "SELECT COUNT(*) as total FROM prospects WHERE isactive = 1 AND CreatedOn <= ?",
+      [dateRange]
+    );
+
+    // Calculate percentage changes
+    const currentLeads = totalLeadsResult[0]?.total || 0;
+    const previousLeads = previousLeadsResult[0]?.total || 0;
+    const leadsChange = previousLeads > 0 ? 
+      Math.round(((currentLeads - previousLeads) / previousLeads) * 100) : 0;
+
+    const stats = {
+      totalLeads: currentLeads,
+      totalLeadsChange: leadsChange,
+      totalEmails: totalEmailsResult[0]?.total || 0,
+      totalEmailsChange: 0, // Simplified - implement proper tracking
+      totalPhones: totalPhonesResult[0]?.total || 0,
+      totalPhonesChange: 0, // Simplified
+      totalCompanies: totalCompaniesResult[0]?.total || 0,
+      totalCompaniesChange: 0, // Simplified
+      duplicateLeads: duplicateLeadsResult[0]?.total_duplicate_records || 0,
+      duplicateLeadsChange: 0, // Simplified
+      junkLeads: junkLeadsResult[0]?.total || 0,
+      junkLeadsChange: 0, // Simplified
+    };
+
+    console.log('📈 Dashboard stats with trends:', stats);
+
+    res.json({
+      success: true,
+      data: {
+        stats,
+        recentActivity: [],
+        trends: {
+          period: timeRange,
+          newLeads: Math.max(0, currentLeads - previousLeads),
+          growthRate: leadsChange
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error("Get dashboard stats with trends error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Internal server error: " + error.message,
+    });
+  } finally {
+    if (connection) {
+      connection.release();
+    }
   }
 };
