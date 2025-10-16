@@ -9,34 +9,34 @@ import useAuth from '../../hooks/useAuth';
 
 // Logout Confirmation Modal Component
 const LogoutConfirmationModal = ({ isOpen, onConfirm, onCancel, userName }) => {
-  if (!isOpen) return null;
+    if (!isOpen) return null;
 
-  return (
-    <div className={styles.modalOverlay}>
-      <div className={styles.modalContent}>
-        <div className={styles.modalHeader}>
-          <h3>Confirm Logout</h3>
+    return (
+        <div className={styles.modalOverlay}>
+            <div className={styles.modalContent}>
+                <div className={styles.modalHeader}>
+                    <h3>Confirm Logout</h3>
+                </div>
+                <div className={styles.modalBody}>
+                    <p>Are you sure you want to logout, <strong>{userName}</strong>?</p>
+                </div>
+                <div className={styles.modalFooter}>
+                    <button
+                        className={styles.cancelButton}
+                        onClick={onCancel}
+                    >
+                        Stay Logged In
+                    </button>
+                    <button
+                        className={styles.confirmButton}
+                        onClick={onConfirm}
+                    >
+                        Yes, Logout
+                    </button>
+                </div>
+            </div>
         </div>
-        <div className={styles.modalBody}>
-          <p>Are you sure you want to logout, <strong>{userName}</strong>?</p>
-        </div>
-        <div className={styles.modalFooter}>
-          <button 
-            className={styles.cancelButton}
-            onClick={onCancel}
-          >
-            Stay Logged In
-          </button>
-          <button 
-            className={styles.confirmButton}
-            onClick={onConfirm}
-          >
-            Yes, Logout
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+    );
 };
 
 const Dashboard = () => {
@@ -54,7 +54,7 @@ const Dashboard = () => {
         try {
             setStatsLoading(true);
             setStatsError(null);
-            
+
             const token = localStorage.getItem('token');
             const response = await fetch('/api/dashboard/stats', {
                 headers: {
@@ -68,7 +68,7 @@ const Dashboard = () => {
             }
 
             const data = await response.json();
-            
+
             if (data.success) {
                 setDashboardData(data.data);
             } else {
@@ -128,7 +128,7 @@ const Dashboard = () => {
         const diffTime = Math.abs(now - date);
         const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
         const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
-        
+
         if (date > now) {
             return 'Tomorrow, ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         } else if (diffHours < 24) {
@@ -175,7 +175,7 @@ const Dashboard = () => {
                 onCancel={handleLogoutCancel}
                 userName={`${user.firstName} ${user.lastName}`}
             />
-            
+
             {/* Left Dashboard Panel */}
             <div
                 className={`${styles.leftPanel} ${leftCollapsed ? styles.collapsed : ''}`}
@@ -210,11 +210,11 @@ const Dashboard = () => {
             {/* Main Content Area */}
             <div className={`${styles.mainContentArea} ${leftCollapsed ? styles.leftCollapsed : ''} ${rightCollapsed ? styles.rightCollapsed : ''}`}>
                 {/* Header Component */}
-                <Header 
-                  user={user} 
-                  onLogoutClick={handleLogoutClick} 
-                  onToggleRightPanel={() => setRightCollapsed(!rightCollapsed)}
-                  rightCollapsed={rightCollapsed}
+                <Header
+                    user={user}
+                    onLogoutClick={handleLogoutClick}
+                    onToggleRightPanel={() => setRightCollapsed(!rightCollapsed)}
+                    rightCollapsed={rightCollapsed}
                 />
 
                 <main className={styles.mainContent}>
@@ -227,7 +227,7 @@ const Dashboard = () => {
                             </button>
                         </div>
                     )}
-                    
+
                     {statsLoading ? (
                         <div className={styles.statsGrid}>
                             {[...Array(6)].map((_, index) => (
@@ -243,65 +243,136 @@ const Dashboard = () => {
                         </div>
                     ) : (
                         <div className={styles.statsGrid}>
+                            {/* Total Leads */}
                             <div className={styles.statCard}>
                                 <div className={styles.statHeader}>
                                     <h3>Total Leads</h3>
+                                    <span className={styles.infoTooltip} title="All active prospects in the system">ℹ️</span>
                                 </div>
                                 <p className={styles.statValue}>{formatNumber(dashboardData?.stats?.totalLeads || 0)}</p>
+                                <p className={styles.statDescription}>
+                                    Active prospects in database
+                                </p>
                                 <p className={dashboardData?.stats?.totalLeadsChange >= 0 ? styles.statChangePositive : styles.statChangeNegative}>
                                     {dashboardData?.stats?.totalLeadsChange >= 0 ? '↑' : '↓'} {Math.abs(dashboardData?.stats?.totalLeadsChange || 0)}% from last month
                                 </p>
-                                <button className={styles.moreInfoBtn}>More info</button>
+                                <button className={styles.moreInfoBtn}>View All Leads</button>
                             </div>
+
+                            {/* Total Emails */}
                             <div className={styles.statCard}>
                                 <div className={styles.statHeader}>
-                                    <h3>Total Emails</h3>
+                                    <h3>Unique Emails</h3>
+                                    <span className={styles.infoTooltip} title="Distinct valid email addresses">ℹ️</span>
                                 </div>
                                 <p className={styles.statValue}>{formatNumber(dashboardData?.stats?.totalEmails || 0)}</p>
+                                <p className={styles.statDescription}>
+                                    Distinct valid email addresses
+                                </p>
                                 <p className={dashboardData?.stats?.totalEmailsChange >= 0 ? styles.statChangePositive : styles.statChangeNegative}>
                                     {dashboardData?.stats?.totalEmailsChange >= 0 ? '↑' : '↓'} {Math.abs(dashboardData?.stats?.totalEmailsChange || 0)}% from last week
                                 </p>
-                                <button className={styles.moreInfoBtn}>More info</button>
+                                <button className={styles.moreInfoBtn}>Email Analytics</button>
                             </div>
+
+                            {/* Total Phone Numbers */}
                             <div className={styles.statCard}>
                                 <div className={styles.statHeader}>
-                                    <h3>Total Phone Numbers</h3>
+                                    <h3>Leads with Phones</h3>
+                                    <span className={styles.infoTooltip} title="Prospects with at least one valid phone number">ℹ️</span>
                                 </div>
                                 <p className={styles.statValue}>{formatNumber(dashboardData?.stats?.totalPhones || 0)}</p>
+                                <p className={styles.statDescription}>
+                                    Have at least one valid phone
+                                </p>
                                 <p className={dashboardData?.stats?.totalPhonesChange >= 0 ? styles.statChangePositive : styles.statChangeNegative}>
                                     {dashboardData?.stats?.totalPhonesChange >= 0 ? '↑' : '↓'} {Math.abs(dashboardData?.stats?.totalPhonesChange || 0)}% from yesterday
                                 </p>
-                                <button className={styles.moreInfoBtn}>More info</button>
+                                <button className={styles.moreInfoBtn}>Phone Report</button>
                             </div>
+
+                            {/* Total Companies */}
                             <div className={styles.statCard}>
                                 <div className={styles.statHeader}>
-                                    <h3>Total Companies</h3>
+                                    <h3>Unique Companies</h3>
+                                    <span className={styles.infoTooltip} title="Distinct company names">ℹ️</span>
                                 </div>
                                 <p className={styles.statValue}>{formatNumber(dashboardData?.stats?.totalCompanies || 0)}</p>
+                                <p className={styles.statDescription}>
+                                    Distinct company names
+                                </p>
                                 <p className={dashboardData?.stats?.totalCompaniesChange >= 0 ? styles.statChangePositive : styles.statChangeNegative}>
                                     {dashboardData?.stats?.totalCompaniesChange >= 0 ? '↑' : '↓'} {Math.abs(dashboardData?.stats?.totalCompaniesChange || 0)}% from last quarter
                                 </p>
-                                <button className={styles.moreInfoBtn}>More info</button>
+                                <button className={styles.moreInfoBtn}>Company View</button>
                             </div>
+
+                            {/* Duplicate Leads */}
                             <div className={styles.statCard}>
                                 <div className={styles.statHeader}>
-                                    <h3>Duplicate Leads</h3>
+                                    <h3>Duplicate Records</h3>
+                                    <span className={styles.infoTooltip} title="Individual records with duplicate emails">ℹ️</span>
                                 </div>
                                 <p className={styles.statValue}>{formatNumber(dashboardData?.stats?.duplicateLeads || 0)}</p>
+                                <p className={styles.statDescription}>
+                                    Across {dashboardData?.stats?.duplicateGroups || 0} email groups
+                                </p>
                                 <p className={dashboardData?.stats?.duplicateLeadsChange >= 0 ? styles.statChangePositive : styles.statChangeNegative}>
                                     {dashboardData?.stats?.duplicateLeadsChange >= 0 ? '↑' : '↓'} {Math.abs(dashboardData?.stats?.duplicateLeadsChange || 0)}% from last month
                                 </p>
-                                <button className={styles.moreInfoBtn}>More info</button>
+                                <button className={styles.moreInfoBtn}>Manage Duplicates</button>
                             </div>
+
+                            {/* Junk Leads */}
                             <div className={styles.statCard}>
                                 <div className={styles.statHeader}>
                                     <h3>Junk Leads</h3>
+                                    <span className={styles.infoTooltip} title="Prospects with no valid email and no valid phone number">ℹ️</span>
                                 </div>
                                 <p className={styles.statValue}>{formatNumber(dashboardData?.stats?.junkLeads || 0)}</p>
+                                <p className={styles.statDescription}>
+                                    No email and no phone
+                                </p>
                                 <p className={dashboardData?.stats?.junkLeadsChange >= 0 ? styles.statChangePositive : styles.statChangeNegative}>
                                     {dashboardData?.stats?.junkLeadsChange >= 0 ? '↑' : '↓'} {Math.abs(dashboardData?.stats?.junkLeadsChange || 0)}% from last week
                                 </p>
-                                <button className={styles.moreInfoBtn}>More info</button>
+                                <button className={styles.moreInfoBtn}>Clean Up</button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Data Quality Summary */}
+                    {!statsLoading && dashboardData && (
+                        <div className={styles.dataQualitySummary}>
+                            <h3>Data Quality Overview</h3>
+                            <div className={styles.qualityMetrics}>
+                                <div className={styles.qualityMetric}>
+                                    <span className={styles.metricLabel}>Email Coverage:</span>
+                                    <span className={styles.metricValue}>
+                                        {Math.round(((dashboardData?.stats?.totalEmails || 0) / (dashboardData?.stats?.totalLeads || 1)) * 100)}%
+                                    </span>
+                                </div>
+                                <div className={styles.qualityMetric}>
+                                    <span className={styles.metricLabel}>Phone Coverage:</span>
+                                    <span className={styles.metricValue}>
+                                        {Math.round(((dashboardData?.stats?.totalPhones || 0) / (dashboardData?.stats?.totalLeads || 1)) * 100)}%
+                                    </span>
+                                </div>
+                                <div className={styles.qualityMetric}>
+                                    <span className={styles.metricLabel}>Duplicate Rate:</span>
+                                    <span className={styles.metricValue}>
+                                        {Math.round(((dashboardData?.stats?.duplicateLeads || 0) / (dashboardData?.stats?.totalLeads || 1)) * 100)}%
+                                    </span>
+                                </div>
+                                <div className={styles.qualityMetric}>
+                                    <span className={styles.metricLabel}>Data Quality Score:</span>
+                                    <span className={styles.metricValue}>
+                                        {Math.round(
+                                            ((dashboardData?.stats?.totalEmails || 0) + (dashboardData?.stats?.totalPhones || 0)) /
+                                            (dashboardData?.stats?.totalLeads || 1) * 50
+                                        )}%
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     )}

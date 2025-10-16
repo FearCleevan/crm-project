@@ -12,7 +12,7 @@
   color: #e0e0e0;
   transition: all 0.3s ease;
   z-index: 10;
-  box-shadow: 2px 0 10px rgba(0,0,0,0.3);
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
 }
 
 .leftPanel.collapsed {
@@ -26,7 +26,7 @@
   border-left: 1px solid #2a2a3a;
   transition: all 0.3s ease;
   z-index: 10;
-  box-shadow: -2px 0 10px rgba(0,0,0,0.3);
+  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.3);
 }
 
 .rightPanel.collapsed {
@@ -286,7 +286,7 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   transition: all 0.2s ease;
   padding: 0;
   z-index: 30;
@@ -303,7 +303,7 @@
   color: #6b9aff;
 }
 
-.leftPanel.collapsed ~ .collapseButtonWrapper .collapseButton svg {
+.leftPanel.collapsed~.collapseButtonWrapper .collapseButton svg {
   transform: rotate(180deg);
 }
 
@@ -370,6 +370,7 @@
     opacity: 0;
     transform: translateY(-20px) scale(0.95);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -439,4 +440,84 @@
 .confirmButton:hover {
   opacity: 0.9;
   transform: translateY(-1px);
+}
+
+/* Add these styles to your existing CSS */
+
+.infoTooltip {
+  cursor: help;
+  margin-left: 8px;
+  font-size: 14px;
+  opacity: 0.6;
+}
+
+.statDescription {
+  font-size: 12px;
+  color: #666;
+  margin: 4px 0;
+  font-weight: 500;
+}
+
+.dataQualitySummary {
+  background: linear-gradient(135deg, #1a1a2a 0%, #2a2a3a 100%);
+  border-radius: 12px;
+  padding: 20px;
+  margin: 24px 0;
+  border: 1px solid #2a2a3a;
+}
+
+.dataQualitySummary h3 {
+  margin: 0 0 16px 0;
+  color: #b0b0b0;
+  font-size: 18px;
+}
+
+.qualityMetrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.qualityMetric {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: rgba(42, 42, 58, 0.5);
+  border-radius: 8px;
+  border: 1px solid #2a2a3a;
+}
+
+.metricLabel {
+  font-size: 14px;
+  color: #b0b0b0;
+  font-weight: 500;
+}
+
+.metricValue {
+  font-size: 16px;
+  font-weight: 600;
+  color: #b0b0b0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .qualityMetrics {
+    grid-template-columns: 1fr;
+  }
+
+  .statDescription {
+    font-size: 11px;
+  }
+}
+
+/* Enhanced stat cards */
+.statCard {
+  position: relative;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.statCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
 }
