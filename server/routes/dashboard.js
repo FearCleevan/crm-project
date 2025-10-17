@@ -11,10 +11,8 @@ const router = express.Router();
 
 console.log('🔄 Dashboard routes initializing...');
 
-// All dashboard routes require authentication
 router.use(authMiddleware);
 
-// Debug middleware to log dashboard requests
 router.use((req, res, next) => {
   console.log(`📊 Dashboard API call: ${req.method} ${req.originalUrl}`);
   next();
@@ -34,7 +32,7 @@ router.get('/test', (req, res) => {
   console.log('✅ Dashboard test route hit');
   res.json({
     success: true,
-    message: 'Dashboard routes are working!',
+    message: 'Dashboards routes are working!',
     timestamp: new Date().toISOString()
   });
 });
