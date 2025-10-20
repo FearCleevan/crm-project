@@ -20,7 +20,7 @@ import AddNewProspects from './Modals/AddNewProspects';
 import styles from './Prospects.module.css';
 import ImportProcessingModal from './ImportProcessingModal';
 
-const FilterAccordion = ({ title, children, isOpen, onToggle, id }) => {
+const FilterAccordion = ({ title, children, isOpen, onToggle, id, onOpen }) => {
     return (
         <div className={styles.zpAccordion}>
             <div
@@ -158,12 +158,18 @@ const SearchableDropdown = ({
         onSelectionChange([]);
     };
 
+    // Function to truncate text to 10 characters
+    const truncateText = (text) => {
+        if (text.length <= 10) return text;
+        return text.substring(0, 10) + '...';
+    };
+
     return (
         <div className={styles.searchableDropdown} ref={dropdownRef}>
             <div className={styles.selectedTags}>
                 {selectedValues.map(value => (
-                    <span key={value} className={styles.selectedTag}>
-                        {value}
+                    <span key={value} className={styles.selectedTag} title={value}>
+                        {truncateText(value)}
                         <button
                             type="button"
                             onClick={() => handleRemove(value)}
@@ -356,12 +362,18 @@ const Prospects = () => {
     }, [filterValues]);
 
     const toggleAccordion = (id) => {
-        setOpenAccordions(prev => ({
-            ...prev,
-            [id]: !prev[id]
-        }));
-    };
+        setOpenAccordions(prev => {
+            // Close all other accordions when opening one
+            const newState = Object.keys(prev).reduce((acc, key) => {
+                acc[key] = false;
+                return acc;
+            }, {});
 
+            // Toggle the clicked accordion
+            newState[id] = !prev[id];
+            return newState;
+        });
+    };
     const handleFilterChange = (field, value) => {
         setFilterValues(prev => ({
             ...prev,

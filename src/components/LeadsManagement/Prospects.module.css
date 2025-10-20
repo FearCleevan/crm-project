@@ -819,15 +819,16 @@
     padding: 16px;
     max-height: 70vh;
     overflow-y: auto;
+    position: relative; /* Added for stacking context */
+    z-index: 1; /* Lower than dropdown */
 }
-
 /* Accordion Styles */
 .zpAccordion {
     margin-bottom: 12px;
     border: 1px solid #3a3a4a;
     border-radius: 6px;
-    overflow: visible; /* Changed from hidden to visible */
-    position: relative; /* Added for proper z-index context */
+    overflow: visible; /* Keep as visible */
+    position: relative;
 }
 
 .zpAccordionHeader {
@@ -838,8 +839,8 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    position: relative; /* Added for z-index */
-    z-index: 1; /* Lower z-index than dropdown */
+    position: relative;
+    z-index: 1;
 }
 
 .zpAccordionHeader:hover {
@@ -875,18 +876,21 @@
 .zpAccordionContent {
     background: #2a2a3a;
     border-top: 1px solid #3a3a4a;
-    overflow: hidden;
+    overflow: visible; /* CHANGED from hidden to visible */
     transition: max-height 0.3s ease;
+    position: relative; /* Added for proper stacking context */
 }
 
 .accordionOpen {
     max-height: 500px;
     padding: 16px;
+    overflow: visible; /* ADDED this */
 }
 
 .accordionClosed {
     max-height: 0;
     padding: 0 16px;
+    overflow: hidden; /* Keep hidden when closed */
 }
 
 /* Form Styles */
@@ -1074,7 +1078,7 @@
 .searchableDropdown {
     position: relative;
     width: 100%;
-    z-index: 1000; /* Higher z-index for dropdown container */
+    z-index: 1000;
 }
 
 .selectedTags {
@@ -1101,14 +1105,22 @@
     background: #e3f2fd;
     border: 1px solid #2196f3;
     border-radius: 16px;
-    padding: 4px 10px;
+    padding: 4px 8px;
     font-size: 10px;
     color: #1976d2;
     font-weight: 500;
-    max-width: 200px;
+    max-width: 120px; /* Limit maximum width */
+    overflow: hidden;
+    white-space: nowrap;
+    position: relative;
+}
+
+.selectedTag span {
+    flex: 1;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    max-width: 80px; /* Space for close button */
 }
 
 .removeTag {
@@ -1116,17 +1128,35 @@
     border: none;
     color: #1976d2;
     cursor: pointer;
-    margin-left: 6px;
+    margin-left: 4px;
     display: flex;
     align-items: center;
     padding: 2px;
     border-radius: 50%;
     transition: background-color 0.2s;
+    flex-shrink: 0; /* Prevent button from shrinking */
 }
 
 .removeTag:hover {
     background: #bbdefb;
     color: #d32f2f;
+}
+
+.clearAllButton {
+    background: none;
+    border: 1px solid #dc3545;
+    color: #dc3545;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-left: auto;
+}
+
+.clearAllButton:hover {
+    background: #dc3545;
+    color: white;
 }
 
 .searchInputContainer {
@@ -1163,7 +1193,7 @@
     border-radius: 6px;
     max-height: 300px;
     overflow-y: auto;
-    z-index: 9999;
+    z-index: 9999; /* Ensure high z-index */
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     margin-top: 4px;
 }
